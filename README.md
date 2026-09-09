@@ -12,22 +12,18 @@ inside the evidence package:
 
 ```sh
 python -m pip wheel --no-deps \
-  "git+https://github.com/frames-sg/wsi-dicom-bench@<published-commit>" \
+  "git+https://github.com/frames-sg/wsi-dicom-bench@caafcd9bc660fa86a7fc6db09a08bd8538181400" \
   --wheel-dir ./benchmark-wheelhouse
 python -m pip install ./benchmark-wheelhouse/wsi_dicom_bench-*.whl
+suite_path="$(python -c 'import importlib.resources; print(importlib.resources.files("wsi_dicom_bench.negative_bench").joinpath("manifest-v4.json"))')"
 wsi-dicom-bench challenge run \
-  --suite /path/to/manifest-v4.json \
+  --suite "$suite_path" \
   --wsi-dicom /absolute/path/to/wsi-dicom \
   --output /new/evidence-directory
 ```
 
-The bundled v4 suite manifest is available through the installed package at
-`wsi_dicom_bench/negative_bench/manifest-v4.json`. An existing evidence directory
-can be checked without modifying it:
-
-```sh
-suite_path="$(python -c 'import importlib.resources; print(importlib.resources.files("wsi_dicom_bench.negative_bench").joinpath("manifest-v4.json"))')"
-```
+The bundled v4 suite manifest is an installed package resource. An existing evidence
+directory can be checked without modifying it:
 
 ```sh
 wsi-dicom-bench challenge check --evidence /path/to/evidence
@@ -47,3 +43,7 @@ benchmark wheelhouse, verify it against `reproduction/requirements.lock`, then i
 `python -m pip install --no-index --find-links /path/to/wheelhouse wsi-dicom-bench`.
 Accepted evidence contains the exact benchmark wheel and a hash-pinned acquisition
 requirement for pydicom; it does not rename or rebuild third-party wheels.
+
+See [the execution contract](docs/EXECUTION_CONTRACT.md) for converter JSON compatibility,
+stable check identities, statuses, and acceptance behavior. The optional
+[control-authoring tool](tools/control-authoring/README.md) is separate from normal runs.
