@@ -11,6 +11,9 @@ requires-python = ">=3.11"
 license = "Apache-2.0 OR MIT"
 dependencies = ["pydicom==3.0.2"]
 
+[project.optional-dependencies]
+test = ["numpy==2.4.4"]
+
 [project.scripts]
 wsi-dicom-bench = "wsi_dicom_bench.challenge:main"
 wsi-dicom-bench-workbench = "wsi_dicom_bench.workbench.cli:main"

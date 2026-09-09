@@ -61,7 +61,8 @@ class WorkbenchCatalogTests(unittest.TestCase):
     def test_default_catalog_is_the_current_v4_catalog(self):
         from wsi_dicom_bench.workbench.cli import DEFAULT_CATALOG
 
-        self.assertEqual(DEFAULT_CATALOG, CATALOG_PATH)
+        self.assertEqual(DEFAULT_CATALOG.name, CATALOG_PATH.name)
+        self.assertEqual(DEFAULT_CATALOG.read_bytes(), CATALOG_PATH.read_bytes())
 
     def test_catalog_has_unique_versioned_rules_and_maps_every_emitted_check(self):
         from wsi_dicom_bench.workbench.catalog import catalog_index, load_catalog

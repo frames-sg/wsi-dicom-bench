@@ -26,6 +26,7 @@ jobs:
         run: |
           python -m venv "${RUNNER_TEMP}/test-environment"
           "${RUNNER_TEMP}/test-environment/bin/python" -m pip install dist/*.whl
+          "${RUNNER_TEMP}/test-environment/bin/python" -m pip install "numpy==2.4.4"
           env -u PYTHONPATH "${RUNNER_TEMP}/test-environment/bin/python" -m unittest discover -s tests
       - name: Generate the bundled suite from an unrelated directory
         shell: bash
