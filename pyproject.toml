@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools==81.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wsi-dicom-bench"
+version = "0.1.0"
+description = "Controlled-failure benchmark for WSI-DICOM validators"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0 OR MIT"
+dependencies = ["pydicom==3.0.2"]
+
+[project.scripts]
+wsi-dicom-bench = "wsi_dicom_bench.challenge:main"
+wsi-dicom-bench-workbench = "wsi_dicom_bench.workbench.cli:main"
+
+[project.urls]
+Repository = "https://github.com/frames-sg/wsi-dicom-bench"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+wsi_dicom_bench = [
+  "negative_bench/*.json",
+  "negative_bench/*.md",
+  "negative_bench/*.txt",
+  "negative_bench/controls-v2/*.dcm",
+  "negative_bench/controls-v4/*.dcm",
+  "negative_bench/controls-v4/*/*.dcm",
+  "negative_bench/package/*",
+  "negative_bench/package/.*",
+  "rules/*.json",
+  "rules/*.md",
+]

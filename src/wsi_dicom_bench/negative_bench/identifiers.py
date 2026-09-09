@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from bench.path_identifiers import require_portable_identifier
+from wsi_dicom_bench.path_identifiers import require_portable_identifier
 
 
 def manifest_identifier_items(manifest: object) -> tuple[list[dict], list[dict]]:

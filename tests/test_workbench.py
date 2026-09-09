@@ -4,19 +4,38 @@ import json
 import re
 import tempfile
 import unittest
+import sys
 from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-CATALOG_PATH = REPO_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v4.json"
-PROFILE_PATH = REPO_ROOT / "rules" / "wsi-dicom-core-profile-2026c-v2.json"
+PACKAGE_ROOT = REPO_ROOT / "src" / "wsi_dicom_bench"
+CATALOG_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v4.json"
+PROFILE_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-core-profile-2026c-v2.json"
 
 
 class WorkbenchCatalogTests(unittest.TestCase):
-    def test_process_errors_are_not_validator_defect_detections(self):
-        from bench.workbench.report import map_findings, validator_comparison
+    def test_contract_rejects_malformed_reports_and_external_statuses(self):
+        from wsi_dicom_bench.workbench.contract import validation_contract_errors
+        from wsi_dicom_bench.workbench.catalog import load_catalog
 
-        catalog = json.loads((REPO_ROOT / "rules/wsi-dicom-bench-rules-2026c-v4.json").read_text())
+        catalog = load_catalog(CATALOG_PATH)
+        valid = {"profile": "core-2026c", "files": ["one.dcm"], "checks": [
+            {"name": name, "path": "one.dcm", "status": "passed"}
+            for rule in catalog["rules"] for name in rule["check_names"]
+        ]}
+        for broken in ([], {**valid, "checks": [None]}, {**valid, "files": [3]}):
+            with self.subTest(report=broken):
+                self.assertTrue(validation_contract_errors(broken, catalog, True))
+        for status in ("unexpected-status", None, []):
+            next(c for c in valid["checks"] if c["name"] == "dciodvfy")["status"] = status
+            with self.subTest(status=status):
+                self.assertTrue(validation_contract_errors(valid, catalog, True))
+
+    def test_process_errors_are_not_validator_defect_detections(self):
+        from wsi_dicom_bench.workbench.report import map_findings, validator_comparison
+
+        catalog = json.loads(CATALOG_PATH.read_text())
         findings = map_findings({"checks": [{
             "name": "dciodvfy", "status": "failed",
             "execution": {"failure": "timeout", "return_code": None, "elapsed_millis": 1000},
@@ -25,8 +44,8 @@ class WorkbenchCatalogTests(unittest.TestCase):
         self.assertEqual(validator_comparison(findings)["external"]["dciodvfy"], "execution_error")
 
     def test_contract_rejects_missing_instance_checks_and_wrong_profile(self):
-        from bench.workbench.contract import validation_contract_errors
-        from bench.workbench.catalog import load_catalog
+        from wsi_dicom_bench.workbench.contract import validation_contract_errors
+        from wsi_dicom_bench.workbench.catalog import load_catalog
 
         catalog = load_catalog(CATALOG_PATH)
         validation = {"profile": "core-2026c", "files": ["one.dcm", "two.dcm"], "checks": [
@@ -40,12 +59,12 @@ class WorkbenchCatalogTests(unittest.TestCase):
         self.assertTrue(any("profile" in error for error in validation_contract_errors(validation, catalog, True)))
 
     def test_default_catalog_is_the_current_v4_catalog(self):
-        from bench.workbench.cli import DEFAULT_CATALOG
+        from wsi_dicom_bench.workbench.cli import DEFAULT_CATALOG
 
         self.assertEqual(DEFAULT_CATALOG, CATALOG_PATH)
 
     def test_catalog_has_unique_versioned_rules_and_maps_every_emitted_check(self):
-        from bench.workbench.catalog import catalog_index, load_catalog
+        from wsi_dicom_bench.workbench.catalog import catalog_index, load_catalog
 
         catalog = load_catalog(CATALOG_PATH)
         index = catalog_index(catalog)
@@ -96,37 +115,9 @@ class WorkbenchCatalogTests(unittest.TestCase):
                 self.assertEqual(citation["edition"], "2026c")
                 self.assertTrue(citation["url"].startswith("https://dicom.nema.org/"))
 
-    def test_catalog_check_names_match_the_validation_implementation(self):
-        from bench.workbench.catalog import catalog_index, load_catalog
-
-        conformance_root = REPO_ROOT / "src/validation/wsi_conformance"
-        conformance = "\n".join(
-            path.read_text() for path in sorted(conformance_root.glob("*.rs"))
-        )
-        pixel_structure = (REPO_ROOT / "src/validation/pixel_structure.rs").read_text()
-        pixel_decode = (REPO_ROOT / "src/validation/pixel_decode.rs").read_text()
-        orchestration = (REPO_ROOT / "src/validation.rs").read_text()
-        emitted = set(
-            re.findall(r'const \w+_RULE: &str\s*=\s*"([^"]+)"', conformance)
-        )
-        emitted.add("intrinsic-pixel-structure")
-        emitted.update(re.findall(r'check_name: "([^"]+)"', pixel_decode))
-        emitted.update(
-            re.findall(r'(?:failed_check|skipped_check)\(\s*"([^"]+)"', pixel_decode)
-        )
-        emitted.update(
-            re.findall(
-                r'name: "(dciodvfy|dcentvfy|validate_iods|dcmvalidate)"',
-                orchestration,
-            )
-        )
-
-        self.assertIn('name: "intrinsic-pixel-structure"', pixel_structure)
-        self.assertEqual(set(catalog_index(load_catalog(CATALOG_PATH))), emitted)
-
     def test_validation_checks_become_cataloged_findings_and_domain_summaries(self):
-        from bench.workbench.catalog import load_catalog
-        from bench.workbench.report import (
+        from wsi_dicom_bench.workbench.catalog import load_catalog
+        from wsi_dicom_bench.workbench.report import (
             map_findings,
             summarize_domains,
             validator_comparison,
@@ -195,7 +186,7 @@ class WorkbenchDicomInspectionTests(unittest.TestCase):
         from pydicom.sequence import Sequence
         from pydicom.uid import ExplicitVRLittleEndian
 
-        from bench.workbench.report import inspect_dicom_set
+        from wsi_dicom_bench.workbench.report import inspect_dicom_set
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "slide.dcm"
@@ -245,7 +236,7 @@ class WorkbenchDicomInspectionTests(unittest.TestCase):
         from pydicom.dataset import FileDataset, FileMetaDataset
         from pydicom.uid import ExplicitVRLittleEndian
 
-        from bench.workbench.report import inspect_dicom_set
+        from wsi_dicom_bench.workbench.report import inspect_dicom_set
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -270,8 +261,63 @@ class WorkbenchDicomInspectionTests(unittest.TestCase):
 
 
 class WorkbenchCliTests(unittest.TestCase):
+    def test_failed_process_documents_retain_diagnostics_and_never_pass(self):
+        from wsi_dicom_bench.workbench.cli import main
+
+        for output in ("not JSON", "[]", '{"tools": [null]}', '{"tools": [], "extra": NaN}',
+                       '{"tools": [], "extra": 1e999}'):
+            with self.subTest(output=output), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                dicom = root / "input.dcm"
+                dicom.write_bytes(b"unparsed input")
+                executable = root / "fake-wsi-dicom"
+                executable.write_text(
+                    f"#!{sys.executable}\nimport sys\nprint({output!r})\n"
+                    "print('retained process diagnostic', file=sys.stderr)\n"
+                )
+                executable.chmod(0o700)
+                evidence = root / "evidence"
+                with contextlib.redirect_stdout(io.StringIO()):
+                    code = main([str(dicom), "--output", str(evidence),
+                                 "--wsi-dicom", str(executable), "--catalog", str(CATALOG_PATH),
+                                 "--profile", str(PROFILE_PATH)])
+                self.assertEqual(code, 2)
+                self.assertIn("retained process diagnostic", (evidence / "doctor.stderr.txt").read_text())
+                self.assertEqual((evidence / "doctor.stdout.json").read_text().strip(), output)
+                report = json.loads((evidence / "workbench-report.json").read_text())
+                self.assertEqual(report["status"], "execution_error")
+                self.assertTrue(report["contract_errors"])
+                self.assertEqual(report["findings"], [])
+                self.assertTrue(Path(report["execution"]["doctor"]["stdout_path"]).is_file())
+                self.assertFalse(list(root.glob(".evidence.staging-*")))
+
+    def test_unknown_external_status_cannot_produce_a_passed_report(self):
+        from wsi_dicom_bench.workbench.cli import main
+        from wsi_dicom_bench.workbench.catalog import load_catalog
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            dicom = root / "input.dcm"
+            dicom.write_bytes(b"input must not be inspected after contract failure")
+            checks = [{"name": name, "path": str(dicom), "status": "passed"}
+                      for rule in load_catalog(CATALOG_PATH)["rules"] for name in rule["check_names"]]
+            next(c for c in checks if c["name"] == "dciodvfy")["status"] = "unexpected-status"
+            validation = {"profile": "core-2026c", "files": [str(dicom)], "checks": checks}
+            executable = root / "fake-wsi-dicom"
+            executable.write_text(f"#!{sys.executable}\nimport sys\n"
+                                  f"print({json.dumps(validation)!r} if sys.argv[1] == 'validate' else '{{\"tools\": []}}')\n")
+            executable.chmod(0o700)
+            evidence = root / "evidence"
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = main([str(dicom), "--output", str(evidence), "--wsi-dicom", str(executable),
+                             "--catalog", str(CATALOG_PATH), "--profile", str(PROFILE_PATH)])
+            self.assertEqual(code, 2)
+            report = json.loads((evidence / "workbench-report.json").read_text())
+            self.assertEqual(report["status"], "execution_error")
+            self.assertTrue(any("status" in error for error in report["contract_errors"]))
+
     def test_core_profile_catalog_requires_profile_argument(self):
-        from bench.workbench.cli import WorkbenchError, parse_args, run_workbench
+        from wsi_dicom_bench.workbench.cli import WorkbenchError, parse_args, run_workbench
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -295,7 +341,7 @@ class WorkbenchCliTests(unittest.TestCase):
                 run_workbench(args)
 
     def test_core_catalog_rejects_a_different_profile_version(self):
-        from bench.workbench.cli import WorkbenchError, parse_args, run_workbench
+        from wsi_dicom_bench.workbench.cli import WorkbenchError, parse_args, run_workbench
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             dicom = root / "one.dcm"
@@ -315,7 +361,7 @@ class WorkbenchCliTests(unittest.TestCase):
         from pydicom.dataset import FileDataset, FileMetaDataset
         from pydicom.uid import ExplicitVRLittleEndian
 
-        from bench.workbench.cli import main
+        from wsi_dicom_bench.workbench.cli import main
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

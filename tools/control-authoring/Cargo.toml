@@ -1,0 +1,10 @@
+[package]
+name = "wsi-dicom-bench-control-authoring"
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+wsi-dicom = "=0.7.5"
+tempfile = "=3.27.0"

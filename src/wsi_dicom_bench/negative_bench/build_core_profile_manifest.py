@@ -12,19 +12,14 @@ import json
 import sys
 from pathlib import Path
 
-if __package__ in {None, ""}:
-    repository_root = str(Path(__file__).resolve().parents[2])
-    if repository_root not in sys.path:
-        sys.path.insert(0, repository_root)
-
 import pydicom
-from bench.negative_bench.identifiers import manifest_identifier_items
+from wsi_dicom_bench.negative_bench.identifiers import manifest_identifier_items
 
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
-def _control_record(control_id: str, path: Path, repository: Path) -> dict:
+def _control_record(control_id: str, path: Path, original_path: str) -> dict:
     dataset = pydicom.dcmread(path, stop_before_pixels=True)
     return {
         "cohort": "core-profile-controls-v1",
@@ -34,7 +29,7 @@ def _control_record(control_id: str, path: Path, repository: Path) -> dict:
             "wsi_dicom_bench": "passed",
         },
         "number_of_frames": int(dataset.NumberOfFrames),
-        "original_path": str(path.relative_to(repository)),
+        "original_path": original_path,
         "package_path": f"controls/{control_id}.dcm",
         "series_instance_uid": str(dataset.SeriesInstanceUID),
         "sha256": _sha256(path),
@@ -46,7 +41,7 @@ def _control_record(control_id: str, path: Path, repository: Path) -> dict:
         "transfer_syntax_uid": str(dataset.file_meta.TransferSyntaxUID),
     }
 
-def _multifile_control_record(control_id: str, paths: list[Path], repository: Path) -> dict:
+def _multifile_control_record(control_id: str, paths: list[Path], original_paths: list[str]) -> dict:
     datasets = [pydicom.dcmread(path, stop_before_pixels=True) for path in paths]
     return {
         "cohort": "core-profile-controls-v1",
@@ -56,7 +51,7 @@ def _multifile_control_record(control_id: str, paths: list[Path], repository: Pa
             "wsi_dicom_bench": "passed",
         },
         "object_count": len(paths),
-        "original_paths": [str(path.relative_to(repository)) for path in paths],
+        "original_paths": original_paths,
         "package_paths": [f"controls/{control_id}/{path.name}" for path in paths],
         "series_instance_uid": str(datasets[0].SeriesInstanceUID),
         "sha256": [_sha256(path) for path in paths],
@@ -72,7 +67,6 @@ def _multifile_control_record(control_id: str, paths: list[Path], repository: Pa
 
 
 def build_manifest(source_manifest: Path, controls_root: Path, output: Path) -> dict:
-    repository = Path(__file__).resolve().parents[2]
     source_manifest = source_manifest.resolve()
     controls_root = controls_root.resolve()
     output = output.resolve()
@@ -87,9 +81,17 @@ def build_manifest(source_manifest: Path, controls_root: Path, output: Path) -> 
         identifier = control["control_id"]
         if "package_paths" in control:
             paths = [controls_root / identifier / Path(path).name for path in control["package_paths"]]
-            refreshed.append(_multifile_control_record(identifier, paths, repository))
+            refreshed.append(
+                _multifile_control_record(identifier, paths, control["original_paths"])
+            )
         else:
-            refreshed.append(_control_record(identifier, controls_root / f"{identifier}.dcm", repository))
+            refreshed.append(
+                _control_record(
+                    identifier,
+                    controls_root / f"{identifier}.dcm",
+                    control["original_path"],
+                )
+            )
     controls_by_id = {control["control_id"]: control for control in refreshed}
     for case in cases:
         case["source_control_sha256"] = controls_by_id[case["source_control_ids"][0]]["sha256"]

@@ -13,7 +13,8 @@ import pydicom
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = REPO_ROOT / "bench" / "negative_bench" / "manifest-v4.json"
+PACKAGE_ROOT = REPO_ROOT / "src" / "wsi_dicom_bench"
+MANIFEST = PACKAGE_ROOT / "negative_bench" / "manifest-v4.json"
 EVIDENCE_ROOT = os.environ.get("WSI_DICOM_BENCH_EVIDENCE_ROOT")
 
 
@@ -25,11 +26,17 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def control_source(path: str) -> Path:
+    return PACKAGE_ROOT / "negative_bench" / Path(path).relative_to(
+        "bench/negative_bench"
+    )
+
+
 class NegativeBenchGenerationTests(unittest.TestCase):
     def test_manifest_shapes_and_identifiers_fail_closed_at_every_consumer(self):
-        from bench.negative_bench.analyze import AnalysisError, analyze_challenge
-        from bench.negative_bench.generate import GenerationError, load_manifest
-        from bench.negative_bench.run import ChallengeRunError, run_challenge
+        from wsi_dicom_bench.negative_bench.analyze import AnalysisError, analyze_challenge
+        from wsi_dicom_bench.negative_bench.generate import GenerationError, load_manifest
+        from wsi_dicom_bench.negative_bench.run import ChallengeRunError, run_challenge
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -84,9 +91,9 @@ class NegativeBenchGenerationTests(unittest.TestCase):
             binary = root / "wsi-dicom"
             binary.write_bytes(b"binary")
             with mock.patch(
-                "bench.negative_bench.run.run_bounded_command"
+                "wsi_dicom_bench.negative_bench.run.run_bounded_command"
             ) as bounded, self.assertRaisesRegex(ChallengeRunError, "safe identifier"):
-                run_challenge(package, root / "workbench.py", binary)
+                run_challenge(package, binary)
             bounded.assert_not_called()
             self.assertFalse((root / "outside").exists())
 
@@ -104,7 +111,7 @@ class NegativeBenchGenerationTests(unittest.TestCase):
                 analyze_challenge(package, adjudications)
 
     def test_control_encoder_uses_shared_output_and_process_bounds(self):
-        from bench.negative_bench import finalize_synthetic_controls as finalize
+        from wsi_dicom_bench.negative_bench import finalize_synthetic_controls as finalize
 
         evidence = {
             "returncode": 0,
@@ -130,13 +137,13 @@ class NegativeBenchGenerationTests(unittest.TestCase):
         )
 
     def test_expected_results_lock_requires_exact_versioned_provenance(self):
-        from bench.negative_bench.generate import (
+        from wsi_dicom_bench.negative_bench.generate import (
             GenerationError,
             _verify_expected_results_lock,
         )
 
         protocol = MANIFEST.with_name("protocol-v4.md")
-        catalog = REPO_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v4.json"
+        catalog = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v4.json"
         baseline = json.loads(
             MANIFEST.with_name("expected-results-lock-v4.json").read_text()
         )
@@ -160,20 +167,20 @@ class NegativeBenchGenerationTests(unittest.TestCase):
                     lock_path.write_text(json.dumps(document), encoding="utf-8")
                     with self.assertRaises(GenerationError):
                         _verify_expected_results_lock(
-                            lock_path, MANIFEST, protocol, catalog, REPO_ROOT / "rules/wsi-dicom-core-profile-2026c-v2.json"
+                            lock_path, MANIFEST, protocol, catalog, PACKAGE_ROOT / "rules/wsi-dicom-core-profile-2026c-v2.json"
                         )
 
     def test_repository_operation_scripts_own_their_import_path(self):
-        for relative_path in (
-            "bench/negative_bench/generate.py",
-            "bench/negative_bench/run.py",
-            "bench/negative_bench/analyze.py",
-            "bench/negative_bench/finalize.py",
-            "bench/negative_bench/finalize_synthetic_controls.py",
+        for module in (
+            "wsi_dicom_bench.negative_bench.generate",
+            "wsi_dicom_bench.negative_bench.run",
+            "wsi_dicom_bench.negative_bench.analyze",
+            "wsi_dicom_bench.negative_bench.finalize",
+            "wsi_dicom_bench.negative_bench.finalize_synthetic_controls",
         ):
-            with self.subTest(script=relative_path):
+            with self.subTest(module=module):
                 completed = subprocess.run(
-                    [sys.executable, str(REPO_ROOT / relative_path), "--help"],
+                    [sys.executable, "-m", module, "--help"],
                     cwd=REPO_ROOT,
                     capture_output=True,
                     text=True,
@@ -188,7 +195,8 @@ class NegativeBenchGenerationTests(unittest.TestCase):
             completed = subprocess.run(
                 [
                     sys.executable,
-                    str(REPO_ROOT / "bench" / "negative_bench" / "generate.py"),
+                    "-m",
+                    "wsi_dicom_bench.negative_bench.generate",
                     "--manifest",
                     str(MANIFEST),
                     "--output",
@@ -205,7 +213,7 @@ class NegativeBenchGenerationTests(unittest.TestCase):
             self.assertTrue((output / "manifest.json").is_file())
 
     def test_mutation_registry_covers_current_cases_and_rejects_duplicates(self):
-        from bench.negative_bench.mutations import (
+        from wsi_dicom_bench.negative_bench.mutations import (
             MUTATION_REGISTRY,
             MutationRegistrationError,
             build_registry,
@@ -226,12 +234,6 @@ class NegativeBenchGenerationTests(unittest.TestCase):
         self.assertTrue(expected.issubset(MUTATION_REGISTRY))
         with self.assertRaisesRegex(MutationRegistrationError, "duplicate mutation"):
             build_registry((("one", {"same": object()}), ("two", {"same": object()})))
-
-    def test_generator_finds_repository_from_nested_private_manifest(self):
-        from bench.negative_bench.generate import _find_repository_root
-
-        nested = REPO_ROOT / "bench" / "results" / "private-holdout" / "manifest.json"
-        self.assertEqual(_find_repository_root(nested), REPO_ROOT)
 
     def test_current_matrix_is_diversified_and_balanced(self):
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
@@ -277,8 +279,8 @@ class NegativeBenchGenerationTests(unittest.TestCase):
         self.assertFalse(any(case_id.startswith("TH-") for case_id in adjudications))
 
     def test_current_end_to_end_generation_uses_only_locked_sources(self):
-        from bench.negative_bench.finalize import _verify_generation_sums
-        from bench.negative_bench.generate import generate_challenge
+        from wsi_dicom_bench.negative_bench.finalize import _verify_generation_sums
+        from wsi_dicom_bench.negative_bench.generate import generate_challenge
 
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "negative-bench-current"
@@ -290,15 +292,7 @@ class NegativeBenchGenerationTests(unittest.TestCase):
             self.assertEqual(len(list((output / "controls").rglob("*.dcm"))), 15)
             self.assertEqual(len(list((output / "cases").glob("*/input/*.dcm"))), 79)
             self.assertFalse((output / "source-inventory-private.json").exists())
-            for relative in (
-                "analysis/analysis_artifacts.py",
-                "analysis/adjudications-v1.json",
-                "analysis/file_digest.py",
-                "generator/bench/process_evidence.py",
-                "generator/bench/path_identifiers.py",
-                "generator/bench/negative_bench/identifiers.py",
-                "generator/finalize.py",
-            ):
+            for relative in ("reproduction/requirements.txt",):
                 self.assertTrue((output / relative).is_file(), relative)
             for case in generated["evaluation_cases"]:
                 report = json.loads(
@@ -311,11 +305,13 @@ class NegativeBenchGenerationTests(unittest.TestCase):
             completed = subprocess.run(
                 [
                     sys.executable,
-                    str(output / "generator" / "generate.py"),
-                    "--manifest",
-                    str(output / "manifest.json"),
-                    "--output",
-                    str(reproduced),
+                    "-c",
+                    (
+                        "from pathlib import Path; "
+                        "from wsi_dicom_bench.negative_bench.generate import generate_challenge; "
+                        f"generate_challenge(Path({str(output / 'manifest.json')!r}), "
+                        f"Path({str(reproduced)!r}))"
+                    ),
                 ],
                 capture_output=True,
                 text=True,
@@ -324,107 +320,19 @@ class NegativeBenchGenerationTests(unittest.TestCase):
             )
             self.assertEqual(completed.returncode, 0, completed.stderr)
 
-            fake_workbench = Path(temporary) / "fake-workbench.py"
-            fake_workbench.write_text(
-                """import argparse
-import hashlib
-import json
-from pathlib import Path
-
-parser = argparse.ArgumentParser()
-parser.add_argument("dicom", type=Path)
-parser.add_argument("--output", type=Path, required=True)
-args, _ = parser.parse_known_args()
-root = args.dicom.resolve()
-while root != root.parent and not (root / "manifest.json").is_file():
-    root = root.parent
-manifest = json.loads((root / "manifest.json").read_text())
-cases = {item["case_id"]: item for item in manifest["evaluation_cases"]}
-identifier = args.dicom.stem if args.dicom.parent.name == "controls" else next(part for part in args.dicom.parts if part in cases)
-case = cases.get(identifier)
-status = "failed" if case else "passed"
-domains = {name: {"status": "failed" if case and name == case["domain"] else "passed"} for name in ("pixel", "geometry", "color", "identity", "conformance")}
-profile_path = root / "expected-results" / Path(manifest["core_profile"]["path"]).name
-catalog_path = root / "expected-results" / Path(manifest["rule_catalog"]["path"]).name
-catalog = json.loads(catalog_path.read_text())
-inputs = sorted(args.dicom.rglob("*.dcm")) if args.dicom.is_dir() else [args.dicom]
-digest = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
-findings = [
-    {"status": "failed" if case and rule["rule_id"] in case["expected_failing_rules"] else "passed",
-     "rule_id": rule["rule_id"], "primary_domain": rule["primary_domain"], "rule_kind": rule["rule_kind"],
-     "check_name": name, "path": str(path), "catalog_status": "mapped"}
-    for path in inputs for rule in catalog["rules"] for name in rule["check_names"]
-]
-report = {
-    "schema_version": "wsi-dicom-bench-workbench-report-v2", "status": status,
-    "profile": {"id": manifest["core_profile"]["profile_id"], "sha256": digest(profile_path)},
-    "catalog": {"sha256": digest(catalog_path)},
-    "slide": {"instances": [{"path": str(path), "sha256": digest(path)} for path in inputs]},
-    "findings": findings, "domains": domains, "validator_comparison": {"external": {}},
-}
-args.output.mkdir(parents=True)
-(args.output / "workbench-report.json").write_text(json.dumps(report) + "\\n")
-print(json.dumps({"status": status}))
-raise SystemExit(0 if status == "passed" else 1)
-""",
-                encoding="utf-8",
-            )
-            fake_binary = Path(temporary) / "wsi-dicom"
-            fake_binary.write_bytes(b"test binary")
-            commands = (
-                [
-                    sys.executable,
-                    str(output / "generator" / "run.py"),
-                    "--package",
-                    str(output),
-                    "--workbench",
-                    str(fake_workbench),
-                    "--wsi-dicom",
-                    str(fake_binary),
-                ],
-                [
-                    sys.executable,
-                    str(output / "analysis" / "analyze.py"),
-                    "--package",
-                    str(output),
-                    "--adjudications",
-                    str(output / "analysis" / "adjudications-v1.json"),
-                ],
-                [
-                    sys.executable,
-                    str(output / "generator" / "finalize.py"),
-                    "--package",
-                    str(output),
-                ],
-            )
-            for command in commands:
-                completed = subprocess.run(
-                    command,
-                    cwd=output,
-                    capture_output=True,
-                    text=True,
-                    timeout=30,
-                    check=False,
-                )
-                retained_errors = "\n".join(
-                    path.read_text(encoding="utf-8", errors="replace")
-                    for path in (output / "validator-results").rglob("*.stderr.txt")
-                )
-                self.assertEqual(
-                    completed.returncode,
-                    0,
-                    completed.stderr + "\n" + retained_errors,
-                )
-            self.assertEqual(list(output.rglob("__pycache__")), [])
             _verify_generation_sums(output)
-            self.assertTrue((output / "SHA256SUMS").is_file())
+            _verify_generation_sums(reproduced)
+            self.assertEqual(
+                [sha256_file(path) for path in sorted(output.rglob("*.dcm"))],
+                [sha256_file(path) for path in sorted(reproduced.rglob("*.dcm"))],
+            )
 
     def test_file_meta_dataset_sop_mismatch_survives_serialization(self):
-        from bench.negative_bench.generate import _generate_case
+        from wsi_dicom_bench.negative_bench.generate import _generate_case
 
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         control = manifest["valid_controls"][0]
-        source = REPO_ROOT / control["original_path"]
+        source = control_source(control["original_path"])
         case = {
             "mutation_name": "file_meta_dataset_sop_mismatch",
             "deterministic_seed": "identity-mismatch-regression",
@@ -444,7 +352,7 @@ raise SystemExit(0 if status == "passed" else 1)
         )
 
     def test_seed_selects_and_records_the_corrupted_frame(self):
-        from bench.negative_bench.generate import _generate_case
+        from wsi_dicom_bench.negative_bench.generate import _generate_case
 
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         base_case = next(
@@ -457,7 +365,7 @@ raise SystemExit(0 if status == "passed" else 1)
             for item in manifest["valid_controls"]
             if item["control_id"] == base_case["source_control_ids"][0]
         )
-        source = REPO_ROOT / control["original_path"]
+        source = control_source(control["original_path"])
 
         selected = []
         with tempfile.TemporaryDirectory() as temporary:
@@ -477,11 +385,11 @@ raise SystemExit(0 if status == "passed" else 1)
         self.assertNotEqual(selected[0], selected[1])
 
     def test_generation_is_atomic_deterministic_and_preserves_sources(self):
-        from bench.negative_bench.generate import generate_challenge
+        from wsi_dicom_bench.negative_bench.generate import generate_challenge
 
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         source_hashes = {
-            REPO_ROOT / path: digest
+            control_source(path): digest
             for control in manifest["valid_controls"]
             for path, digest in zip(control.get("original_paths", [control.get("original_path")]), control["sha256"] if isinstance(control["sha256"], list) else [control["sha256"]], strict=True)
         }
@@ -500,7 +408,7 @@ raise SystemExit(0 if status == "passed" else 1)
             self.assertEqual(len(list((first / "controls").rglob("*.dcm"))), 15)
             self.assertEqual(len(list((first / "cases").glob("*/input/*.dcm"))), 79)
             self.assertEqual(
-                (first / "generator" / "requirements.txt").read_text(),
+                (first / "reproduction" / "requirements.txt").read_text(),
                 "pydicom==3.0.2\n",
             )
 
@@ -511,7 +419,7 @@ raise SystemExit(0 if status == "passed" else 1)
                 self.assertEqual(sha256_file(path), expected)
 
     def test_generation_refuses_existing_output(self):
-        from bench.negative_bench.generate import GenerationError, generate_challenge
+        from wsi_dicom_bench.negative_bench.generate import GenerationError, generate_challenge
 
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "existing"
@@ -520,14 +428,14 @@ raise SystemExit(0 if status == "passed" else 1)
                 generate_challenge(MANIFEST, output)
 
     def test_identifying_control_is_rejected_without_publishing_output(self):
-        from bench.negative_bench.generate import GenerationError, generate_challenge
+        from wsi_dicom_bench.negative_bench.generate import GenerationError, generate_challenge
 
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             source = root / "identifying.dcm"
             dataset = pydicom.dcmread(
-                REPO_ROOT / manifest["valid_controls"][0]["original_path"]
+                control_source(manifest["valid_controls"][0]["original_path"])
             )
             dataset.PatientName = "IDENTIFIED^PATIENT"
             dataset.save_as(source)
@@ -552,7 +460,7 @@ raise SystemExit(0 if status == "passed" else 1)
 
 class NegativeBenchRunTests(unittest.TestCase):
     def test_runner_preserves_nonzero_workbench_output_as_observation(self):
-        from bench.negative_bench.run import run_challenge
+        from wsi_dicom_bench.negative_bench.run import run_challenge
 
         with tempfile.TemporaryDirectory() as temporary:
             package = Path(temporary) / "package"
@@ -619,18 +527,18 @@ class NegativeBenchRunTests(unittest.TestCase):
                     "stderr_truncated": False,
                 }
 
-            with mock.patch("bench.negative_bench.run.run_bounded_command", fake_run), mock.patch(
-                "bench.negative_bench.run.platform.platform", return_value="test-os"
+            with mock.patch("wsi_dicom_bench.negative_bench.run.run_bounded_command", fake_run), mock.patch(
+                "wsi_dicom_bench.negative_bench.run.platform.platform", return_value="test-os"
             ), mock.patch(
-                "bench.negative_bench.run.platform.machine", return_value="test-machine"
+                "wsi_dicom_bench.negative_bench.run.platform.machine", return_value="test-machine"
             ):
                 summary = run_challenge(
                     package,
-                    Path("fake-workbench.py"),
                     fake_binary,
                 )
 
             self.assertEqual(summary["executions"][1]["returncode"], 1)
+            self.assertEqual(summary["executions"][1]["command"][0], "python")
             raw = package / "validator-results" / "NB-ONE" / "launcher.stderr.txt"
             self.assertEqual(raw.read_text(), "retained diagnostic\n")
             encoded = json.dumps(summary)
@@ -657,7 +565,7 @@ class NegativeBenchRunTests(unittest.TestCase):
             self.assertNotIn(str(Path(sys.executable).resolve()), retained_text)
 
     def test_runner_failures_never_publish_a_summary(self):
-        from bench.negative_bench.run import ChallengeRunError, run_challenge
+        from wsi_dicom_bench.negative_bench.run import ChallengeRunError, run_challenge
 
         failure_cases = {
             "timeout": {"timed_out": True},
@@ -711,15 +619,15 @@ class NegativeBenchRunTests(unittest.TestCase):
                     }
 
                 with mock.patch(
-                    "bench.negative_bench.run.run_bounded_command", fake_run
+                    "wsi_dicom_bench.negative_bench.run.run_bounded_command", fake_run
                 ), self.assertRaises(ChallengeRunError):
-                    run_challenge(package, Path("workbench.py"), binary)
+                    run_challenge(package, binary)
                 self.assertFalse(
                     (package / "observed-results" / "run-summary.json").exists()
                 )
 
     def test_runner_refuses_preexisting_per_input_results_before_launch(self):
-        from bench.negative_bench.run import ChallengeRunError, run_challenge
+        from wsi_dicom_bench.negative_bench.run import ChallengeRunError, run_challenge
 
         for relative in (
             "observed-results/VC-ONE/workbench",
@@ -750,11 +658,11 @@ class NegativeBenchRunTests(unittest.TestCase):
                 binary.write_bytes(b"binary")
 
                 with mock.patch(
-                    "bench.negative_bench.run.run_bounded_command"
+                    "wsi_dicom_bench.negative_bench.run.run_bounded_command"
                 ) as bounded, self.assertRaisesRegex(
                     ChallengeRunError, "result path already exists"
                 ):
-                    run_challenge(package, Path("workbench.py"), binary)
+                    run_challenge(package, binary)
 
                 bounded.assert_not_called()
                 self.assertFalse(
@@ -764,7 +672,7 @@ class NegativeBenchRunTests(unittest.TestCase):
 
 class NegativeBenchAnalysisTests(unittest.TestCase):
     def test_execution_error_cannot_count_as_detection_or_localization(self):
-        from bench.negative_bench.analyze import _build_case_rows
+        from wsi_dicom_bench.negative_bench.analyze import _build_case_rows
 
         with tempfile.TemporaryDirectory() as temporary:
             package = Path(temporary)
@@ -783,7 +691,7 @@ class NegativeBenchAnalysisTests(unittest.TestCase):
             self.assertFalse(rows[0]["expected_rule_localized"])
 
     def test_synthetic_package_drives_rows_metrics_and_artifacts(self):
-        from bench.negative_bench.analyze import analyze_challenge
+        from wsi_dicom_bench.negative_bench.analyze import analyze_challenge
 
         with tempfile.TemporaryDirectory() as temporary:
             package = Path(temporary) / "package"
@@ -889,7 +797,7 @@ class NegativeBenchAnalysisTests(unittest.TestCase):
             self.assertEqual(missed_summary["domain_localization_accuracy"], 0)
 
     def test_results_markdown_uses_dynamic_case_and_domain_counts(self):
-        from bench.negative_bench.analyze import _results_markdown
+        from wsi_dicom_bench.negative_bench.analyze import _results_markdown
 
         summary = {
             "bench_detected": 15,
@@ -939,7 +847,7 @@ class NegativeBenchAnalysisTests(unittest.TestCase):
         self.assertNotIn("/30", text)
 
     def test_exact_binomial_interval_handles_all_successes_and_failures(self):
-        from bench.negative_bench.analyze import exact_binomial
+        from wsi_dicom_bench.negative_bench.analyze import exact_binomial
 
         self.assertEqual(exact_binomial(30, 30)[1], 1.0)
         self.assertAlmostEqual(exact_binomial(30, 30)[0], 0.025 ** (1 / 30), places=12)
@@ -953,9 +861,11 @@ class NegativeBenchAnalysisTests(unittest.TestCase):
         "set WSI_DICOM_BENCH_EVIDENCE_ROOT to run retained-evidence regression",
     )
     def test_frozen_run_metrics_are_reproducible(self):
-        from bench.negative_bench.analyze import summarize_challenge
+        from wsi_dicom_bench.negative_bench.analyze import summarize_challenge
 
-        package = Path(EVIDENCE_ROOT) / "wsi-dicom-negative-bench-v3"
+        package = Path(EVIDENCE_ROOT)
+        if not (package / "manifest.json").is_file():
+            package /= "wsi-dicom-negative-bench-v3"
         summary = summarize_challenge(package)
         self.assertEqual(summary["evaluation_cases"], 69)
         self.assertEqual(summary["valid_controls"], 14)
@@ -964,7 +874,7 @@ class NegativeBenchAnalysisTests(unittest.TestCase):
         self.assertEqual(summary["valid_controls_accepted"], 14)
         self.assertEqual(summary["rule_localized_detected_cases"], 69)
         self.assertEqual(summary["domain_localized_detected_cases"], 69)
-        adjudications = REPO_ROOT / "bench/negative_bench/adjudications-v1.json"
+        adjudications = PACKAGE_ROOT / "negative_bench/adjudications-v1.json"
         self.assertEqual(
             summary["adjudications"],
             {
@@ -976,7 +886,7 @@ class NegativeBenchAnalysisTests(unittest.TestCase):
 
 class NegativeBenchFinalizationTests(unittest.TestCase):
     def test_analysis_refuses_to_modify_a_sealed_package(self):
-        from bench.negative_bench.analyze import AnalysisError, analyze_challenge
+        from wsi_dicom_bench.negative_bench.analyze import AnalysisError, analyze_challenge
 
         with tempfile.TemporaryDirectory() as temporary:
             package = Path(temporary)
@@ -1072,7 +982,7 @@ class NegativeBenchFinalizationTests(unittest.TestCase):
             path.write_text("fixture\n")
 
     def test_final_seal_is_atomic_complete_and_exclusive(self):
-        from bench.negative_bench.finalize import FinalizationError, finalize_package
+        from wsi_dicom_bench.negative_bench.finalize import FinalizationError, finalize_package
 
         with tempfile.TemporaryDirectory() as temporary:
             package = Path(temporary) / "package"
@@ -1093,7 +1003,7 @@ class NegativeBenchFinalizationTests(unittest.TestCase):
                 finalize_package(package)
 
     def test_finalizer_cannot_seal_core_reports_without_the_profile_gate(self):
-        from bench.negative_bench.finalize import FinalizationError, finalize_package
+        from wsi_dicom_bench.negative_bench.finalize import FinalizationError, finalize_package
         with tempfile.TemporaryDirectory() as temporary:
             package = Path(temporary)
             self._write_completed_package(package)
@@ -1110,7 +1020,7 @@ class NegativeBenchFinalizationTests(unittest.TestCase):
             self.assertFalse((package / "SHA256SUMS").exists())
 
     def test_final_seal_requires_run_and_analysis_outputs(self):
-        from bench.negative_bench.finalize import FinalizationError, finalize_package
+        from wsi_dicom_bench.negative_bench.finalize import FinalizationError, finalize_package
 
         with tempfile.TemporaryDirectory() as temporary:
             package = Path(temporary)
@@ -1126,7 +1036,7 @@ class NegativeBenchFinalizationTests(unittest.TestCase):
             self.assertFalse((package / "SHA256SUMS").exists())
 
     def test_final_seal_rejects_generation_hash_mismatch(self):
-        from bench.negative_bench.finalize import FinalizationError, finalize_package
+        from wsi_dicom_bench.negative_bench.finalize import FinalizationError, finalize_package
 
         with tempfile.TemporaryDirectory() as temporary:
             package = Path(temporary)
@@ -1139,7 +1049,7 @@ class NegativeBenchFinalizationTests(unittest.TestCase):
             self.assertFalse((package / "SHA256SUMS").exists())
 
     def test_final_seal_rejects_incomplete_execution_evidence(self):
-        from bench.negative_bench.finalize import FinalizationError, finalize_package
+        from wsi_dicom_bench.negative_bench.finalize import FinalizationError, finalize_package
 
         with tempfile.TemporaryDirectory() as temporary:
             package = Path(temporary)
@@ -1153,7 +1063,7 @@ class NegativeBenchFinalizationTests(unittest.TestCase):
                 finalize_package(package)
 
     def test_final_seal_rejects_incomplete_or_unsafe_generation_manifest(self):
-        from bench.negative_bench.finalize import FinalizationError, finalize_package
+        from wsi_dicom_bench.negative_bench.finalize import FinalizationError, finalize_package
 
         with tempfile.TemporaryDirectory() as temporary:
             package = Path(temporary)

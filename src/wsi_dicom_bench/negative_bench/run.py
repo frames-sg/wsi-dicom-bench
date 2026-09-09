@@ -9,24 +9,17 @@ import platform
 import sys
 from pathlib import Path
 
-if __package__ in {None, ""}:
-    sys.dont_write_bytecode = True
-    repository_root = str(Path(__file__).resolve().parents[2])
-    if repository_root not in sys.path:
-        sys.path.insert(0, repository_root)
-
-from bench.file_digest import sha256_file
-from bench.negative_bench.identifiers import manifest_identifier_items
-from bench.process_evidence import run_bounded_command
+from wsi_dicom_bench.file_digest import sha256_file
+from wsi_dicom_bench.negative_bench.identifiers import manifest_identifier_items
+from wsi_dicom_bench.process_evidence import run_bounded_command
 
 
 class ChallengeRunError(RuntimeError):
     """The locked challenge could not be executed completely."""
 
 
-def run_challenge(package: Path, workbench_script: Path, wsi_dicom: Path) -> dict:
+def run_challenge(package: Path, wsi_dicom: Path) -> dict:
     package = package.resolve()
-    workbench_script = workbench_script.resolve()
     wsi_dicom = wsi_dicom.resolve()
     manifest_path = package / "manifest.json"
     if not manifest_path.is_file():
@@ -93,7 +86,6 @@ def run_challenge(package: Path, workbench_script: Path, wsi_dicom: Path) -> dic
         executions.append(
             _run_one_input(
                 package,
-                workbench_script,
                 wsi_dicom,
                 package / "expected-results" / catalog_name,
                 profile_path,
@@ -113,10 +105,7 @@ def run_challenge(package: Path, workbench_script: Path, wsi_dicom: Path) -> dic
             "machine": platform.machine(),
             "wsi_dicom_path": wsi_dicom.name,
             "wsi_dicom_sha256": sha256_file(wsi_dicom),
-            "workbench_script": _portable_path(package, workbench_script),
-            "workbench_script_sha256": sha256_file(workbench_script)
-            if workbench_script.is_file()
-            else None,
+            "workbench_module": "wsi_dicom_bench.workbench.cli",
         },
         "resource_limits": limits,
         "executions": executions,
@@ -132,7 +121,6 @@ def run_challenge(package: Path, workbench_script: Path, wsi_dicom: Path) -> dic
 
 def _run_one_input(
     package: Path,
-    workbench_script: Path,
     wsi_dicom: Path,
     catalog_path: Path,
     profile_path: Path | None,
@@ -150,7 +138,8 @@ def _run_one_input(
     raw_dir.mkdir(parents=True)
     command = [
         sys.executable,
-        str(workbench_script),
+        "-m",
+        "wsi_dicom_bench.workbench.cli",
         str(dicom_input),
         "--output",
         str(evidence),
@@ -195,26 +184,13 @@ def _run_one_input(
             f"workbench execution failed for {identifier}: returncode={returncode}, "
             f"timed_out={timed_out}, report_present={report_present}"
         )
-    _sanitize_public_evidence(
-        (evidence, raw_dir),
-        package=package,
-        workbench_script=workbench_script,
-        wsi_dicom=wsi_dicom,
-    )
+    sanitize = _evidence_sanitizer(package, wsi_dicom)
+    _sanitize_public_evidence((evidence, raw_dir), sanitize)
     return {
         "id": identifier,
         "cohort": cohort,
         "input": str(dicom_input.relative_to(package)),
-        "command": _recorded_command(
-            package,
-            workbench_script,
-            wsi_dicom,
-            catalog_path,
-            profile_path,
-            limits,
-            dicom_input,
-            evidence,
-        ),
+        "command": [sanitize(argument) for argument in command],
         "returncode": returncode,
         "timed_out": timed_out,
         "runtime_seconds": runtime,
@@ -224,16 +200,10 @@ def _run_one_input(
     }
 
 
-def _sanitize_public_evidence(
-    roots: tuple[Path, ...],
-    *,
-    package: Path,
-    workbench_script: Path,
-    wsi_dicom: Path,
-) -> None:
+def _evidence_sanitizer(package: Path, wsi_dicom: Path):
     replacements = {
-        str(workbench_script): _portable_path(package, workbench_script),
         str(wsi_dicom): wsi_dicom.name,
+        sys.executable: "python",
         str(Path(sys.executable).resolve()): "python",
         str(package): ".",
     }
@@ -252,6 +222,10 @@ def _sanitize_public_evidence(
                 value = value.replace(sensitive, portable)
         return value
 
+    return sanitize
+
+
+def _sanitize_public_evidence(roots: tuple[Path, ...], sanitize) -> None:
     for root in roots:
         for path in root.rglob("*"):
             if not path.is_file() or path.suffix not in {".json", ".md", ".txt"}:
@@ -278,50 +252,17 @@ def _portable_path(package: Path, path: Path) -> str:
         return path.name
 
 
-def _recorded_command(
-    package: Path,
-    workbench_script: Path,
-    wsi_dicom: Path,
-    catalog_path: Path,
-    profile_path: Path | None,
-    limits: dict,
-    dicom_input: Path,
-    evidence: Path,
-) -> list[str]:
-    command = [
-        "python",
-        _portable_path(package, workbench_script),
-        str(dicom_input.relative_to(package)),
-        "--output",
-        str(evidence.relative_to(package)),
-        "--wsi-dicom",
-        wsi_dicom.name,
-        "--catalog",
-        str(catalog_path.relative_to(package)),
-        "--max-pixel-frames",
-        str(limits["max_pixel_frames"]),
-        "--command-timeout-secs",
-        str(limits["command_timeout_secs"]),
-        "--evaluation-timeout-secs",
-        str(limits["case_timeout_secs"]),
-    ]
-    if profile_path is not None:
-        command.extend(["--profile", str(profile_path.relative_to(package))])
-    return command
-
-
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--package", type=Path, required=True)
-    parser.add_argument("--workbench", type=Path, default=Path("bench/wsi_dicom_bench.py"))
-    parser.add_argument("--wsi-dicom", type=Path, default=Path("target/release/wsi-dicom"))
+    parser.add_argument("--wsi-dicom", type=Path, required=True)
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     try:
-        summary = run_challenge(args.package, args.workbench, args.wsi_dicom)
+        summary = run_challenge(args.package, args.wsi_dicom)
     except (ChallengeRunError, OSError, ValueError) as exc:
         print(f"challenge run failed: {exc}", file=sys.stderr)
         return 2

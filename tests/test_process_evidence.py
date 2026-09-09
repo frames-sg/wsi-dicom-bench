@@ -9,10 +9,10 @@ from unittest import mock
 
 class ProcessEvidenceTests(unittest.TestCase):
     def test_capture_io_failure_fails_closed(self):
-        from bench.process_evidence import ProcessEvidenceError, run_bounded_command
+        from wsi_dicom_bench.process_evidence import ProcessEvidenceError, run_bounded_command
 
         with tempfile.TemporaryDirectory() as temporary, mock.patch(
-            "bench.process_evidence._capture_pipe", side_effect=OSError("disk full")
+            "wsi_dicom_bench.process_evidence._capture_pipe", side_effect=OSError("disk full")
         ):
             root = Path(temporary)
             with self.assertRaisesRegex(ProcessEvidenceError, "capture"):
@@ -24,7 +24,7 @@ class ProcessEvidenceTests(unittest.TestCase):
                 )
 
     def test_gnu_time_metrics_use_kib_and_linux_flags(self):
-        from bench.process_evidence import _measurement_command, parse_gnu_time_metrics
+        from wsi_dicom_bench.process_evidence import _measurement_command, parse_gnu_time_metrics
 
         self.assertEqual(
             parse_gnu_time_metrics(
@@ -46,7 +46,7 @@ class ProcessEvidenceTests(unittest.TestCase):
         self.assertNotIn("-lp", command)
 
     def test_output_is_capped_while_observed_size_and_truncation_are_retained(self):
-        from bench.process_evidence import run_bounded_command
+        from wsi_dicom_bench.process_evidence import run_bounded_command
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -72,7 +72,7 @@ class ProcessEvidenceTests(unittest.TestCase):
             self.assertTrue(result["stderr_truncated"])
 
     def test_success_records_bounded_process_evidence(self):
-        from bench.process_evidence import run_bounded_command
+        from wsi_dicom_bench.process_evidence import run_bounded_command
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -94,7 +94,7 @@ class ProcessEvidenceTests(unittest.TestCase):
         self.assertEqual(result["stderr_path"], str(stderr))
 
     def test_timeout_is_evidence_not_an_exception(self):
-        from bench.process_evidence import run_bounded_command
+        from wsi_dicom_bench.process_evidence import run_bounded_command
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -111,7 +111,7 @@ class ProcessEvidenceTests(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "posix", "process-group regression is POSIX-specific")
     def test_timeout_terminates_descendants_before_they_can_publish_output(self):
-        from bench.process_evidence import run_bounded_command
+        from wsi_dicom_bench.process_evidence import run_bounded_command
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -138,7 +138,7 @@ class ProcessEvidenceTests(unittest.TestCase):
             self.assertFalse(sentinel.exists())
 
     def test_resource_measurement_is_portable_and_structured(self):
-        from bench.process_evidence import run_bounded_command
+        from wsi_dicom_bench.process_evidence import run_bounded_command
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

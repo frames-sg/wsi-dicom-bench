@@ -6,10 +6,10 @@ This is not an exhaustive inventory of normative DICOM attributes or conditions.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
-import sys
 from pathlib import Path
+
+from .file_digest import sha256_file
 
 
 class CoreProfileError(ValueError):
@@ -195,10 +195,6 @@ def validate_profile_coverage(profile: dict, catalog: dict, manifest: dict) -> d
     }
 
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
 def validate_evidence_coverage(
     profile: dict, catalog: dict, manifest: dict, evidence_root: Path
 ) -> dict:
@@ -209,7 +205,7 @@ def validate_evidence_coverage(
         for rule in catalog["rules"]
         if rule.get("rule_kind") != "independent_validator"
     }
-    profile_digest = _sha256(
+    profile_digest = sha256_file(
         evidence_root
         / "expected-results"
         / Path(manifest["core_profile"]["path"]).name
@@ -355,7 +351,7 @@ def _validate_report_evidence(identifier: str, report: dict, catalog: dict, mani
            or (f.get("execution") or {}).get("failure") for f in findings if f.get("status") != "skipped"):
         raise CoreProfileError(f"{identifier} contains an execution error or unmapped finding")
     catalog_path = root / "expected-results" / Path(manifest["rule_catalog"]["path"]).name
-    if report.get("catalog", {}).get("sha256") != _sha256(catalog_path):
+    if report.get("catalog", {}).get("sha256") != sha256_file(catalog_path):
         raise CoreProfileError(f"{identifier} records the wrong catalog digest")
     for validator in manifest.get("required_external_validators", []) or [
         name for rule in catalog["rules"] if rule.get("rule_kind") == "independent_validator"
@@ -378,7 +374,7 @@ def _validate_report_evidence(identifier: str, report: dict, catalog: dict, mani
         if path not in paths or path in observed or not path.is_relative_to(root.resolve()) or not path.is_file():
             raise CoreProfileError(f"{identifier} records an unexpected or duplicate input")
         observed.add(path)
-        if instance.get("sha256") != _sha256(path):
+        if instance.get("sha256") != sha256_file(path):
             raise CoreProfileError(f"{identifier} input digest differs from observed bytes")
         emitted = {f.get("check_name") for f in findings if f.get("path") and (root / f["path"]).resolve() == path and f.get("status") in {"passed", "failed"}}
         if required - emitted:

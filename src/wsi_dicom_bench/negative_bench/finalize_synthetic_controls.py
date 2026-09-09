@@ -9,15 +9,10 @@ import sys
 import tempfile
 from pathlib import Path
 
-if __package__ in {None, ""}:
-    repository_root = str(Path(__file__).resolve().parents[2])
-    if repository_root not in sys.path:
-        sys.path.insert(0, repository_root)
-
 import pydicom
 from pydicom.encaps import encapsulate_extended
 
-from bench.process_evidence import run_bounded_command
+from wsi_dicom_bench.process_evidence import run_bounded_command
 
 
 EXPLICIT_VR_LITTLE_ENDIAN = "1.2.840.10008.1.2.1"

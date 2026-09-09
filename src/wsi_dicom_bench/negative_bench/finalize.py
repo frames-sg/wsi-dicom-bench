@@ -8,15 +8,9 @@ import os
 import sys
 from pathlib import Path, PurePosixPath
 
-if __package__ in {None, ""}:
-    sys.dont_write_bytecode = True
-    repository_root = str(Path(__file__).resolve().parents[2])
-    if repository_root not in sys.path:
-        sys.path.insert(0, repository_root)
-
-from bench.file_digest import sha256_file
-from bench.negative_bench.identifiers import manifest_identifier_items
-from bench.path_identifiers import require_portable_identifier
+from wsi_dicom_bench.file_digest import sha256_file
+from wsi_dicom_bench.negative_bench.identifiers import manifest_identifier_items
+from wsi_dicom_bench.path_identifiers import require_portable_identifier
 
 
 REQUIRED_FINAL_INPUTS = (
@@ -192,7 +186,7 @@ def _validate_completed_package(package: Path) -> None:
     ):
         raise FinalizationError("analysis summary does not match manifest inputs")
     if manifest.get("core_profile"):
-        from bench.core_profile import CoreProfileError, load_profile, validate_evidence_coverage
+        from wsi_dicom_bench.core_profile import CoreProfileError, load_profile, validate_evidence_coverage
         try:
             profile_path = package / "expected-results" / Path(manifest["core_profile"]["path"]).name
             catalog_path = "expected-results/" + Path(manifest["rule_catalog"]["path"]).name

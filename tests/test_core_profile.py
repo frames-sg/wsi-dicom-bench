@@ -2,23 +2,25 @@ import copy
 import json
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import pydicom
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-PROFILE_PATH = REPO_ROOT / "rules" / "wsi-dicom-core-profile-2026c-v2.json"
-CATALOG_PATH = REPO_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v4.json"
-MANIFEST_PATH = REPO_ROOT / "bench" / "negative_bench" / "manifest-v4.json"
+PACKAGE_ROOT = REPO_ROOT / "src" / "wsi_dicom_bench"
+PROFILE_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-core-profile-2026c-v2.json"
+CATALOG_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v4.json"
+MANIFEST_PATH = PACKAGE_ROOT / "negative_bench" / "manifest-v4.json"
 EXPECTED_LOCK_PATH = (
-    REPO_ROOT / "bench" / "negative_bench" / "expected-results-lock-v4.json"
+    PACKAGE_ROOT / "negative_bench" / "expected-results-lock-v4.json"
 )
 
 
 class CoreProfileCoverageTests(unittest.TestCase):
     def test_profile_has_complete_locked_coverage(self):
-        from bench.core_profile import load_profile, validate_profile_coverage
+        from wsi_dicom_bench.core_profile import load_profile, validate_profile_coverage
 
         profile = load_profile(PROFILE_PATH)
         catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
@@ -51,7 +53,7 @@ class CoreProfileCoverageTests(unittest.TestCase):
         )
 
     def test_profile_gate_rejects_missing_positive_or_negative_coverage(self):
-        from bench.core_profile import CoreProfileError, load_profile, validate_profile_coverage
+        from wsi_dicom_bench.core_profile import CoreProfileError, load_profile, validate_profile_coverage
 
         profile = load_profile(PROFILE_PATH)
         catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
@@ -64,7 +66,7 @@ class CoreProfileCoverageTests(unittest.TestCase):
                 validate_profile_coverage(broken, catalog, manifest)
 
     def test_profile_loader_rejects_duplicate_requirement_ids(self):
-        from bench.core_profile import CoreProfileError, load_profile
+        from wsi_dicom_bench.core_profile import CoreProfileError, load_profile
 
         document = json.loads(PROFILE_PATH.read_text(encoding="utf-8"))
         document["requirements"].append(copy.deepcopy(document["requirements"][0]))
@@ -75,7 +77,7 @@ class CoreProfileCoverageTests(unittest.TestCase):
                 load_profile(path)
 
     def test_profile_loader_requires_an_explicit_profile_version(self):
-        from bench.core_profile import CoreProfileError, load_profile
+        from wsi_dicom_bench.core_profile import CoreProfileError, load_profile
 
         document = json.loads(PROFILE_PATH.read_text(encoding="utf-8"))
         document.pop("profile_version", None)
@@ -86,7 +88,7 @@ class CoreProfileCoverageTests(unittest.TestCase):
                 load_profile(path)
 
     def test_current_expected_results_lock_binds_profile_identity_version_and_hash(self):
-        from bench.negative_bench.generate import (
+        from wsi_dicom_bench.negative_bench.generate import (
             GenerationError,
             _verify_expected_results_lock,
         )
@@ -112,9 +114,9 @@ class CoreProfileCoverageTests(unittest.TestCase):
                     )
 
     def test_core_control_builder_adds_monochrome_and_multilevel_controls(self):
-        from bench.negative_bench.build_core_profile_controls import build_controls
+        from wsi_dicom_bench.negative_bench.build_core_profile_controls import build_controls
 
-        source = REPO_ROOT / "bench" / "negative_bench" / "controls-v2"
+        source = PACKAGE_ROOT / "negative_bench" / "controls-v2"
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "controls"
             build_controls(source, output)
@@ -167,11 +169,11 @@ class CoreProfileCoverageTests(unittest.TestCase):
             )
 
     def test_new_functional_group_mutations_remove_only_the_authored_group(self):
-        from bench.negative_bench.mutations import generate_case
-        from bench.negative_bench.build_core_profile_controls import build_controls
+        from wsi_dicom_bench.negative_bench.mutations import generate_case
+        from wsi_dicom_bench.negative_bench.build_core_profile_controls import build_controls
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            build_controls(REPO_ROOT / "bench/negative_bench/controls-v2", root / "controls")
+            build_controls(PACKAGE_ROOT / "negative_bench/controls-v2", root / "controls")
             for name, source, expected_group in (
                 ("remove_wsi_frame_type", root / "controls/CP01-EVRLE-4F-ANISO.dcm", "WholeSlideMicroscopyImageFrameTypeSequence"),
                 ("remove_derivation_image", root / "controls/CP12-PYRAMID-2L/level-0.dcm", "DerivationImageSequence"),
@@ -186,25 +188,25 @@ class CoreProfileCoverageTests(unittest.TestCase):
                 self.assertEqual(len(paths), 2 if name == "remove_derivation_image" else 1)
 
     def test_manifest_inventory_rebuild_uses_the_current_case_specification(self):
-        from bench.negative_bench.build_core_profile_manifest import build_manifest
-        source = REPO_ROOT / "bench/negative_bench/manifest-v4.json"
+        from wsi_dicom_bench.negative_bench.build_core_profile_manifest import build_manifest
+        source = PACKAGE_ROOT / "negative_bench/manifest-v4.json"
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "manifest.json"
-            rebuilt = build_manifest(source, REPO_ROOT / "bench/negative_bench/controls-v4", output)
+            rebuilt = build_manifest(source, PACKAGE_ROOT / "negative_bench/controls-v4", output)
             self.assertEqual(rebuilt, json.loads(source.read_text()))
             self.assertEqual(json.loads(output.read_text()), rebuilt)
 
     def test_amended_challenge_generates_derived_multifile_case(self):
-        from bench.negative_bench.generate import generate_challenge
+        from wsi_dicom_bench.negative_bench.generate import generate_challenge
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "challenge"
-            generate_challenge(REPO_ROOT / "bench/negative_bench/manifest-v4.json", output)
+            generate_challenge(PACKAGE_ROOT / "negative_bench/manifest-v4.json", output)
             paths = sorted((output / "cases/CP-CF-011/input").glob("*.dcm"))
             self.assertEqual(len(paths), 2)
             self.assertNotIn("DerivationImageSequence", pydicom.dcmread(paths[1]).SharedFunctionalGroupsSequence[0])
 
     def test_current_generator_materializes_multifile_controls(self):
-        from bench.negative_bench.generate import _materialize_controls
+        from wsi_dicom_bench.negative_bench.generate import _materialize_controls
 
         manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
         with tempfile.TemporaryDirectory() as temporary:
@@ -228,7 +230,7 @@ class CoreProfileCoverageTests(unittest.TestCase):
 
 class CoreEvidenceGateTests(unittest.TestCase):
     def test_gate_rejects_missing_negative_validator_and_unadjudicated_cascade(self):
-        from bench.core_profile import CoreProfileError, validate_evidence_coverage
+        from wsi_dicom_bench.core_profile import CoreProfileError, validate_evidence_coverage
         import hashlib
 
         rule = {"rule_id": "rule", "rule_kind": "intrinsic", "check_names": ["check"]}
@@ -250,7 +252,8 @@ class CoreEvidenceGateTests(unittest.TestCase):
                 path = root / "observed-results" / identifier / "workbench/workbench-report.json"
                 path.parent.mkdir(parents=True)
                 path.write_text(json.dumps(report))
-            baseline = validate_evidence_coverage(profile, catalog, manifest, root)
+            with mock.patch.object(Path, "read_bytes", side_effect=AssertionError("evidence files must be streamed")):
+                baseline = validate_evidence_coverage(profile, catalog, manifest, root)
             self.assertEqual(baseline["controls_passing"], 1)
             path = root / "observed-results/N/workbench/workbench-report.json"
             report = json.loads(path.read_text())

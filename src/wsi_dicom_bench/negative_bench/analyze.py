@@ -8,19 +8,11 @@ import math
 import sys
 from pathlib import Path
 
-if __package__ in {None, ""}:
-    sys.dont_write_bytecode = True
-    source = Path(__file__).resolve()
-    for import_root in (source.parents[2], source.parents[1] / "generator"):
-        value = str(import_root)
-        if import_root.is_dir() and value not in sys.path:
-            sys.path.insert(0, value)
-
-from bench.negative_bench.identifiers import manifest_identifier_items
+from wsi_dicom_bench.negative_bench.identifiers import manifest_identifier_items
 
 try:
-    from bench.file_digest import sha256_file
-    from bench.negative_bench.analysis_artifacts import (
+    from wsi_dicom_bench.file_digest import sha256_file
+    from wsi_dicom_bench.negative_bench.analysis_artifacts import (
         EXTERNAL_NAMES,
         _results_markdown,
         _write_artifacts,

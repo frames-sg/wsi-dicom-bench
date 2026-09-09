@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import importlib.metadata
+import importlib.resources
 import json
 import os
 import shutil
@@ -10,35 +12,31 @@ import sys
 import tempfile
 from pathlib import Path
 
-if __package__ in {None, ""}:
-    sys.dont_write_bytecode = True
-    repository_root = str(Path(__file__).resolve().parents[2])
-    if repository_root not in sys.path:
-        sys.path.insert(0, repository_root)
-
 import pydicom
 
-from bench.file_digest import sha256_file
-from bench.core_profile import CoreProfileError, load_profile, validate_profile_coverage
-from bench.json_document import write_json
-from bench.negative_bench.identifiers import manifest_identifier_items
-from bench.negative_bench.model import GenerationError
-from bench.negative_bench.mutations import generate_case as _generate_case
-from bench.negative_bench.mutations.dicom import deterministic_uid
-from bench.path_identifiers import require_portable_identifier
+from wsi_dicom_bench.file_digest import sha256_file
+from wsi_dicom_bench.distribution_payload import (
+    DistributionPayloadError,
+    retain_installed_distribution,
+)
+from wsi_dicom_bench.core_profile import CoreProfileError, load_profile, validate_profile_coverage
+from wsi_dicom_bench.json_document import write_json
+from wsi_dicom_bench.negative_bench.identifiers import manifest_identifier_items
+from wsi_dicom_bench.negative_bench.model import GenerationError
+from wsi_dicom_bench.negative_bench.mutations import generate_case as _generate_case
+from wsi_dicom_bench.negative_bench.mutations.dicom import deterministic_uid
+from wsi_dicom_bench.path_identifiers import require_portable_identifier
 
 
 EXPECTED_PYDICOM_VERSION = "3.0.2"
 VL_WSI_SOP_CLASS_UID = "1.2.840.10008.5.1.4.1.1.77.1.6"
 
 
-def _find_repository_root(path: Path) -> Path | None:
-    for candidate in [path.parent, *path.parents]:
-        if (candidate / "bench" / "negative_bench" / "generate.py").is_file() and (
-            candidate / "rules"
-        ).is_dir():
-            return candidate
-    return None
+def _resource_path(package: str, name: str = "") -> Path:
+    resource = importlib.resources.files(package)
+    if name:
+        resource = resource.joinpath(name)
+    return Path(str(resource))
 
 
 def load_manifest(path: Path) -> dict:
@@ -185,6 +183,12 @@ def _materialize_controls(
             if not source.is_file():
                 source = manifest_path.parent / package
             if not source.is_file():
+                try:
+                    relative = Path(original).relative_to("bench/negative_bench")
+                except ValueError:
+                    relative = Path("__invalid_control_path__")
+                source = manifest_path.parent / relative
+            if not source.is_file():
                 raise GenerationError(f"control source does not exist: {source}")
             size = source.stat().st_size
             if size != int(expected_size) or size > max_file_bytes:
@@ -265,16 +269,14 @@ def _copy_locked_evidence(
     if not protocol.is_file():
         raise GenerationError(f"protocol does not exist: {protocol}")
     shutil.copyfile(protocol, staging / "protocol.md")
-    repository = _find_repository_root(manifest_path)
-    catalog = (
-        repository / manifest["rule_catalog"]["path"]
-        if repository is not None
-        else Path("__repository_not_available__")
-    )
+    repository = None
+    catalog = manifest_path.parent / "expected-results" / Path(
+        manifest["rule_catalog"]["path"]
+    ).name
     if not catalog.is_file():
-        catalog = manifest_path.parent / "expected-results" / Path(
+        catalog = _resource_path("wsi_dicom_bench.rules", Path(
             manifest["rule_catalog"]["path"]
-        ).name
+        ).name)
     if not catalog.is_file():
         raise GenerationError(f"rule catalog does not exist: {catalog}")
     shutil.copyfile(catalog, expected_dir / catalog.name)
@@ -284,13 +286,9 @@ def _copy_locked_evidence(
         profile_path = core_profile.get("path") if isinstance(core_profile, dict) else None
         if not isinstance(profile_path, str) or not profile_path:
             raise GenerationError("core_profile.path must be a non-empty string")
-        profile = (
-            repository / profile_path
-            if repository is not None
-            else Path("__repository_not_available__")
-        )
+        profile = manifest_path.parent / "expected-results" / Path(profile_path).name
         if not profile.is_file():
-            profile = manifest_path.parent / "expected-results" / Path(profile_path).name
+            profile = _resource_path("wsi_dicom_bench.rules", Path(profile_path).name)
         if not profile.is_file():
             raise GenerationError(f"core profile does not exist: {profile}")
         try:
@@ -319,109 +317,71 @@ def _copy_packaged_runtime(
     repository: Path | None,
     staging: Path,
 ) -> None:
-    shutil.copyfile(Path(__file__), staging / "generator" / "generate.py")
-    packaged_source = manifest_path.parent / "generator"
-    source_root = repository or Path("__repository_not_available__")
-    run_source = source_root / "bench" / "negative_bench" / "run.py"
-    finalize_source = source_root / "bench" / "negative_bench" / "finalize.py"
-    analyze_source = source_root / "bench" / "negative_bench" / "analyze.py"
-    workbench_source = source_root / "bench" / "wsi_dicom_bench.py"
-    requirements_source = source_root / "bench" / "negative_bench" / "requirements.txt"
-    bench_source = source_root / "bench"
-    if not run_source.is_file():
-        run_source = packaged_source / "run.py"
-        finalize_source = packaged_source / "finalize.py"
-        analyze_source = manifest_path.parent / "analysis" / "analyze.py"
-        workbench_source = packaged_source / "wsi_dicom_bench.py"
-        requirements_source = packaged_source / "requirements.txt"
-        bench_source = packaged_source / "bench"
-    shutil.copyfile(run_source, staging / "generator" / "run.py")
-    shutil.copyfile(finalize_source, staging / "generator" / "finalize.py")
-    shutil.copyfile(
-        analyze_source,
-        staging / "analysis" / "analyze.py",
-    )
-    shutil.copyfile(
-        analyze_source.with_name("analysis_artifacts.py"),
-        staging / "analysis" / "analysis_artifacts.py",
-    )
-    shutil.copyfile(
-        bench_source / "file_digest.py",
-        staging / "analysis" / "file_digest.py",
-    )
-    adjudications_source = analyze_source.with_name("adjudications-v1.json")
-    if not adjudications_source.is_file():
-        raise GenerationError(f"adjudications do not exist: {adjudications_source}")
-    shutil.copyfile(
-        adjudications_source,
-        staging / "analysis" / "adjudications-v1.json",
-    )
-    shutil.copyfile(workbench_source, staging / "generator" / "wsi_dicom_bench.py")
-    shutil.copyfile(requirements_source, staging / "generator" / "requirements.txt")
-    packaged_bench = staging / "generator" / "bench"
-    packaged_bench.mkdir()
-    shutil.copyfile(bench_source / "__init__.py", packaged_bench / "__init__.py")
-    shutil.copyfile(bench_source / "cli_values.py", packaged_bench / "cli_values.py")
-    shutil.copyfile(bench_source / "file_digest.py", packaged_bench / "file_digest.py")
-    shutil.copyfile(bench_source / "core_profile.py", packaged_bench / "core_profile.py")
-    shutil.copyfile(bench_source / "json_document.py", packaged_bench / "json_document.py")
-    shutil.copyfile(
-        bench_source / "path_identifiers.py", packaged_bench / "path_identifiers.py"
-    )
-    shutil.copyfile(
-        bench_source / "process_evidence.py", packaged_bench / "process_evidence.py"
-    )
-    packaged_negative_bench = packaged_bench / "negative_bench"
-    packaged_negative_bench.mkdir()
-    shutil.copyfile(
-        bench_source / "negative_bench" / "__init__.py",
-        packaged_negative_bench / "__init__.py",
-    )
-    shutil.copyfile(
-        bench_source / "negative_bench" / "model.py",
-        packaged_negative_bench / "model.py",
-    )
-    shutil.copyfile(
-        bench_source / "negative_bench" / "identifiers.py",
-        packaged_negative_bench / "identifiers.py",
-    )
-    shutil.copytree(
-        bench_source / "negative_bench" / "mutations",
-        packaged_negative_bench / "mutations",
-        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
-    )
-    shutil.copytree(
-        bench_source / "workbench",
-        packaged_bench / "workbench",
-        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
-    )
-    package_assets = source_root / "bench" / "negative_bench" / "package"
-    if not package_assets.is_dir():
-        package_assets = manifest_path.parent
-    if package_assets.is_dir():
-        for name in ["README.md", "LICENSE", "CITATION.cff", ".zenodo.json"]:
-            shutil.copyfile(package_assets / name, staging / name)
-    if repository is not None:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        challenge = manifest["challenge_id"]
-        title = manifest.get("title", challenge)
-        description = f"{len(manifest['evaluation_cases'])} authored negative cases and {len(manifest['valid_controls'])} controls; catalog {manifest['rule_catalog']['catalog_version']}. Selected rule-family evidence, not certification or exhaustive normative coverage."
-        (staging / "README.md").write_text(
-            f"# {title}\n\n{description}\n\nUnpublished research package. See protocol.md, manifest.json, and expected-results for scope and locked expectations.\n\n"
-            "Reproduce into a new directory with `python generator/generate.py --manifest manifest.json --output ../reproduction`. "
-            "Run with `python generator/run.py --package . --workbench generator/wsi_dicom_bench.py --wsi-dicom /absolute/path/to/wsi-dicom`. "
-            "Then run `python analysis/analyze.py --package .` and `python generator/finalize.py --package .`. "
-            "Finalization validates execution evidence before sealing. Sealed packages must not be edited.\n",
-            encoding="utf-8",
+    del repository  # Repository discovery is never required for installed execution.
+    package_root = _resource_path("wsi_dicom_bench.negative_bench")
+    assets = package_root / "package"
+    for name in ["LICENSE", "CITATION.cff", ".zenodo.json"]:
+        shutil.copyfile(assets / name, staging / name)
+    reproduction = staging / "reproduction"
+    reproduction.mkdir()
+    shutil.copyfile(package_root / "requirements.txt", reproduction / "requirements.txt")
+    try:
+        distribution_record = retain_installed_distribution(
+            reproduction / "wheelhouse"
         )
-        import re
-        citation = (staging / "CITATION.cff").read_text(encoding="utf-8")
-        for key, value in (("title", title), ("version", challenge)):
-            citation = re.sub(rf"^{key}:.*$", f"{key}: {json.dumps(value)}", citation, flags=re.MULTILINE)
-        (staging / "CITATION.cff").write_text(citation, encoding="utf-8")
-        metadata = json.loads((staging / ".zenodo.json").read_text(encoding="utf-8"))
-        metadata.update(title=title, version=challenge, description=description)
-        (staging / ".zenodo.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        distribution_record["wheel"]["path"] = (
+            "wheelhouse/" + distribution_record["wheel"]["path"]
+        )
+    except (DistributionPayloadError, importlib.metadata.PackageNotFoundError) as exc:
+        # Library-only generation remains useful during source development. The
+        # public challenge command rejects this incomplete payload before running.
+        distribution_record = {
+            "schema_version": "wsi-dicom-bench-distribution-payload-v1",
+            "available": False,
+            "error": str(exc),
+        }
+    distribution_record["evidence_layout"] = "wsi-dicom-bench-evidence-v1"
+    (reproduction / "benchmark-distribution.json").write_text(
+        json.dumps(distribution_record, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    (reproduction / "requirements.lock").write_text(
+        "pydicom==3.0.2 --hash=sha256:abf971a5440f84dbaf42c4b6758e30e62480902584f8b270b9a5d146e278a07b\n",
+        encoding="utf-8",
+    )
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    challenge = manifest["challenge_id"]
+    title = manifest.get("title", challenge)
+    description = (
+        f"{len(manifest['evaluation_cases'])} authored negative cases and "
+        f"{len(manifest['valid_controls'])} controls; catalog "
+        f"{manifest['rule_catalog']['catalog_version']}. Selected rule-family "
+        "evidence, not certification or exhaustive normative coverage."
+    )
+    (staging / "README.md").write_text(
+        f"# {title}\n\n{description}\n\n"
+        "Unpublished research package. See protocol.md, manifest.json, and "
+        "expected-results for scope and locked expectations. Install the exact "
+        "wsi-dicom-bench distribution recorded with this evidence, then reproduce "
+        "with `wsi-dicom-bench challenge run --suite manifest.json --wsi-dicom "
+        "/absolute/path/to/wsi-dicom --output ../reproduction`. Finalized evidence "
+        "is read-only; use `wsi-dicom-bench challenge check --evidence .`.\n",
+        encoding="utf-8",
+    )
+    import re
+
+    citation = (staging / "CITATION.cff").read_text(encoding="utf-8")
+    for key, value in (("title", title), ("version", challenge)):
+        citation = re.sub(
+            rf"^{key}:.*$", f"{key}: {json.dumps(value)}", citation, flags=re.MULTILINE
+        )
+    (staging / "CITATION.cff").write_text(citation, encoding="utf-8")
+    metadata = json.loads((staging / ".zenodo.json").read_text(encoding="utf-8"))
+    metadata.update(title=title, version=challenge, description=description)
+    (staging / ".zenodo.json").write_text(
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
 
 
 def _reject_identifying_metadata(path: Path) -> None:

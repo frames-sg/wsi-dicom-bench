@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import json
 import shlex
+import sys
+import argparse
 from pathlib import Path
 
-from bench.file_digest import sha256_file
+from wsi_dicom_bench.file_digest import sha256_file
+from .execution import run_text_command
 
 
 def definition_inventory(root: Path, edition: str = "2026c") -> dict:
@@ -48,3 +51,36 @@ print(json.dumps({'python': sys.version, 'packages': packages}))
     result["interpreter_sha256"] = sha256_file(Path(arguments[0]))
     result["definitions"] = definition_inventory(Path.home() / "dicom-validator")
     return result
+
+
+def software_inventory(args: argparse.Namespace, doctor: dict) -> dict:
+    version = run_text_command(
+        [str(args.wsi_dicom), "--version"],
+        timeout_secs=min(args.evaluation_timeout_secs, 30),
+        max_output_bytes=4096,
+    )
+    validators = []
+    for tool in doctor.get("tools", []):
+        path_text = tool.get("path")
+        path = Path(path_text) if path_text else None
+        validators.append(
+            {
+                "name": tool.get("name"),
+                "status": tool.get("status"),
+                "path": path_text,
+                "sha256": sha256_file(path) if path and path.is_file() else None,
+                "probe_command": tool.get("command") or [],
+                "probe_stdout": tool.get("probe_stdout"),
+                "probe_stderr": tool.get("probe_stderr"),
+                "runtime": python_validator_inventory(path, run_text_command) if tool.get("name") == "validate_iods" and path and path.is_file() else None,
+            }
+        )
+    return {
+        "wsi_dicom": {
+            "path": str(args.wsi_dicom),
+            "version": version,
+            "sha256": sha256_file(args.wsi_dicom),
+        },
+        "validators_and_decoders": validators,
+        "python": sys.version.splitlines()[0],
+    }
