@@ -2,6 +2,8 @@ import copy
 import json
 import tempfile
 import unittest
+from contextlib import redirect_stderr
+from io import StringIO
 from unittest import mock
 from pathlib import Path
 
@@ -19,6 +21,18 @@ EXPECTED_LOCK_PATH = (
 
 
 class CoreProfileCoverageTests(unittest.TestCase):
+    def test_profile_cli_reports_invalid_input(self):
+        from wsi_dicom_bench.core_profile import main
+
+        with tempfile.TemporaryDirectory() as temporary, redirect_stderr(StringIO()) as stderr:
+            result = main([
+                "--profile", str(Path(temporary) / "missing.json"),
+                "--catalog", str(CATALOG_PATH), "--manifest", str(MANIFEST_PATH),
+            ])
+        self.assertEqual(result, 2)
+        self.assertIn("core-profile validation failed", stderr.getvalue())
+        self.assertIn("missing.json", stderr.getvalue())
+
     def test_profile_has_complete_locked_coverage(self):
         from wsi_dicom_bench.core_profile import load_profile, validate_profile_coverage
 
@@ -196,15 +210,6 @@ class CoreProfileCoverageTests(unittest.TestCase):
             self.assertEqual(rebuilt, json.loads(source.read_text()))
             self.assertEqual(json.loads(output.read_text()), rebuilt)
 
-    def test_amended_challenge_generates_derived_multifile_case(self):
-        from wsi_dicom_bench.negative_bench.generate import generate_challenge
-        with tempfile.TemporaryDirectory() as temporary:
-            output = Path(temporary) / "challenge"
-            generate_challenge(PACKAGE_ROOT / "negative_bench/manifest-v4.json", output)
-            paths = sorted((output / "cases/CP-CF-011/input").glob("*.dcm"))
-            self.assertEqual(len(paths), 2)
-            self.assertNotIn("DerivationImageSequence", pydicom.dcmread(paths[1]).SharedFunctionalGroupsSequence[0])
-
     def test_current_generator_materializes_multifile_controls(self):
         from wsi_dicom_bench.negative_bench.generate import _materialize_controls
 
@@ -251,6 +256,19 @@ class CoreEvidenceGateTests(unittest.TestCase):
                 report = {"status": status, "profile": {"id": "profile", "sha256": hashlib.sha256((expected / "profile.json").read_bytes()).hexdigest()}, "catalog": {"sha256": hashlib.sha256((expected / "catalog.json").read_bytes()).hexdigest()}, "slide": {"instances": [{"path": str(input_path), "sha256": hashlib.sha256(input_path.read_bytes()).hexdigest()}]}, "findings": [{"rule_id": "rule", "check_name": "check", "path": str(input_path), "status": status, "primary_domain": "pixel", "catalog_status": "mapped"}, {"rule_id": "external", "check_name": "validator", "status": "passed", "catalog_status": "mapped"}]}
                 path = root / "observed-results" / identifier / "workbench/workbench-report.json"
                 path.parent.mkdir(parents=True)
+                report["execution"] = {}
+                for name in ("doctor", "validation"):
+                    execution = {
+                        "command": ["wsi-dicom", name], "returncode": 0,
+                        "elapsed_seconds": 0.01, "timed_out": False,
+                        "launch_error": None, "stdout_truncated": False,
+                        "stderr_truncated": False,
+                    }
+                    for stream, extension in (("stdout", "json"), ("stderr", "txt")):
+                        log = path.parent / f"{name}.{stream}.{extension}"
+                        log.write_text("{}\n" if stream == "stdout" else "")
+                        execution[f"{stream}_path"] = str(log.relative_to(root))
+                    report["execution"][name] = execution
                 path.write_text(json.dumps(report))
             with mock.patch.object(Path, "read_bytes", side_effect=AssertionError("evidence files must be streamed")):
                 baseline = validate_evidence_coverage(profile, catalog, manifest, root)
@@ -272,6 +290,29 @@ class CoreEvidenceGateTests(unittest.TestCase):
                 path.write_text(json.dumps(broken))
                 with self.subTest(defect=defect), self.assertRaises(CoreProfileError):
                     validate_evidence_coverage(profile, catalog, manifest, root)
+
+            for execution in (
+                None, {}, {"doctor": report["execution"]["doctor"]},
+                {"validation": report["execution"]["validation"]},
+                {**report["execution"], "doctor": None},
+                {**report["execution"], "doctor": {"returncode": 0}},
+            ):
+                broken = {**report, "execution": execution}
+                path.write_text(json.dumps(broken))
+                with self.subTest(execution=execution), self.assertRaises(CoreProfileError):
+                    validate_evidence_coverage(profile, catalog, manifest, root)
+
+            path.write_text(json.dumps(report))
+            for execution in report["execution"].values():
+                for field in ("stdout_path", "stderr_path"):
+                    log = root / execution[field]
+                    moved = log.with_suffix(".missing")
+                    log.rename(moved)
+                    try:
+                        with self.subTest(log=log.name), self.assertRaises(CoreProfileError):
+                            validate_evidence_coverage(profile, catalog, manifest, root)
+                    finally:
+                        moved.rename(log)
 
 
 if __name__ == "__main__":

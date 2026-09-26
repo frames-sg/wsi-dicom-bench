@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from .file_digest import sha256_file
@@ -360,9 +361,37 @@ def _validate_report_evidence(identifier: str, report: dict, catalog: dict, mani
         statuses = [f.get("status") for f in findings if f.get("check_name") == validator]
         if not statuses or any(status not in {"passed", "failed"} for status in statuses):
             raise CoreProfileError(f"{identifier} lacks completed required validator {validator}")
-    for execution in report.get("execution", {}).values():
-        if execution.get("returncode") not in {0, 1} or execution.get("timed_out") or execution.get("launch_error") or execution.get("stdout_truncated") or execution.get("stderr_truncated"):
-            raise CoreProfileError(f"{identifier} has incomplete process evidence")
+    executions = report.get("execution")
+    if not isinstance(executions, dict) or set(executions) != {"doctor", "validation"}:
+        raise CoreProfileError(f"{identifier} lacks doctor or validation process evidence")
+    workbench = root / "observed-results" / identifier / "workbench"
+    for name, execution in executions.items():
+        if not isinstance(execution, dict):
+            raise CoreProfileError(f"{identifier} has invalid {name} process evidence")
+        command = execution.get("command")
+        elapsed = execution.get("elapsed_seconds")
+        if (
+            type(execution.get("returncode")) is not int
+            or execution["returncode"] not in ({0} if name == "doctor" else {0, 1})
+            or any(execution.get(flag) is not False for flag in (
+                "timed_out", "stdout_truncated", "stderr_truncated"
+            ))
+            or "launch_error" not in execution
+            or execution["launch_error"] is not None
+            or not isinstance(command, list) or not command
+            or any(not isinstance(arg, str) or not arg for arg in command)
+            or isinstance(elapsed, bool) or not isinstance(elapsed, (int, float))
+            or not 0 <= elapsed < float("inf")
+        ):
+            raise CoreProfileError(f"{identifier} has incomplete {name} process evidence")
+        for stream, extension in (("stdout", "json"), ("stderr", "txt")):
+            recorded_path = execution.get(f"{stream}_path")
+            if not isinstance(recorded_path, str) or not recorded_path or "\0" in recorded_path:
+                raise CoreProfileError(f"{identifier} lacks the {name} {stream} path")
+            path = (root / recorded_path).resolve()
+            expected_path = (workbench / f"{name}.{stream}.{extension}").resolve()
+            if path != expected_path or not path.is_relative_to(root.resolve()) or not path.is_file():
+                raise CoreProfileError(f"{identifier} lacks retained {name} {stream} evidence")
     control = any(c["control_id"] == identifier for c in manifest["valid_controls"])
     input_root = root / (f"controls/{identifier}" if control else f"cases/{identifier}/input")
     paths = {p.resolve() for p in input_root.rglob("*.dcm")} if input_root.is_dir() else {input_root.with_name(input_root.name + ".dcm").resolve()}

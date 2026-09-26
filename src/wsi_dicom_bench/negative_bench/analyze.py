@@ -10,16 +10,8 @@ from pathlib import Path
 
 from wsi_dicom_bench.negative_bench.identifiers import manifest_identifier_items
 
-try:
-    from wsi_dicom_bench.file_digest import sha256_file
-    from wsi_dicom_bench.negative_bench.analysis_artifacts import (
-        EXTERNAL_NAMES,
-        _results_markdown,
-        _write_artifacts,
-    )
-except ImportError:  # Packaged standalone analysis directory.
-    from analysis_artifacts import EXTERNAL_NAMES, _results_markdown, _write_artifacts
-    from file_digest import sha256_file
+from wsi_dicom_bench.file_digest import sha256_file
+from wsi_dicom_bench.negative_bench.analysis_artifacts import EXTERNAL_NAMES, _write_artifacts
 
 
 INTRINSIC_KINDS = {"intrinsic", "intrinsic_set", "independent_decoder"}

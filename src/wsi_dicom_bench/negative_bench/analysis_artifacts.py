@@ -41,13 +41,7 @@ def _write_artifacts(
 
     adjudication = []
     for row in disagreements:
-        observed = observed_adjudications.get(
-            row["id"],
-            {
-                "disposition": "validator_disagreement",
-                "rationale": "Raw validator output retained; expected result was not changed.",
-            },
-        )
+        observed = observed_adjudications.get(row["id"])
         adjudication.append(
             {
                 "case_id": row["id"],
@@ -58,9 +52,9 @@ def _write_artifacts(
                 "dcentvfy": row["dcentvfy"],
                 "validate_iods": row["validate_iods"],
                 "dcmvalidate": row["dcmvalidate"],
-                "adjudication_status": "adjudicated_observed_v1",
-                "disposition": observed["disposition"],
-                "rationale": observed["rationale"],
+                "adjudication_status": "adjudicated_observed_v1" if observed else "pending_review",
+                "disposition": observed["disposition"] if observed else "",
+                "rationale": observed["rationale"] if observed else "",
             }
         )
     _write_csv(package / "adjudication.csv", adjudication)
@@ -88,13 +82,20 @@ def _results_markdown(summary: dict, domain_rows: list[dict]) -> str:
         for row in domain_rows
     )
     total = summary["evaluation_cases"]
-    return f"""# WSI-DICOM Negative Bench v1 results
+    dcmvalidate_executed = agreement["dcmvalidate"]["executed_cases"]
+    dcmvalidate_result = (
+        f"`dcmvalidate` detected {validator_counts['dcmvalidate']}/{total} cases; "
+        f"{dcmvalidate_executed}/{total} had completed evaluations."
+        if dcmvalidate_executed
+        else "`dcmvalidate` had no completed evaluations."
+    )
+    return f"""# WSI-DICOM Negative Bench results: {summary['challenge_id']}
 
-WSI-DICOM Bench detected {summary['bench_detected']} of {summary['evaluation_cases']} locked single-defect cases (sensitivity {sensitivity:.1f}%, exact 95% CI {sensitivity_ci[0]:.1f}–{sensitivity_ci[1]:.1f}%) and accepted {summary['valid_controls_accepted']} of {summary['valid_controls']} unmodified controls (valid-control specificity {specificity:.1f}%, exact 95% CI {specificity_ci[0]:.1f}–{specificity_ci[1]:.1f}%). The prespecified rule and domain were localized in {summary['rule_localized_detected_cases']} of {summary['evaluation_cases']} cases ({localization:.1f}%). Intrinsic rules alone detected {summary['intrinsic_detected']} of {summary['evaluation_cases']} cases.
+WSI-DICOM Bench detected {summary['bench_detected']} of {summary['evaluation_cases']} locked single-defect cases (sensitivity {sensitivity:.1f}%, exact 95% CI {sensitivity_ci[0]:.1f}–{sensitivity_ci[1]:.1f}%) and accepted {summary['valid_controls_accepted']} of {summary['valid_controls']} unmodified controls (valid-control specificity {specificity:.1f}%, exact 95% CI {specificity_ci[0]:.1f}–{specificity_ci[1]:.1f}%). The prespecified rule was localized in {summary['rule_localized_detected_cases']} of {summary['evaluation_cases']} cases ({localization:.1f}%). Intrinsic rules alone detected {summary['intrinsic_detected']} of {summary['evaluation_cases']} cases.
 
 Detected cases by domain were {domain_sensitivity}. Domain-localized cases were {domain_localization}. Undetected cases were {', '.join(summary['cases_not_detected']) or 'none'}. Cases without the prespecified rule localization were {', '.join(summary['cases_not_rule_localized']) or 'none'}.
 
-Independent validators detected {validator_counts['dciodvfy']}/{total} cases with dciodvfy, {validator_counts['dcentvfy']}/{total} with dcentvfy, and {validator_counts['validate_iods']}/{total} with validate_iods. Binary agreement with intrinsic detection was {agreement['dciodvfy']['agreeing_cases']}/{agreement['dciodvfy']['executed_cases']}, {agreement['dcentvfy']['agreeing_cases']}/{agreement['dcentvfy']['executed_cases']}, and {agreement['validate_iods']['agreeing_cases']}/{agreement['validate_iods']['executed_cases']}, respectively. Intrinsic rules uniquely detected {unique['wsi_dicom_intrinsic']} cases; dciodvfy uniquely detected {unique['dciodvfy']}. `dcmvalidate` was not reproducibly configured and is reported as unavailable, not passed.
+Independent validators detected {validator_counts['dciodvfy']}/{total} cases with dciodvfy, {validator_counts['dcentvfy']}/{total} with dcentvfy, and {validator_counts['validate_iods']}/{total} with validate_iods. Binary agreement with intrinsic detection was {agreement['dciodvfy']['agreeing_cases']}/{agreement['dciodvfy']['executed_cases']}, {agreement['dcentvfy']['agreeing_cases']}/{agreement['dcentvfy']['executed_cases']}, and {agreement['validate_iods']['agreeing_cases']}/{agreement['validate_iods']['executed_cases']}, respectively. Intrinsic rules uniquely detected {unique['wsi_dicom_intrinsic']} cases; dciodvfy uniquely detected {unique['dciodvfy']}. {dcmvalidate_result}
 
 There were {summary['execution_failures']} execution failures and {summary['unmapped_findings']} unmapped findings. Total sequential workbench runtime was {summary['total_runtime_seconds']:.2f} s. These are engineered challenge cases, not a prevalence sample. Real-slide holdout material is excluded pending provenance, licensing, PHI, and redistribution review.
 """

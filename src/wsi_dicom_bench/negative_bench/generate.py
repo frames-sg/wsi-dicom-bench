@@ -128,10 +128,10 @@ def _generate_into(manifest_path: Path, manifest: dict, staging: Path) -> None:
         manifest_path, manifest, controls_dir, max_file_bytes
     )
     _materialize_cases(manifest, controls, cases_dir, max_file_bytes)
-    repository = _copy_locked_evidence(
+    _copy_locked_evidence(
         manifest_path, manifest, staging, expected_dir
     )
-    _copy_packaged_runtime(manifest_path, repository, staging)
+    _copy_packaged_runtime(manifest_path, staging)
     _write_generation_sums(staging)
 
 
@@ -261,7 +261,7 @@ def _copy_locked_evidence(
     manifest: dict,
     staging: Path,
     expected_dir: Path,
-) -> Path | None:
+) -> None:
     shutil.copyfile(manifest_path, staging / "manifest.json")
     protocol = manifest_path.with_name(manifest.get("protocol", "protocol-v1.md"))
     if not protocol.is_file():
@@ -269,7 +269,6 @@ def _copy_locked_evidence(
     if not protocol.is_file():
         raise GenerationError(f"protocol does not exist: {protocol}")
     shutil.copyfile(protocol, staging / "protocol.md")
-    repository = None
     catalog = manifest_path.parent / "expected-results" / Path(
         manifest["rule_catalog"]["path"]
     ).name
@@ -309,15 +308,12 @@ def _copy_locked_evidence(
         raise GenerationError(f"expected-results lock does not exist: {lock}")
     _verify_expected_results_lock(lock, manifest_path, protocol, catalog, profile)
     shutil.copyfile(lock, expected_dir / lock.name)
-    return repository
 
 
 def _copy_packaged_runtime(
     manifest_path: Path,
-    repository: Path | None,
     staging: Path,
 ) -> None:
-    del repository  # Repository discovery is never required for installed execution.
     package_root = _resource_path("wsi_dicom_bench.negative_bench")
     assets = package_root / "package"
     for name in ["LICENSE", "CITATION.cff", ".zenodo.json"]:
