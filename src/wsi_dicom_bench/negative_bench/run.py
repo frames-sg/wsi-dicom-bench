@@ -245,13 +245,6 @@ def _sanitize_public_evidence(roots: tuple[Path, ...], sanitize) -> None:
             path.write_text(sanitize(text), encoding="utf-8")
 
 
-def _portable_path(package: Path, path: Path) -> str:
-    try:
-        return str(path.relative_to(package))
-    except ValueError:
-        return path.name
-
-
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--package", type=Path, required=True)

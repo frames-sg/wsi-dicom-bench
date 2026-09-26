@@ -1,3 +1,4 @@
+import csv
 import hashlib
 import json
 import os
@@ -291,6 +292,12 @@ class NegativeBenchGenerationTests(unittest.TestCase):
             self.assertEqual(len(generated["evaluation_cases"]), 69)
             self.assertEqual(len(list((output / "controls").rglob("*.dcm"))), 15)
             self.assertEqual(len(list((output / "cases").glob("*/input/*.dcm"))), 79)
+            derived_paths = sorted((output / "cases/CP-CF-011/input").glob("*.dcm"))
+            self.assertEqual(len(derived_paths), 2)
+            self.assertNotIn(
+                "DerivationImageSequence",
+                pydicom.dcmread(derived_paths[1]).SharedFunctionalGroupsSequence[0],
+            )
             self.assertFalse((output / "source-inventory-private.json").exists())
             for relative in ("reproduction/requirements.txt",):
                 self.assertTrue((output / relative).is_file(), relative)
@@ -782,6 +789,29 @@ class NegativeBenchAnalysisTests(unittest.TestCase):
             self.assertTrue((package / "analysis/USCAP-results.md").is_file())
             self.assertTrue((package / "analysis/validator-detection.svg").is_file())
 
+            with (package / "adjudication.csv").open(newline="") as stream:
+                pending = list(csv.DictReader(stream))
+            self.assertEqual(pending[0]["case_id"], "NB-ONE")
+            self.assertEqual(pending[0]["adjudication_status"], "pending_review")
+            self.assertEqual(pending[0]["disposition"], "")
+            self.assertEqual(pending[0]["rationale"], "")
+
+            adjudications.write_text(json.dumps({
+                "schema_version": "wsi-dicom-negative-bench-adjudications-v1",
+                "cases": {"NB-ONE": {
+                    "disposition": "validator_disagreement",
+                    "rationale": "Reviewed the retained outputs for this case.",
+                }},
+            }))
+            analyze_challenge(package, adjudications)
+            with (package / "adjudication.csv").open(newline="") as stream:
+                reviewed = list(csv.DictReader(stream))
+            self.assertEqual(reviewed[0]["adjudication_status"], "adjudicated_observed_v1")
+            self.assertEqual(reviewed[0]["disposition"], "validator_disagreement")
+            self.assertEqual(
+                reviewed[0]["rationale"], "Reviewed the retained outputs for this case."
+            )
+
             case_report["status"] = "passed"
             case_report["findings"] = []
             case_report["domains"]["pixel"]["status"] = "passed"
@@ -797,9 +827,10 @@ class NegativeBenchAnalysisTests(unittest.TestCase):
             self.assertEqual(missed_summary["domain_localization_accuracy"], 0)
 
     def test_results_markdown_uses_dynamic_case_and_domain_counts(self):
-        from wsi_dicom_bench.negative_bench.analyze import _results_markdown
+        from wsi_dicom_bench.negative_bench.analysis_artifacts import _results_markdown
 
         summary = {
+            "challenge_id": "synthetic-v4",
             "bench_detected": 15,
             "evaluation_cases": 15,
             "defect_detection_sensitivity": 1.0,
@@ -817,6 +848,7 @@ class NegativeBenchAnalysisTests(unittest.TestCase):
                 "dciodvfy": 2,
                 "dcentvfy": 1,
                 "validate_iods": 3,
+                "dcmvalidate": 0,
             },
             "intrinsic_external_agreement": {
                 name: {"agreeing_cases": count, "executed_cases": 15}
@@ -834,6 +866,9 @@ class NegativeBenchAnalysisTests(unittest.TestCase):
             "unmapped_findings": 0,
             "total_runtime_seconds": 1.0,
         }
+        summary["intrinsic_external_agreement"]["dcmvalidate"] = {
+            "agreeing_cases": 0, "executed_cases": 0,
+        }
         domain_rows = [
             {"domain": "pixel", "detected": 3, "evaluation_cases": 3, "domain_localized": 3}
         ]
@@ -845,6 +880,20 @@ class NegativeBenchAnalysisTests(unittest.TestCase):
         self.assertIn("valid-control specificity", text)
         self.assertNotIn("synthetic-control specificity", text)
         self.assertNotIn("/30", text)
+        with self.subTest(claim="challenge identity"):
+            self.assertIn("synthetic-v4", text)
+            self.assertNotIn("Negative Bench v1 results", text)
+        for executed, detected in ((0, 0), (15, 0), (15, 3)):
+            summary["validator_detection_counts"]["dcmvalidate"] = detected
+            summary["intrinsic_external_agreement"]["dcmvalidate"]["executed_cases"] = executed
+            text = _results_markdown(summary, domain_rows)
+            with self.subTest(dcmvalidate_executed=executed, detected=detected):
+                if executed:
+                    self.assertIn(f"`dcmvalidate` detected {detected}/15 cases", text)
+                    self.assertIn(f"{executed}/15 had completed evaluations", text)
+                else:
+                    self.assertIn("`dcmvalidate` had no completed evaluations", text)
+                self.assertNotIn("not reproducibly configured", text)
 
     def test_exact_binomial_interval_handles_all_successes_and_failures(self):
         from wsi_dicom_bench.negative_bench.analyze import exact_binomial

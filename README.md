@@ -44,6 +44,5 @@ benchmark wheelhouse, verify it against `reproduction/requirements.lock`, then i
 Accepted evidence contains the exact benchmark wheel and a hash-pinned acquisition
 requirement for pydicom; it does not rename or rebuild third-party wheels.
 
-See [the execution contract](docs/EXECUTION_CONTRACT.md) for converter JSON compatibility,
-stable check identities, statuses, and acceptance behavior. The optional
+The optional
 [control-authoring tool](tools/control-authoring/README.md) is separate from normal runs.

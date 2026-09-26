@@ -5,3 +5,10 @@
 **/__pycache__/
 **/*.py[cod]
 /tools/control-authoring/target/
+
+# Keep manuscript files and standalone technical docs out of the public repository.
+/docs/
+manuscript/
+manuscripts/
+*.[dD][oO][cC]
+*.[dD][oO][cC][xXmM]
