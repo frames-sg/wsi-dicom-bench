@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import platform
+import re
 import signal
 import subprocess
 import threading
@@ -24,6 +26,98 @@ def read_bounded_text(path: Path, limit: int = DEFAULT_MAX_OUTPUT_BYTES) -> str:
         data = stream.read(limit + 1)
     suffix = "\n[truncated]" if len(data) > limit else ""
     return data[:limit].decode("utf-8", errors="replace") + suffix
+
+
+def _captured_fields(patterns: dict[str, str], text: str) -> dict[str, str] | None:
+    """Return each pattern's first group, or None unless every pattern matches."""
+    fields = {}
+    for name, pattern in patterns.items():
+        match = re.search(pattern, text)
+        if match is None:
+            return None
+        fields[name] = match.group(1)
+    return fields
+
+
+def parse_bsd_time_metrics(text: str) -> dict | None:
+    """Parse the stable fields emitted by macOS `/usr/bin/time -lp`."""
+    fields = _captured_fields(
+        {
+            "wall_seconds": r"(?m)^real\s+([0-9]+(?:\.[0-9]+)?)\s*$",
+            "user_seconds": r"(?m)^user\s+([0-9]+(?:\.[0-9]+)?)\s*$",
+            "system_seconds": r"(?m)^sys\s+([0-9]+(?:\.[0-9]+)?)\s*$",
+            "peak_rss_bytes": r"(?m)^\s*([0-9]+)\s+maximum resident set size\s*$",
+        },
+        text,
+    )
+    if fields is None:
+        return None
+    return {
+        "wall_seconds": float(fields["wall_seconds"]),
+        "user_seconds": float(fields["user_seconds"]),
+        "system_seconds": float(fields["system_seconds"]),
+        "peak_rss_bytes": int(fields["peak_rss_bytes"]),
+    }
+
+
+def parse_gnu_time_metrics(text: str) -> dict | None:
+    """Parse the locale-independent format requested from GNU `time`."""
+    fields = _captured_fields(
+        {
+            "wall_seconds": r"(?m)^wall_seconds=([0-9]+(?:\.[0-9]+)?)$",
+            "user_seconds": r"(?m)^user_seconds=([0-9]+(?:\.[0-9]+)?)$",
+            "system_seconds": r"(?m)^system_seconds=([0-9]+(?:\.[0-9]+)?)$",
+            "peak_rss_kib": r"(?m)^peak_rss_kib=([0-9]+)$",
+        },
+        text,
+    )
+    if fields is None:
+        return None
+    return {
+        "wall_seconds": float(fields["wall_seconds"]),
+        "user_seconds": float(fields["user_seconds"]),
+        "system_seconds": float(fields["system_seconds"]),
+        "peak_rss_bytes": int(fields["peak_rss_kib"]) * 1024,
+    }
+
+
+def _measurement_command(
+    command: Sequence[str], resource_path: Path, system_name: str | None = None
+) -> list[str]:
+    time_path = Path("/usr/bin/time")
+    if not time_path.is_file():
+        raise ProcessEvidenceError("resource measurement requires /usr/bin/time")
+    system_name = platform.system() if system_name is None else system_name
+    if system_name == "Darwin":
+        return [str(time_path), "-lp", "-o", str(resource_path), *command]
+    if system_name == "Linux":
+        output_format = (
+            "wall_seconds=%e\nuser_seconds=%U\nsystem_seconds=%S\npeak_rss_kib=%M"
+        )
+        return [
+            str(time_path),
+            "-f",
+            output_format,
+            "-o",
+            str(resource_path),
+            *command,
+        ]
+    raise ProcessEvidenceError(
+        f"resource measurement is unsupported on {system_name or 'unknown platform'}"
+    )
+
+
+def _resource_metrics(path: Path, system_name: str, limit: int = 1024 * 1024) -> dict | None:
+    try:
+        with path.open("rb") as stream:
+            text = stream.read(limit + 1)[:limit].decode("utf-8", errors="replace")
+    except OSError:
+        return None
+    if system_name == "Darwin":
+        return parse_bsd_time_metrics(text)
+    if system_name == "Linux":
+        return parse_gnu_time_metrics(text)
+    return None
 
 
 def _capture_pipe(
@@ -96,6 +190,7 @@ def run_bounded_command(
     stderr_path: Path,
     timeout_secs: int,
     cwd: Path | None = None,
+    measure_resources: bool = False,
     max_output_bytes: int = DEFAULT_MAX_OUTPUT_BYTES,
 ) -> dict:
     """Run one command with capped output and retain uninterpreted lifecycle facts."""
@@ -116,6 +211,15 @@ def run_bounded_command(
     stdout_path.write_bytes(b"")
     stderr_path.write_bytes(b"")
 
+    system_name = platform.system()
+    resource_path: Path | None = None
+    measured_command = list(command)
+    if measure_resources:
+        resource_path = stderr_path.with_name(f"{stderr_path.name}.resources.txt")
+        resource_path.parent.mkdir(parents=True, exist_ok=True)
+        resource_path.write_bytes(b"")
+        measured_command = _measurement_command(command, resource_path, system_name)
+
     started = time.monotonic()
     deadline = started + timeout_secs
     timed_out = False
@@ -130,7 +234,7 @@ def run_bounded_command(
 
     try:
         process = subprocess.Popen(
-            command,
+            measured_command,
             cwd=cwd,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
@@ -187,7 +291,7 @@ def run_bounded_command(
                 "subprocess output capture failed: " + "; ".join(capture_errors)
             )
 
-    return {
+    evidence = {
         "command": list(command),
         "returncode": returncode,
         "timed_out": timed_out,
@@ -198,3 +302,9 @@ def run_bounded_command(
         "max_output_bytes": max_output_bytes,
         **capture,
     }
+    # Unmeasured records keep the challenge evidence shape unchanged.
+    if resource_path is not None:
+        evidence["measurement_command"] = measured_command
+        evidence["resource_usage_path"] = str(resource_path)
+        evidence["resource_usage"] = _resource_metrics(resource_path, system_name)
+    return evidence

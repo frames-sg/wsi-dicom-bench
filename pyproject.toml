@@ -17,6 +17,9 @@ test = ["numpy==2.4.4"]
 [project.scripts]
 wsi-dicom-bench = "wsi_dicom_bench.challenge:main"
 wsi-dicom-bench-workbench = "wsi_dicom_bench.workbench.cli:main"
+wsi-dicom-bench-gdc = "wsi_dicom_bench.gdc.cli:main"
+wsi-dicom-bench-format-coverage = "wsi_dicom_bench.format_coverage.runner:main"
+wsi-dicom-bench-format-compare = "wsi_dicom_bench.format_coverage.compare:main"
 
 [project.urls]
 Repository = "https://github.com/frames-sg/wsi-dicom-bench"
@@ -30,6 +33,8 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 wsi_dicom_bench = [
+  "format_coverage/*.json",
+  "gdc/*.txt",
   "negative_bench/*.json",
   "negative_bench/*.md",
   "negative_bench/*.txt",

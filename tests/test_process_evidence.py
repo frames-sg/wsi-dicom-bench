@@ -23,6 +23,31 @@ class ProcessEvidenceTests(unittest.TestCase):
                     timeout_secs=5,
                 )
 
+    def test_gnu_time_metrics_use_kib_and_linux_flags(self):
+        from wsi_dicom_bench.process_evidence import (
+            _measurement_command,
+            parse_gnu_time_metrics,
+        )
+
+        self.assertEqual(
+            parse_gnu_time_metrics(
+                "wall_seconds=1.25\nuser_seconds=0.50\n"
+                "system_seconds=0.10\npeak_rss_kib=123\n"
+            ),
+            {
+                "wall_seconds": 1.25,
+                "user_seconds": 0.5,
+                "system_seconds": 0.1,
+                "peak_rss_bytes": 123 * 1024,
+            },
+        )
+        command = _measurement_command(
+            ["wsi-dicom", "--version"], Path("resources.txt"), "Linux"
+        )
+        self.assertEqual(command[0], "/usr/bin/time")
+        self.assertIn("-f", command)
+        self.assertNotIn("-lp", command)
+
     def test_output_is_capped_while_observed_size_and_truncation_are_retained(self):
         from wsi_dicom_bench.process_evidence import run_bounded_command
 
@@ -71,6 +96,23 @@ class ProcessEvidenceTests(unittest.TestCase):
         self.assertEqual(result["stdout_path"], str(stdout))
         self.assertEqual(result["stderr_path"], str(stderr))
 
+    def test_unmeasured_evidence_keeps_the_challenge_record_shape(self):
+        from wsi_dicom_bench.process_evidence import run_bounded_command
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            result = run_bounded_command(
+                [sys.executable, "-c", "print('ok')"],
+                stdout_path=root / "stdout.txt",
+                stderr_path=root / "stderr.txt",
+                timeout_secs=5,
+            )
+
+        self.assertEqual(
+            {"measurement_command", "resource_usage", "resource_usage_path"} & set(result),
+            set(),
+        )
+
     def test_timeout_is_evidence_not_an_exception(self):
         from wsi_dicom_bench.process_evidence import run_bounded_command
 
@@ -89,34 +131,60 @@ class ProcessEvidenceTests(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "posix", "process-group regression is POSIX-specific")
     def test_timeout_terminates_descendants_before_they_can_publish_output(self):
+        for parent_exits, measure_resources in ((False, False), (True, False), (True, True)):
+            with self.subTest(parent_exits=parent_exits, measured=measure_resources):
+                self.check_descendant_timeout(parent_exits, measure_resources)
+
+    def check_descendant_timeout(self, parent_exits, measure_resources):
         from wsi_dicom_bench.process_evidence import run_bounded_command
 
-        child = (
-            "import pathlib,signal,sys,time; "
-            "signal.signal(signal.SIGTERM, signal.SIG_IGN); time.sleep(2); "
-            "pathlib.Path(sys.argv[1]).write_text('survived')"
-        )
-        for parent_exits in (False, True):
-            with self.subTest(parent_exits=parent_exits), tempfile.TemporaryDirectory() as temporary:
-                root = Path(temporary)
-                sentinel = root / "descendant-survived"
-                parent = (
-                    "import subprocess,sys,time; "
-                    "subprocess.Popen([sys.executable, '-c', sys.argv[1], sys.argv[2]])"
-                )
-                if not parent_exits:
-                    parent += "; time.sleep(10)"
-                result = run_bounded_command(
-                    [sys.executable, "-c", parent, child, str(sentinel)],
-                    stdout_path=root / "stdout.txt",
-                    stderr_path=root / "stderr.txt",
-                    timeout_secs=1,
-                )
-                time.sleep(1.5)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            sentinel = root / "descendant-survived"
+            child = (
+                "import pathlib,signal,sys,time; "
+                "signal.signal(signal.SIGTERM, signal.SIG_IGN); time.sleep(2); "
+                "pathlib.Path(sys.argv[1]).write_text('survived')"
+            )
+            parent = (
+                "import subprocess,sys,time; "
+                "subprocess.Popen([sys.executable, '-c', sys.argv[1], sys.argv[2]])"
+            )
+            if not parent_exits:
+                parent += "; time.sleep(10)"
+            result = run_bounded_command(
+                [sys.executable, "-c", parent, child, str(sentinel)],
+                stdout_path=root / "stdout.txt",
+                stderr_path=root / "stderr.txt",
+                timeout_secs=1,
+                measure_resources=measure_resources,
+            )
+            time.sleep(1.5)
 
-                self.assertTrue(result["timed_out"])
-                self.assertIsNone(result["returncode"])
-                self.assertFalse(sentinel.exists())
+            self.assertTrue(result["timed_out"])
+            self.assertIsNone(result["returncode"])
+            self.assertFalse(sentinel.exists())
+
+    def test_resource_measurement_is_portable_and_structured(self):
+        from wsi_dicom_bench.process_evidence import run_bounded_command
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            command = [sys.executable, "-c", "print('measured')"]
+            result = run_bounded_command(
+                command,
+                stdout_path=root / "stdout.txt",
+                stderr_path=root / "stderr.txt",
+                timeout_secs=5,
+                measure_resources=True,
+            )
+
+            self.assertEqual(result["returncode"], 0)
+            self.assertEqual(result["command"], command)
+            self.assertEqual(result["measurement_command"][0], "/usr/bin/time")
+            self.assertIsInstance(result["resource_usage"], dict)
+            self.assertGreater(result["resource_usage"]["peak_rss_bytes"], 0)
+            self.assertTrue(Path(result["resource_usage_path"]).is_file())
 
 
 if __name__ == "__main__":
