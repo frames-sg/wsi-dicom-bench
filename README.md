@@ -46,3 +46,60 @@ requirement for pydicom; it does not rename or rebuild third-party wheels.
 
 The optional
 [control-authoring tool](tools/control-authoring/README.md) is separate from normal runs.
+
+## Converter speed and format coverage
+
+Two further harnesses measure a `wsi-dicom` build instead of judging it against the locked
+acceptance policy. Run them from the `wsi-dicom` checkout under test: the GDC harness records that
+checkout's Git commit and crate version, and both default to its `target/release/wsi-dicom`.
+
+The GDC harness runs the same local GDC/TCGA slides through `wsi-dicom` and `wsidicomizer`. Its
+`--wsidicomizer-command` and `--python-command` default to `./.venv/bin/` in the working directory;
+that environment is pinned by `src/wsi_dicom_bench/gdc/requirements.txt`. Use `--dry-run` first to
+inspect the exact command matrix:
+
+```sh
+wsi-dicom-bench-gdc \
+  --out /path/to/results \
+  --downloads-root ~/Downloads \
+  --probe-slide-metadata \
+  --tools wsi-dicom-cpu wsi-dicom-device wsidicomizer \
+  --profile htj2k-lossless-rpcl \
+  --scope base \
+  --runs 1 \
+  --system-label macos-metal \
+  --device-preflight \
+  --validate
+```
+
+Run the same command on the Metal and CUDA hosts with host-specific release binaries,
+`--run-label`, and `--system-label` values, then combine result directories with
+`--merge-results`. Publish failed, timed-out, and unsupported rows, transfer syntax, frame geometry,
+tool versions, and host details with any performance claim. The `htj2k-lossless-rpcl` profile maps
+wsidicomizer to its HTJ2K option because that CLI does not expose RPCL-specific control.
+
+The format-coverage runner converts bounded native levels from a checksummed OpenSlide test-data
+manifest, runs the workbench on successful conversions, and retains exact unsupported-format
+outcomes. The output path must not already exist. `--backend require-device` fails unless each
+manifest-declared encode case reports device encoding:
+
+```sh
+metal_manifest="$(python -c 'import importlib.resources; print(importlib.resources.files("wsi_dicom_bench.format_coverage").joinpath("format-coverage-metal-v2.json"))')"
+wsi-dicom-bench-format-coverage \
+  --corpus-root /absolute/path/to/openslide-testdata \
+  --manifest "$metal_manifest" \
+  --output /new/format-coverage-metal \
+  --wsi-dicom target/metal/release/wsi-dicom \
+  --backend require-device
+wsi-dicom-bench-format-coverage \
+  --corpus-root /absolute/path/to/openslide-testdata \
+  --manifest "$metal_manifest" \
+  --output /new/format-coverage-cpu \
+  --backend cpu
+wsi-dicom-bench-format-compare \
+  --cpu /new/format-coverage-cpu \
+  --metal /new/format-coverage-metal \
+  --output /new/format-coverage-comparison
+```
+
+Without `--manifest`, the runner uses the bundled `format-coverage-v2.json`.
