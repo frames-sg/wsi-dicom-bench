@@ -12,7 +12,7 @@ inside the evidence package:
 
 ```sh
 python -m pip wheel --no-deps \
-  "git+https://github.com/frames-sg/wsi-dicom-bench@caafcd9bc660fa86a7fc6db09a08bd8538181400" \
+  "git+https://github.com/frames-sg/wsi-dicom-bench@1987f59efd6fb1387b3d3aa9d655197141b914bb" \
   --wheel-dir ./benchmark-wheelhouse
 python -m pip install ./benchmark-wheelhouse/wsi_dicom_bench-*.whl
 suite_path="$(python -c 'import importlib.resources; print(importlib.resources.files("wsi_dicom_bench.negative_bench").joinpath("manifest-v4.json"))')"
