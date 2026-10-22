@@ -317,6 +317,17 @@ class WorkbenchCliTests(unittest.TestCase):
             self.assertEqual(report["status"], "execution_error")
             self.assertTrue(any("status" in error for error in report["contract_errors"]))
 
+    def test_validation_command_forwards_max_input_bytes_only_when_given(self):
+        from wsi_dicom_bench.workbench.cli import build_validation_command, parse_args
+
+        base = ["slide", "--output", "evidence", "--wsi-dicom", "wsi-dicom"]
+        default_command = build_validation_command(parse_args(base))
+        self.assertNotIn("--max-input-bytes", default_command)
+
+        command = build_validation_command(parse_args(base + ["--max-input-bytes", "68719476736"]))
+        flag = command.index("--max-input-bytes")
+        self.assertEqual(command[flag + 1], "68719476736")
+
     def test_core_profile_catalog_requires_profile_argument(self):
         from wsi_dicom_bench.workbench.cli import WorkbenchError, parse_args, run_workbench
 

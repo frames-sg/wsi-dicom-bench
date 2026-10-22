@@ -47,6 +47,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dcmvalidate-iod", type=Path)
     parser.add_argument("--htj2k-decoder")
     parser.add_argument("--max-pixel-frames", type=positive_int, default=1)
+    parser.add_argument(
+        "--max-input-bytes",
+        type=positive_int,
+        help="per-file input limit forwarded to wsi-dicom validate; its own default applies when omitted",
+    )
     parser.add_argument("--command-timeout-secs", type=positive_int, default=300)
     parser.add_argument("--evaluation-timeout-secs", type=positive_int, default=3600)
     parser.add_argument("--max-json-bytes", type=positive_int, default=256 * 1024 * 1024)
@@ -160,6 +165,8 @@ def build_validation_command(args: argparse.Namespace) -> list[str]:
         "--command-timeout-secs",
         str(args.command_timeout_secs),
     ]
+    if args.max_input_bytes is not None:
+        command.extend(["--max-input-bytes", str(args.max_input_bytes)])
     if not args.allow_missing_tools:
         command.append("--strict")
     append_validator_options(command, args)

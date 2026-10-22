@@ -210,6 +210,7 @@ def build_report(
         "evaluation_policy": {
             "strict_external_tools": not args.allow_missing_tools,
             "max_pixel_frames_per_transfer_syntax": args.max_pixel_frames,
+            "max_input_bytes": args.max_input_bytes,
             "command_timeout_secs": args.command_timeout_secs,
             "evaluation_timeout_secs": args.evaluation_timeout_secs,
         },
