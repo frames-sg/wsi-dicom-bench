@@ -150,6 +150,7 @@ def build_report(
     profile: dict | None,
     doctor: dict,
     validation: dict,
+    decoding: dict,
     doctor_execution: dict,
     validation_execution: dict,
 ) -> dict:
@@ -160,7 +161,11 @@ def build_report(
     for name, execution in (("doctor", doctor_execution), ("validation", validation_execution)):
         if execution.get("document_error"):
             contract_errors.append(f"{name}: {execution['document_error']}")
-    findings = [] if validation_errors else map_findings(validation, catalog)
+    findings = (
+        []
+        if validation_errors
+        else map_findings({"checks": [*validation["checks"], *decoding["checks"]]}, catalog)
+    )
     domains = summarize_domains(findings)
     comparison = validator_comparison(findings)
     slide = {"slide_id": None, "instance_count": 0, "instances": []}
@@ -168,6 +173,7 @@ def build_report(
     if not contract_errors:
         try:
             software = software_inventory(args, doctor)
+            software["bench_decoders"] = decoding["decoders"]
             slide = inspect_dicom_set([Path(path) for path in validation["files"]])
         except (WorkbenchError, OSError, ValueError) as exc:
             contract_errors.append(f"report enrichment failed: {exc}")
@@ -210,6 +216,9 @@ def build_report(
         "evaluation_policy": {
             "strict_external_tools": not args.allow_missing_tools,
             "max_pixel_frames_per_transfer_syntax": args.max_pixel_frames,
+            "pixel_decode_owner": "wsi-dicom-bench",
+            "max_pixel_frame_bytes": decoding["policy"]["max_frame_bytes"],
+            "wsi_dicom_pixel_decode": decoding["wsi_dicom_pixel_decode"],
             "max_input_bytes": args.max_input_bytes,
             "command_timeout_secs": args.command_timeout_secs,
             "evaluation_timeout_secs": args.evaluation_timeout_secs,

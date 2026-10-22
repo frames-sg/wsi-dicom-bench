@@ -13,9 +13,11 @@ from pathlib import Path
 from wsi_dicom_bench.cli_values import positive_int
 from wsi_dicom_bench.core_profile import CoreProfileError, load_profile
 from wsi_dicom_bench.json_document import write_json
+from wsi_dicom_bench.process_evidence import run_bounded_command
 
 from .catalog import CatalogError, load_catalog
 from .execution import WorkbenchError, run_json_command
+from .pixel_decode import DecodePolicy, run_pixel_decode_checks
 from .report import build_report, render_summary
 
 
@@ -45,8 +47,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--allow-missing-tools", action="store_true")
     parser.add_argument("--dcmvalidate-iod", type=Path)
-    parser.add_argument("--htj2k-decoder")
-    parser.add_argument("--max-pixel-frames", type=positive_int, default=1)
+    parser.add_argument(
+        "--htj2k-decoder",
+        help="absolute HTJ2K decoder command template with {input} and {output}; "
+        "grk_decompress on PATH is used when omitted",
+    )
+    parser.add_argument(
+        "--max-pixel-frames",
+        type=positive_int,
+        default=1,
+        help="frames per instance that the bench decodes with independent decoders",
+    )
     parser.add_argument(
         "--max-input-bytes",
         type=positive_int,
@@ -96,23 +107,38 @@ def run_workbench(args: argparse.Namespace) -> dict:
         prefix=f".{args.output.name}.staging-", dir=args.output.parent
     ) as temporary:
         staging = Path(temporary)
-        doctor_execution, validation_execution = _run_evaluations(args, staging)
+        legacy = wsi_dicom_runs_pixel_decode(args.wsi_dicom, args.command_timeout_secs)
+        doctor_execution, validation_execution = _run_evaluations(args, staging, legacy)
         doctor = doctor_execution.pop("document")
         validation = validation_execution.pop("document")
         for execution in (doctor_execution, validation_execution):
             for field in ("stdout_path", "stderr_path"):
                 execution[field] = str(args.output / Path(execution[field]).relative_to(staging))
+        decoding = run_pixel_decode_checks(
+            _validated_files(validation),
+            DecodePolicy(
+                max_frames=args.max_pixel_frames,
+                strict=not args.allow_missing_tools,
+                timeout_secs=args.command_timeout_secs,
+                htj2k_decoder=args.htj2k_decoder,
+            ),
+        )
+        decoding["wsi_dicom_pixel_decode"] = (
+            "disabled_with_max_pixel_frames_0" if legacy else "not_supported"
+        )
         report = build_report(
             args,
             catalog,
             profile,
             doctor,
             validation,
+            decoding,
             doctor_execution,
             validation_execution,
         )
         write_json(staging / "doctor.json", doctor)
         write_json(staging / "validation.json", validation)
+        write_json(staging / "pixel-decode.json", decoding)
         write_json(staging / "workbench-report.json", report)
         (staging / "summary.md").write_text(render_summary(report), encoding="utf-8")
         os.replace(staging, args.output)
@@ -125,17 +151,17 @@ def run_workbench(args: argparse.Namespace) -> dict:
 
 
 def _run_evaluations(
-    args: argparse.Namespace, staging: Path
+    args: argparse.Namespace, staging: Path, legacy: bool
 ) -> tuple[dict, dict]:
     doctor_execution = run_json_command(
-        build_doctor_command(args),
+        build_doctor_command(args, legacy),
         staging / "doctor.stdout.json",
         staging / "doctor.stderr.txt",
         args.evaluation_timeout_secs,
         args.max_json_bytes,
     )
     validation_execution = run_json_command(
-        build_validation_command(args),
+        build_validation_command(args, legacy),
         staging / "validation.stdout.json",
         staging / "validation.stderr.txt",
         args.evaluation_timeout_secs,
@@ -144,15 +170,44 @@ def _run_evaluations(
     return doctor_execution, validation_execution
 
 
-def build_doctor_command(args: argparse.Namespace) -> list[str]:
+def wsi_dicom_runs_pixel_decode(wsi_dicom: Path, timeout_secs: int) -> bool:
+    """Whether this wsi-dicom still decodes frames itself (releases through 0.8.0).
+
+    Those releases accept ``--max-pixel-frames``; the bench passes 0 so that only
+    its own decoder stage runs. A failed probe is treated as a current release.
+    """
+    with tempfile.TemporaryDirectory(prefix="wsi-workbench-probe-") as temporary:
+        root = Path(temporary)
+        execution = run_bounded_command(
+            [str(wsi_dicom), "validate", "--help"],
+            stdout_path=root / "stdout.txt",
+            stderr_path=root / "stderr.txt",
+            timeout_secs=min(timeout_secs, 30),
+            max_output_bytes=256 * 1024,
+        )
+        help_text = (root / "stdout.txt").read_text(encoding="utf-8", errors="replace")
+    return execution["returncode"] == 0 and "--max-pixel-frames" in help_text
+
+
+def _validated_files(validation: object) -> list[str]:
+    files = validation.get("files") if isinstance(validation, dict) else None
+    if not isinstance(files, list) or not all(isinstance(path, str) and path for path in files):
+        return []
+    return files
+
+
+def build_doctor_command(args: argparse.Namespace, legacy: bool = False) -> list[str]:
     command = [str(args.wsi_dicom), "doctor", "--json"]
     if not args.allow_missing_tools:
         command.append("--strict")
     append_validator_options(command, args)
+    if legacy and args.htj2k_decoder:
+        # Releases through 0.8.0 probe the HTJ2K decoder in strict doctor runs.
+        command.extend(["--htj2k-decoder", args.htj2k_decoder])
     return command
 
 
-def build_validation_command(args: argparse.Namespace) -> list[str]:
+def build_validation_command(args: argparse.Namespace, legacy: bool = False) -> list[str]:
     command = [
         str(args.wsi_dicom),
         "validate",
@@ -160,11 +215,11 @@ def build_validation_command(args: argparse.Namespace) -> list[str]:
         "--profile",
         "core-2026c" if args.profile else "general",
         "--json",
-        "--max-pixel-frames",
-        str(args.max_pixel_frames),
         "--command-timeout-secs",
         str(args.command_timeout_secs),
     ]
+    if legacy:
+        command.extend(["--max-pixel-frames", "0"])
     if args.max_input_bytes is not None:
         command.extend(["--max-input-bytes", str(args.max_input_bytes)])
     if not args.allow_missing_tools:
@@ -176,8 +231,6 @@ def build_validation_command(args: argparse.Namespace) -> list[str]:
 def append_validator_options(command: list[str], args: argparse.Namespace) -> None:
     if args.dcmvalidate_iod:
         command.extend(["--dcmvalidate-iod", str(args.dcmvalidate_iod)])
-    if args.htj2k_decoder:
-        command.extend(["--htj2k-decoder", args.htj2k_decoder])
 
 
 if __name__ == "__main__":

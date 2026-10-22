@@ -38,6 +38,15 @@ evaluation violated the policy, and `2` means execution, integrity, or converter
 contract compatibility failed. Invalid DICOM rejection is an expected successful
 outcome for negative cases.
 
+The benchmark, not `wsi-dicom`, runs the independent decoders. For each instance
+it decodes the first `--max-pixel-frames` frames (default 1) with `djpeg`
+(JPEG Baseline), `opj_decompress` (JPEG 2000), or an HTJ2K decoder
+(`--htj2k-decoder`, otherwise `grk_decompress` on `PATH`). It then checks the
+decoded size, sample count and bit depth against the DICOM header. Those decoders
+must be installed unless `--allow-missing-tools` is given. `wsi-dicom` releases
+through 0.8.0 still decode frames themselves. The workbench detects them and
+passes `--max-pixel-frames 0`, so frames are decoded once.
+
 The v4 protocol describes the benchmark scope and limitations. The engineered
 cases are not a prevalence sample, certification, or an independent blinded
 replication.

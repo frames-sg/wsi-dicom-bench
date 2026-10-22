@@ -328,6 +328,55 @@ class WorkbenchCliTests(unittest.TestCase):
         flag = command.index("--max-input-bytes")
         self.assertEqual(command[flag + 1], "68719476736")
 
+    def test_decoder_options_are_never_sent_to_current_wsi_dicom(self):
+        from wsi_dicom_bench.workbench.cli import (
+            build_doctor_command,
+            build_validation_command,
+            parse_args,
+        )
+
+        args = parse_args(["slide", "--output", "evidence", "--wsi-dicom", "wsi-dicom",
+                           "--htj2k-decoder", "/opt/grk -i {input} -o {output}"])
+        for command in (build_doctor_command(args), build_validation_command(args)):
+            self.assertNotIn("--max-pixel-frames", command)
+            self.assertNotIn("--htj2k-decoder", command)
+
+        legacy_validation = build_validation_command(args, legacy=True)
+        flag = legacy_validation.index("--max-pixel-frames")
+        self.assertEqual(legacy_validation[flag + 1], "0")
+        self.assertNotIn("--htj2k-decoder", legacy_validation)
+        self.assertIn("--htj2k-decoder", build_doctor_command(args, legacy=True))
+
+    def test_probe_detects_releases_that_still_decode_frames(self):
+        from wsi_dicom_bench.workbench.cli import wsi_dicom_runs_pixel_decode
+
+        cases = {
+            "print('  --max-pixel-frames <MAX_PIXEL_FRAMES>')": True,
+            "print('  --max-input-bytes <MAX_INPUT_BYTES>')": False,
+            "raise SystemExit(2)": False,
+        }
+        for body, expected in cases.items():
+            with self.subTest(body=body), tempfile.TemporaryDirectory() as tmp:
+                executable = Path(tmp) / "fake-wsi-dicom"
+                executable.write_text(f"#!{sys.executable}\n{body}\n")
+                executable.chmod(0o700)
+                self.assertIs(wsi_dicom_runs_pixel_decode(executable, 30), expected)
+
+    def test_contract_rejects_decoder_checks_emitted_by_wsi_dicom(self):
+        from wsi_dicom_bench.workbench.catalog import load_catalog
+        from wsi_dicom_bench.workbench.contract import validation_contract_errors
+
+        validation = {
+            "profile": "general",
+            "rule_set_id": "wsi-dicom-general-v1",
+            "files": ["slide.dcm"],
+            "checks": [{"name": "pixel-djpeg", "path": "slide.dcm", "status": "passed"}],
+            "schema_version": "wsi-dicom-validation-report-v1",
+        }
+        errors = validation_contract_errors(validation, load_catalog(CATALOG_PATH), core=False)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("bench-owned decoder check pixel-djpeg", errors[0])
+
     def test_core_profile_catalog_requires_profile_argument(self):
         from wsi_dicom_bench.workbench.cli import WorkbenchError, parse_args, run_workbench
 
@@ -412,7 +461,6 @@ class WorkbenchCliTests(unittest.TestCase):
                 "intrinsic-wsi-dicom-2026c-optical-path-structure",
                 "intrinsic-wsi-dicom-2026c-specimen-container",
                 "intrinsic-wsi-dicom-2026c-clinical-identity-set",
-                "pixel-decode",
                 "dciodvfy",
                 "dcentvfy",
                 "validate_iods",
@@ -455,12 +503,20 @@ class WorkbenchCliTests(unittest.TestCase):
 
             report = json.loads((output / "workbench-report.json").read_text())
             summary = (output / "summary.md").read_text()
+            decoding = json.loads((output / "pixel-decode.json").read_text())
 
             self.assertTrue((output / "doctor.json").is_file())
             self.assertTrue((output / "validation.json").is_file())
 
         self.assertEqual(returncode, 0)
         self.assertEqual(report["status"], "passed")
+        # The bench, not wsi-dicom, owns independent decoding; native pixels need none.
+        decode_findings = [f for f in report["findings"] if f["check_name"] == "pixel-decode"]
+        self.assertEqual([f["status"] for f in decode_findings], ["skipped"])
+        self.assertEqual(decode_findings[0]["rule_id"], "pixel-decode-wsi-dicom-2026c-frame-geometry")
+        self.assertEqual(decoding["checks"][0]["name"], "pixel-decode")
+        self.assertEqual(report["evaluation_policy"]["pixel_decode_owner"], "wsi-dicom-bench")
+        self.assertEqual(report["evaluation_policy"]["wsi_dicom_pixel_decode"], "not_supported")
         self.assertEqual(report["slide"]["slide_id"], "SLIDE-001")
         self.assertEqual(report["domains"]["identity"]["status"], "passed")
         self.assertFalse(report["validator_comparison"]["disagreement"])

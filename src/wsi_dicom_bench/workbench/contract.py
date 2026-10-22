@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+from .pixel_decode import BENCH_OWNED_CHECKS
+
 
 DOCTOR_SCHEMA = "wsi-dicom-doctor-report-v1"
 VALIDATION_SCHEMA = "wsi-dicom-validation-report-v1"
@@ -82,7 +84,12 @@ def validation_contract_errors(validation: object, catalog: dict, core: bool) ->
     checks = validation.get("checks", [])
     known = {name for rule in catalog["rules"] for name in rule["check_names"]}
     for check in checks:
-        if check.get("name") not in known:
+        if check.get("name") in BENCH_OWNED_CHECKS:
+            errors.append(
+                f"binary emitted bench-owned decoder check {check['name']}; "
+                "independent decoding runs in the bench"
+            )
+        elif check.get("name") not in known:
             errors.append(f"binary emitted an unmapped check: {check.get('name')}")
     # Every instance must have every unconditional intrinsic check. Corpus and
     # decoder rules are conditional and are checked by the evidence release gate.
