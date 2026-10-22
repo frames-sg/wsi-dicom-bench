@@ -22,6 +22,7 @@ wsi-dicom-bench-format-coverage = "wsi_dicom_bench.format_coverage.runner:main"
 wsi-dicom-bench-format-compare = "wsi_dicom_bench.format_coverage.compare:main"
 
 [project.urls]
+Homepage = "https://frames-sg.com/dicom-whole-slide-conversion/"
 Repository = "https://github.com/frames-sg/wsi-dicom-bench"
 
 [tool.setuptools]

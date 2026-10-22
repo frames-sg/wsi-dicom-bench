@@ -1,5 +1,9 @@
 # WSI-DICOM Bench
 
+[![CI](https://github.com/frames-sg/wsi-dicom-bench/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/frames-sg/wsi-dicom-bench/actions/workflows/ci.yml?query=branch%3Amain)
+
+[DICOM whole-slide workflow](https://frames-sg.com/dicom-whole-slide-conversion/)
+
 `wsi-dicom-bench` is the controlled-failure benchmark for an explicitly supplied
 [`wsi-dicom`](https://github.com/frames-sg/wsi-dicom) executable. It owns frozen
 controls, deterministic mutations, locked expectations, orchestration, analysis,
