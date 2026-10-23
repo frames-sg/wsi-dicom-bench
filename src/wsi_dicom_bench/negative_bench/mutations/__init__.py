@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from ..model import GenerationError, MutationContext, MutationResult
-from . import color, conformance, geometry, identity, pixel
+from . import color, conformance, geometry, identity, pixel, structure
 from .dicom import read_case_source, save
 
 
@@ -34,21 +34,29 @@ def build_registry(
     return registry
 
 
-MUTATION_REGISTRY: dict[str, MutationHandler] = build_registry(
-    (
-        ("pixel", pixel.HANDLERS),
-        ("geometry", geometry.HANDLERS),
-        ("color", color.HANDLERS),
-        ("identity", identity.HANDLERS),
-        ("conformance", conformance.HANDLERS),
-    )
+CATALOG_V4_DOMAINS = (
+    ("pixel", pixel.HANDLERS),
+    ("geometry", geometry.HANDLERS),
+    ("color", color.HANDLERS),
+    ("identity", identity.HANDLERS),
+    ("conformance", conformance.HANDLERS),
+)
+# The catalog-v4 mutation inventory stays exact; the v5 amendment adds its
+# single-defect IOD structure mutations in a separate registry. ALL_MUTATIONS,
+# which generation dispatches through, rejects any name that both would own.
+MUTATION_REGISTRY: dict[str, MutationHandler] = build_registry(CATALOG_V4_DOMAINS)
+STRUCTURE_MUTATION_REGISTRY: dict[str, MutationHandler] = build_registry(
+    (("structure", structure.HANDLERS),)
+)
+ALL_MUTATIONS: dict[str, MutationHandler] = build_registry(
+    (*CATALOG_V4_DOMAINS, ("structure", structure.HANDLERS))
 )
 
 
 def generate_case(
     case: dict, source: Path, input_dir: Path
 ) -> tuple[list[Path], list[dict]]:
-    handler = MUTATION_REGISTRY.get(case["mutation_name"])
+    handler = ALL_MUTATIONS.get(case["mutation_name"])
     if handler is None:
         raise GenerationError(f"unsupported mutation: {case['mutation_name']}")
     context = MutationContext(

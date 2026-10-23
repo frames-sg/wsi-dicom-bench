@@ -54,3 +54,27 @@ jobs:
           assert len(list((output / "controls").iterdir())) == 14
           assert len(list((output / "cases").iterdir())) == 69
           PY
+      - name: Generate the bundled v5 amendment suite from an unrelated directory
+        shell: bash
+        run: |
+          portable_cwd="$(mktemp -d)"
+          cd "${portable_cwd}"
+          env -u PYTHONPATH "${RUNNER_TEMP}/portable-environment/bin/python" - "${RUNNER_TEMP}/generated-suite-v5" <<'PY'
+          import json
+          import sys
+          from importlib.resources import files
+          from pathlib import Path
+
+          from wsi_dicom_bench.negative_bench.generate import generate_challenge
+
+          manifest = files("wsi_dicom_bench").joinpath(
+              "negative_bench/manifest-v5.json"
+          )
+          output = Path(sys.argv[1])
+          generate_challenge(Path(str(manifest)), output)
+          document = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
+          assert len(document["valid_controls"]) == 14
+          assert len(document["evaluation_cases"]) == 149
+          assert len(list((output / "controls").iterdir())) == 14
+          assert len(list((output / "cases").iterdir())) == 149
+          PY

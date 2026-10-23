@@ -53,6 +53,7 @@ def load_manifest(path: Path) -> dict:
         "wsi-dicom-negative-bench-manifest-v2",
         "wsi-dicom-negative-bench-manifest-v3",
         "wsi-dicom-negative-bench-manifest-v4",
+        "wsi-dicom-negative-bench-manifest-v5",
     }:
         raise GenerationError("unsupported challenge manifest schema")
     limits = manifest.get("resource_limits")
@@ -410,6 +411,7 @@ def _verify_expected_results_lock(
         "wsi-dicom-negative-bench-manifest-v2": "v2",
         "wsi-dicom-negative-bench-manifest-v3": "v3",
         "wsi-dicom-negative-bench-manifest-v4": "v4",
+        "wsi-dicom-negative-bench-manifest-v5": "v5",
     }.get(manifest_schema)
     if version is None:
         raise GenerationError("expected-results lock received an unsupported manifest")
@@ -428,7 +430,8 @@ def _verify_expected_results_lock(
         raise GenerationError("expected-results lock counts do not match the manifest")
 
     files = lock.get("files")
-    expected_file_count = 4 if version in {"v3", "v4"} else 3
+    profiled = version in {"v3", "v4", "v5"}
+    expected_file_count = 4 if profiled else 3
     if not isinstance(files, list) or len(files) != expected_file_count:
         raise GenerationError(
             f"expected-results lock must contain exactly {expected_file_count} files"
@@ -438,7 +441,7 @@ def _verify_expected_results_lock(
         f"bench/negative_bench/manifest-{version}.json",
         manifest["rule_catalog"]["path"],
     }
-    if version in {"v3", "v4"}:
+    if profiled:
         profile_reference = manifest.get("core_profile", {}).get("path")
         if not isinstance(profile_reference, str) or profile_path is None:
             raise GenerationError("v3 expected-results lock requires a core profile")
@@ -469,7 +472,7 @@ def _verify_expected_results_lock(
         f"bench/negative_bench/manifest-{version}.json": sha256_file(manifest_path),
         manifest["rule_catalog"]["path"]: sha256_file(catalog_path),
     }
-    if version in {"v3", "v4"}:
+    if profiled:
         actual[manifest["core_profile"]["path"]] = sha256_file(profile_path)
         try:
             profile = load_profile(profile_path)

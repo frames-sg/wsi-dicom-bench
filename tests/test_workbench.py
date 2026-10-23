@@ -58,11 +58,18 @@ class WorkbenchCatalogTests(unittest.TestCase):
         validation["profile"] = "general"
         self.assertTrue(any("profile" in error for error in validation_contract_errors(validation, catalog, True)))
 
-    def test_default_catalog_is_the_current_v4_catalog(self):
-        from wsi_dicom_bench.workbench.cli import DEFAULT_CATALOG
+    def test_default_catalog_is_the_current_v5_catalog(self):
+        # The v5 amendment makes catalog v5 the default; catalog v4 stays selectable.
+        from wsi_dicom_bench.workbench.cli import CATALOG_PROFILES, DEFAULT_CATALOG
 
-        self.assertEqual(DEFAULT_CATALOG.name, CATALOG_PATH.name)
-        self.assertEqual(DEFAULT_CATALOG.read_bytes(), CATALOG_PATH.read_bytes())
+        current = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v5.json"
+        self.assertEqual(DEFAULT_CATALOG.name, current.name)
+        self.assertEqual(DEFAULT_CATALOG.read_bytes(), current.read_bytes())
+        self.assertTrue(CATALOG_PATH.is_file())
+        self.assertEqual(
+            CATALOG_PROFILES[json.loads(CATALOG_PATH.read_text())["catalog_version"]],
+            json.loads(PROFILE_PATH.read_text())["profile_id"],
+        )
 
     def test_catalog_has_unique_versioned_rules_and_maps_every_emitted_check(self):
         from wsi_dicom_bench.workbench.catalog import catalog_index, load_catalog
@@ -259,6 +266,135 @@ class WorkbenchDicomInspectionTests(unittest.TestCase):
         self.assertEqual(inspection["slide_identity_status"], "conflicting")
         self.assertEqual(inspection["slide_id"], "multiple-slide-identities")
         self.assertEqual(len(inspection["slide_scopes"]), 2)
+
+    def test_inspection_distinguishes_sparse_from_dense_and_preserves_pixel_history(self):
+        from pydicom.dataset import Dataset, FileDataset, FileMetaDataset
+        from pydicom.sequence import Sequence
+        from pydicom.uid import ExplicitVRLittleEndian, JPEG2000Lossless
+
+        from wsi_dicom_bench.workbench.report import inspect_dicom_set
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = []
+            controls = (
+                ("dense.dcm", ExplicitVRLittleEndian, b"\x00\x03", "TILED_FULL", []),
+                (
+                    "sparse.dcm",
+                    JPEG2000Lossless,
+                    b"\x80\x01",
+                    "TILED_SPARSE",
+                    [(1, 1), (513, 513)],
+                ),
+                ("volume.dcm", ExplicitVRLittleEndian, b"\x00\x01", "3D", []),
+                (
+                    "incomplete-full.dcm",
+                    ExplicitVRLittleEndian,
+                    b"\x00\x01",
+                    "TILED_FULL",
+                    [],
+                ),
+            )
+            for index, (name, transfer_syntax, version, organization, positions) in enumerate(
+                controls, start=1
+            ):
+                path = root / name
+                meta = FileMetaDataset()
+                meta.TransferSyntaxUID = transfer_syntax
+                meta.FileMetaInformationVersion = version
+                dataset = FileDataset(path, {}, file_meta=meta, preamble=b"\0" * 128)
+                dataset.SOPClassUID = "1.2.840.10008.5.1.4.1.1.77.1.6"
+                dataset.SOPInstanceUID = f"1.2.3.4.{index}"
+                dataset.FrameOfReferenceUID = "1.2.3.5"
+                dataset.ContainerIdentifier = "SLIDE-001"
+                dataset.Rows = 512
+                dataset.Columns = 512
+                dataset.NumberOfFrames = str(
+                    len(positions) or (36 if name == "dense.dcm" else 6)
+                )
+                dataset.TotalPixelMatrixRows = 1024
+                dataset.TotalPixelMatrixColumns = 1536
+                dataset.DimensionOrganizationType = organization
+                if name == "dense.dcm":
+                    dataset.NumberOfOpticalPaths = 2
+                    dataset.TotalPixelMatrixFocalPlanes = 3
+                dataset.SamplesPerPixel = 1
+                dataset.PhotometricInterpretation = "MONOCHROME2"
+                dataset.BitsAllocated = 16
+                dataset.BitsStored = 12
+                dataset.HighBit = 11
+                dataset.PixelRepresentation = 0
+                dataset.LossyImageCompression = "01"
+                dataset.LossyImageCompressionMethod = ["ISO_10918_1", "ISO_15444_1"]
+                dataset.LossyImageCompressionRatio = [12.5, 4.0]
+                if positions:
+                    frame_groups = []
+                    for row, column in positions:
+                        plane_position = Dataset()
+                        plane_position.RowPositionInTotalImagePixelMatrix = row
+                        plane_position.ColumnPositionInTotalImagePixelMatrix = column
+                        frame_group = Dataset()
+                        frame_group.PlanePositionSlideSequence = Sequence([plane_position])
+                        frame_groups.append(frame_group)
+                    dataset.PerFrameFunctionalGroupsSequence = Sequence(frame_groups)
+                dataset.save_as(path, enforce_file_format=True)
+                paths.append(path)
+
+            instances = {
+                Path(instance["path"]).name: instance
+                for instance in inspect_dicom_set(paths)["instances"]
+            }
+
+        dense = instances["dense.dcm"]
+        sparse = instances["sparse.dcm"]
+        volume = instances["volume.dcm"]
+        incomplete_full = instances["incomplete-full.dcm"]
+        self.assertEqual(dense["geometry"]["dimension_organization_type"], "TILED_FULL")
+        self.assertEqual(dense["geometry"]["full_grid_frame_capacity"], 6)
+        self.assertEqual(dense["geometry"]["number_of_optical_paths"], 2)
+        self.assertEqual(dense["geometry"]["total_pixel_matrix_focal_planes"], 3)
+        self.assertEqual(dense["geometry"]["number_of_frames"], 36)
+        self.assertEqual(dense["geometry"]["expected_full_frame_count"], 36)
+        self.assertEqual(dense["geometry"]["per_frame_functional_group_count"], 0)
+        self.assertEqual(sparse["geometry"]["dimension_organization_type"], "TILED_SPARSE")
+        self.assertEqual(sparse["geometry"]["full_grid_frame_capacity"], 6)
+        self.assertEqual(sparse["geometry"]["number_of_frames"], 2)
+        self.assertIsNone(sparse["geometry"]["expected_full_frame_count"])
+        self.assertEqual(sparse["geometry"]["per_frame_functional_group_count"], 2)
+        self.assertEqual(
+            sparse["geometry"]["explicit_frame_position_sample"],
+            [
+                {"row_position": 1, "column_position": 1},
+                {"row_position": 513, "column_position": 513},
+            ],
+        )
+        self.assertFalse(
+            sparse["geometry"]["explicit_frame_position_sample_truncated"]
+        )
+        self.assertEqual(volume["geometry"]["dimension_organization_type"], "3D")
+        self.assertIsNone(volume["geometry"]["expected_full_frame_count"])
+        self.assertIsNone(incomplete_full["geometry"]["number_of_optical_paths"])
+        self.assertIsNone(incomplete_full["geometry"]["expected_full_frame_count"])
+        for instance in instances.values():
+            self.assertEqual(
+                instance["pixel"],
+                {
+                    "samples_per_pixel": 1,
+                    "bits_allocated": 16,
+                    "bits_stored": 12,
+                    "high_bit": 11,
+                    "pixel_representation": 0,
+                },
+            )
+            self.assertTrue(instance["file_meta"]["version_1_compatible"])
+            self.assertEqual(
+                instance["compression"]["lossy_methods"],
+                ["ISO_10918_1", "ISO_15444_1"],
+            )
+            self.assertEqual(instance["compression"]["lossy_ratios"], [12.5, 4.0])
+        self.assertEqual(dense["file_meta"]["information_version_hex"], "0003")
+        self.assertEqual(sparse["file_meta"]["information_version_hex"], "8001")
+        self.assertEqual(str(sparse["transfer_syntax_uid"]), str(JPEG2000Lossless))
 
 
 class WorkbenchCliTests(unittest.TestCase):
