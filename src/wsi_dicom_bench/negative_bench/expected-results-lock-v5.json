@@ -11,7 +11,7 @@
   "files": [
     {
       "path": "bench/negative_bench/protocol-v5.md",
-      "sha256": "5ed0640dd141074acf6507089cb57abf2ef5b2e9980a538aaf2c73b2dea7a708"
+      "sha256": "1dfda938faaa40d2c4df354cb66552d52dd525f32e20de7b707fb75addec8204"
     },
     {
       "path": "bench/negative_bench/manifest-v5.json",

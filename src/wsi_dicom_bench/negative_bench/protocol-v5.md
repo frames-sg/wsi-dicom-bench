@@ -1,8 +1,8 @@
 # WSI-DICOM Negative Bench: October 22, 2026 amendment
 
-This prospective amendment preserves manifest v4, expected-results-lock-v4.json, protocol-v4.md,
+This amendment preserves manifest v4, expected-results-lock-v4.json, protocol-v4.md,
 catalog v4, core profile v2, controls-v4, controls-v2, and adjudications-v1.json unchanged, so
-studies pinned to catalog v4 keep their meaning. It adds catalog v5, core profile v3, manifest v5,
+evidence pinned to catalog v4 keeps its meaning. It adds catalog v5, core profile v3, manifest v5,
 and expected-results-lock-v5.json for a `wsi-dicom` candidate whose validator adds seven VL WSI IOD
 requirement families generated from the pinned DICOM 2026c DocBook tables (PS3.3 A.32.8 and the
 Module and Macro tables it includes, PS3.6 Tables 6-1 and 7-1, PS3.10 Table 7.1-1):

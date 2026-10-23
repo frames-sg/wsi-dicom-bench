@@ -1,6 +1,7 @@
 import hashlib
 import base64
 import json
+import re
 import tempfile
 import unittest
 import zipfile
@@ -98,6 +99,34 @@ class DistributionPayloadTests(unittest.TestCase):
                         distribution_payload.retain_installed_distribution(output)
                     self.assertFalse(output.exists())
 
+
+class PublicPayloadTests(unittest.TestCase):
+    # Digests of lowercase words reserved for documents kept outside the
+    # repository.
+    RESERVED_WORD_DIGESTS = frozenset({
+        "4d5be44c61172ce4f1f57d44a02c2814abe7113434492f785e668100aa08a42b",
+        "6fd4b2b13c9465a622bc79ba5bde5ee3a09d8d9479477c0608e9cc73247e8ba4",
+    })
+
+    def test_shipped_sources_carry_no_private_documents(self):
+        root = Path(__file__).resolve().parents[1]
+        private_dirs = {"manuscript", "manuscripts", "grant", "paper", "papers"}
+        text_suffixes = {".cff", ".csv", ".json", ".md", ".py", ".toml", ".txt", ".yml"}
+        leaked = []
+        for path in [root / "README.md", *(root / "src" / "wsi_dicom_bench").rglob("*")]:
+            relative = path.relative_to(root)
+            if not path.is_file() or "__pycache__" in relative.parts:
+                continue
+            words = set(re.findall(r"[a-z]+", str(relative).lower()))
+            if path.suffix.lower() in text_suffixes:
+                words |= set(re.findall(r"[a-z]+", path.read_text(encoding="utf-8").lower()))
+            if (
+                private_dirs & {part.lower() for part in relative.parts[:-1]}
+                or path.suffix.lower() in {".docx", ".pptx"}
+                or any(hashlib.sha256(word.encode()).hexdigest() in self.RESERVED_WORD_DIGESTS for word in words)
+            ):
+                leaked.append(str(relative))
+        self.assertEqual(leaked, [], "shipped sources must not carry private documents")
 
 if __name__ == "__main__":
     unittest.main()
