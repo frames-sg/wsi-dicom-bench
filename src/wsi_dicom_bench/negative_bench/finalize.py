@@ -21,13 +21,13 @@ REQUIRED_FINAL_INPUTS = (
 )
 REQUIRED_ANALYSIS_OUTPUTS = (
     "adjudication.csv",
-    "analysis/USCAP-results.md",
     "analysis/case-validator-matrix.csv",
     "analysis/case-validator-matrix.json",
     "analysis/disagreements.csv",
     "analysis/disagreements.json",
     "analysis/domain-metrics.csv",
     "analysis/domain-metrics.json",
+    "analysis/results.md",
     "analysis/summary.json",
     "analysis/validator-detection.svg",
 )

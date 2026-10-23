@@ -5,7 +5,7 @@ type: dataset
 version: "unreleased"
 authors:
   - name: "WSI-DICOM Bench contributors"
-repository-code: "https://github.com/frames-sg/wsi-dicom"
+repository-code: "https://github.com/frames-sg/wsi-dicom-bench"
 license: MIT
 abstract: >-
   A frozen engineered challenge set for detection and rule/domain localization of known DICOM 2026c

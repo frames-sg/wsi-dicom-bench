@@ -7,10 +7,26 @@ from .pixel_decode import BENCH_OWNED_CHECKS
 
 DOCTOR_SCHEMA = "wsi-dicom-doctor-report-v1"
 VALIDATION_SCHEMA = "wsi-dicom-validation-report-v1"
-RULE_SET_IDS = {
+# The wsi-dicom rule set each catalog was written for. A binary that declares a
+# different rule set emits checks the catalog does not map, so the pairing is exact.
+CATALOG_V4_RULE_SETS = {
     "core-2026c": "wsi-dicom-core-profile-2026c-v2",
     "general": "wsi-dicom-general-v1",
 }
+RULE_SET_IDS_BY_CATALOG = {
+    "wsi-dicom-bench-rules-2026c-v2": CATALOG_V4_RULE_SETS,
+    "wsi-dicom-bench-rules-2026c-v4": CATALOG_V4_RULE_SETS,
+    "wsi-dicom-bench-rules-2026c-v5": {
+        "core-2026c": "wsi-dicom-core-profile-2026c-v3",
+        "general": "wsi-dicom-general-v2",
+    },
+}
+
+
+def expected_rule_set_id(catalog: object, profile: str) -> str | None:
+    """Return the rule set a catalog requires for a profile, or None if it declares none."""
+    version = catalog.get("catalog_version") if isinstance(catalog, dict) else None
+    return RULE_SET_IDS_BY_CATALOG.get(version, {}).get(profile)
 
 
 def _schema_errors(document: object, expected: str, kind: str) -> tuple[list[str], bool]:
@@ -75,11 +91,18 @@ def validation_contract_errors(validation: object, catalog: dict, core: bool) ->
     expected_profile = "core-2026c" if core else "general"
     if validation.get("profile") != expected_profile:
         errors.append(f"binary did not execute selected profile {expected_profile}")
+    rule_set_id = expected_rule_set_id(catalog, expected_profile)
     if legacy and "rule_set_id" in validation:
         errors.append("legacy validation report must not declare rule_set_id")
-    elif not legacy and validation.get("rule_set_id") != RULE_SET_IDS[expected_profile]:
+    elif not legacy and rule_set_id is None:
         errors.append(
-            f"binary did not execute selected rule set {RULE_SET_IDS[expected_profile]}"
+            f"catalog {catalog.get('catalog_version')!r} declares no selected rule set "
+            f"for profile {expected_profile}"
+        )
+    elif not legacy and validation.get("rule_set_id") != rule_set_id:
+        errors.append(
+            f"binary did not execute selected rule set {rule_set_id}; "
+            f"it declared {validation.get('rule_set_id')!r}"
         )
     checks = validation.get("checks", [])
     known = {name for rule in catalog["rules"] for name in rule["check_names"]}

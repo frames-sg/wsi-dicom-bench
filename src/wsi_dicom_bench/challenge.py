@@ -49,7 +49,7 @@ def _suite_manifest(suite: Path) -> Path:
         return suite
     if not suite.is_dir():
         raise ChallengeInfrastructureError(f"suite does not exist: {suite}")
-    candidates = [suite / "manifest.json", suite / "manifest-v4.json"]
+    candidates = [suite / "manifest.json", suite / "manifest-v4.json", suite / "manifest-v5.json"]
     existing = [path for path in candidates if path.is_file()]
     if len(existing) != 1:
         raise ChallengeInfrastructureError(

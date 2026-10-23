@@ -1,0 +1,886 @@
+{
+  "catalog_schema_version": "wsi-dicom-bench-rule-catalog-v1",
+  "catalog_version": "wsi-dicom-bench-rules-2026c-v5",
+  "dicom_edition": "2026c",
+  "rules": [
+    {
+      "applicability": "All evaluated DICOM image instances; encapsulation requirements apply to compressed transfer syntaxes.",
+      "check_names": [
+        "intrinsic-pixel-structure"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "Extended Offset Table entries address frame Item Tags and Extended Offset Table Lengths describe frame byte lengths.",
+          "section": "C.7.6.3.1.8",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.6.3.html#sect_C.7.6.3.1.8"
+        },
+        {
+          "edition": "2026c",
+          "part": "PS3.5",
+          "requirement": "Compressed Pixel Data uses encapsulated fragments with the required Item, offset-table, padding, and frame boundaries.",
+          "section": "8.2 and A.4",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part05/sect_A.4.html"
+        }
+      ],
+      "clinical_severity": "critical",
+      "clinical_severity_rationale": "A structural failure can make pixels unreadable or associate compressed bytes with the wrong frame.",
+      "likely_fix_owners": [
+        "converter",
+        "codec",
+        "archive"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Receivers and decoders may reject the instance or reconstruct frames incorrectly.",
+      "primary_domain": "pixel",
+      "rule_id": "intrinsic-wsi-dicom-2026c-pixel-structure",
+      "rule_kind": "intrinsic",
+      "summary": "Pixel Data representation, fragments, frame mapping, and offset tables are structurally usable and consistent with the transfer syntax and Number of Frames."
+    },
+    {
+      "applicability": "VL WSI instances with Optical Path Sequence; ICC is required for color optical paths under the implemented profile.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-icc-profile"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "ICC Profile encodes the transformation from stored device-dependent color values to Profile Connection Space and is an Input Device Profile.",
+          "section": "C.8.12.5.1.4 and C.11.15",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.12.5.html#sect_C.8.12.5.1.4"
+        }
+      ],
+      "clinical_severity": "major",
+      "clinical_severity_rationale": "Missing or invalid color characterization can change rendered tissue color and downstream color measurements.",
+      "likely_fix_owners": [
+        "converter",
+        "calibration_metadata_provider"
+      ],
+      "operational_severity": "major",
+      "operational_severity_rationale": "Color-managed receivers cannot reproduce the intended device-to-PCS transform.",
+      "primary_domain": "color",
+      "rule_id": "intrinsic-wsi-dicom-2026c-icc-profile",
+      "rule_kind": "intrinsic",
+      "summary": "Each color optical path has a structurally valid ICC Input Device Profile; monochrome optical paths do not require ICC."
+    },
+    {
+      "applicability": "VL WSI instances whose Photometric Interpretation is MONOCHROME2.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-monochrome-presentation"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "The VL Whole Slide Microscopy Image Module specifies Presentation LUT Shape, Rescale Intercept, and Rescale Slope conditions for monochrome pixels.",
+          "section": "C.8.12.4",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.12.4.html"
+        }
+      ],
+      "clinical_severity": "major",
+      "clinical_severity_rationale": "An unintended presentation or rescale transform can change displayed grayscale values.",
+      "likely_fix_owners": [
+        "converter"
+      ],
+      "operational_severity": "major",
+      "operational_severity_rationale": "Receivers may apply inconsistent default grayscale transformations.",
+      "primary_domain": "color",
+      "rule_id": "intrinsic-wsi-dicom-2026c-monochrome-presentation",
+      "rule_kind": "intrinsic",
+      "summary": "MONOCHROME2 output declares identity presentation and unit rescale behavior."
+    },
+    {
+      "applicability": "All VL WSI instances; method and ratio history is required when Lossy Image Compression is 01.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-lossy-history"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "Image modules carry the lossy compression indicator and, when applicable, the compression method and ratio history.",
+          "section": "C.8.12.4 and C.7.6.1",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.12.4.html"
+        }
+      ],
+      "clinical_severity": "major",
+      "clinical_severity_rationale": "Erased or contradictory lossy history can conceal prior irreversible pixel alteration.",
+      "likely_fix_owners": [
+        "converter",
+        "archive"
+      ],
+      "operational_severity": "major",
+      "operational_severity_rationale": "Consumers cannot reliably determine whether pixels have undergone lossy processing.",
+      "primary_domain": "conformance",
+      "rule_id": "intrinsic-wsi-dicom-2026c-lossy-history",
+      "rule_kind": "intrinsic",
+      "summary": "Lossy Image Compression flag, methods, ratios, and final transfer syntax describe a consistent compression history."
+    },
+    {
+      "applicability": "Every specimen described by a VL WSI instance.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-specimen-identity"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "The Specimen Module identifies specimens being imaged and uses governed identifier issuer semantics.",
+          "section": "C.7.6.22 and 10.14",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.6.22.html"
+        }
+      ],
+      "clinical_severity": "critical",
+      "clinical_severity_rationale": "Incorrect specimen identity can associate pixels with the wrong physical specimen.",
+      "likely_fix_owners": [
+        "source_metadata",
+        "converter"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Archives and downstream systems cannot safely reconcile specimen records.",
+      "primary_domain": "identity",
+      "rule_id": "intrinsic-wsi-dicom-2026c-specimen-identity",
+      "rule_kind": "intrinsic",
+      "summary": "Specimen Identifier, Specimen UID, and issuer fields are present and structurally valid."
+    },
+    {
+      "applicability": "A set containing one or more VL WSI instances.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-specimen-uid-set"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "Specimen UID and identifier Attributes identify the specimen consistently across instances.",
+          "section": "C.7.6.22",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.6.22.html"
+        }
+      ],
+      "clinical_severity": "critical",
+      "clinical_severity_rationale": "Conflicting mappings can merge distinct specimens or split one governed specimen identity.",
+      "likely_fix_owners": [
+        "source_metadata",
+        "converter",
+        "archive"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Set-level reconciliation and longitudinal retrieval become ambiguous.",
+      "primary_domain": "identity",
+      "rule_id": "intrinsic-wsi-dicom-2026c-specimen-uid-set",
+      "rule_kind": "intrinsic_set",
+      "summary": "One Specimen UID does not map to conflicting specimen identifiers or issuers across the evaluated set."
+    },
+    {
+      "applicability": "VL WSI instances containing Dimension Index Sequence and per-frame slide plane positions.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-dimension-order"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "Dimension Index Values correspond in order to Dimension Index Sequence items, and slide row and column positions locate each frame in the Total Pixel Matrix.",
+          "section": "C.7.6.17.1 and C.8.12.6.1",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.6.17.html#sect_C.7.6.17.1"
+        }
+      ],
+      "clinical_severity": "major",
+      "clinical_severity_rationale": "Incorrect dimension ordering can place tiles at the wrong slide coordinates.",
+      "likely_fix_owners": [
+        "converter"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Receivers may assemble a transposed, scrambled, or incomplete total pixel matrix.",
+      "primary_domain": "geometry",
+      "rule_id": "intrinsic-wsi-dicom-2026c-dimension-order",
+      "rule_kind": "intrinsic",
+      "summary": "Dimension Index pointers, values, and slide plane positions use consistent row-before-column indexing."
+    },
+    {
+      "applicability": "Sampled frames for transfer syntaxes with a configured independent decoder.",
+      "check_names": [
+        "pixel-decode",
+        "pixel-djpeg",
+        "pixel-opj-decompress",
+        "pixel-htj2k"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "Rows, Columns, Samples per Pixel, Bits Allocated, and Photometric Interpretation describe the pixel sample matrix.",
+          "section": "C.7.6.3",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.6.3.html"
+        },
+        {
+          "edition": "2026c",
+          "part": "PS3.5",
+          "requirement": "Encapsulated pixel bytes are encoded according to the negotiated compressed transfer syntax.",
+          "section": "8.2",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part05/sect_8.2.html"
+        }
+      ],
+      "clinical_severity": "critical",
+      "clinical_severity_rationale": "A decode mismatch means the encoded frame cannot be interpreted as the declared pixel matrix.",
+      "likely_fix_owners": [
+        "converter",
+        "codec",
+        "decoder"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Independent consumers may reject or misinterpret compressed pixels.",
+      "primary_domain": "pixel",
+      "rule_id": "pixel-decode-wsi-dicom-2026c-frame-geometry",
+      "rule_kind": "independent_decoder",
+      "summary": "A bounded independent decode produces the declared rows, columns, components, sample width, and payload size."
+    },
+    {
+      "applicability": "VL WSI instances whose Dimension Organization Type is TILED_FULL.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-tile-geometry"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "For TILED_FULL, frame order and slide-plane positions describe complete regular tiling of the Total Pixel Matrix.",
+          "section": "C.8.12.6.1",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.12.6.html"
+        },
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "Pixel Spacing supplies row then column spacing and agrees with the physical imaged-volume dimensions of the Total Pixel Matrix.",
+          "section": "C.7.6.16.2.1 and C.8.12.4",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.6.16.2.html"
+        }
+      ],
+      "clinical_severity": "major",
+      "clinical_severity_rationale": "Missing, duplicate, out-of-range, or physically inconsistent tiles can omit tissue or place it at the wrong slide coordinate.",
+      "likely_fix_owners": [
+        "converter",
+        "source_metadata"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Receivers may assemble an incomplete, overlapping, or dimensionally incorrect total pixel matrix.",
+      "primary_domain": "geometry",
+      "rule_id": "intrinsic-wsi-dicom-2026c-tile-geometry",
+      "rule_kind": "intrinsic",
+      "summary": "TILED_FULL frame count, per-frame positions, total-matrix coverage, and physical spacing form one complete, unique, bounded geometry."
+    },
+    {
+      "applicability": "Every VL WSI instance and every set containing one or more VL WSI instances.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-identity-set"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "SOP Class and SOP Instance UIDs identify the composite instance consistently, including corresponding File Meta Information.",
+          "section": "C.12.1",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.12.1.html"
+        }
+      ],
+      "clinical_severity": "critical",
+      "clinical_severity_rationale": "An ambiguous SOP identity can associate different image content or series membership with one object identifier.",
+      "likely_fix_owners": [
+        "converter",
+        "archive"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Archives may overwrite, deduplicate, reject, or retrieve the wrong object when identities collide or disagree.",
+      "primary_domain": "identity",
+      "rule_id": "intrinsic-wsi-dicom-2026c-identity-set",
+      "rule_kind": "intrinsic_set",
+      "summary": "File Meta Information and data-set SOP identities agree, and each SOP Instance UID occurs at most once in the evaluated set."
+    },
+    {
+      "applicability": "Every VL WSI image instance.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-image-metadata"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "The Image Pixel Module jointly specifies samples, photometric interpretation, allocated and stored bits, high bit, and pixel representation.",
+          "section": "C.7.6.3",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.6.3.html"
+        }
+      ],
+      "clinical_severity": "critical",
+      "clinical_severity_rationale": "Contradictory sample or bit metadata can cause stored pixels to be decoded into the wrong colors or numerical values.",
+      "likely_fix_owners": [
+        "converter",
+        "codec"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Decoders may reject the instance or allocate and interpret the pixel buffer incorrectly.",
+      "primary_domain": "conformance",
+      "rule_id": "intrinsic-wsi-dicom-2026c-image-metadata",
+      "rule_kind": "intrinsic",
+      "summary": "Samples per Pixel, Photometric Interpretation, stored-bit declarations, and pixel representation are internally consistent."
+    },
+    {
+      "applicability": "Sets containing at least two VL WSI instances with the same Pyramid UID.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-pyramid-geometry"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "Pyramid UID identifies images in one multi-resolution pyramid and total-matrix geometry and pixel spacing describe their physical slide extent.",
+          "section": "C.8.12.6",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.12.6.html"
+        }
+      ],
+      "clinical_severity": "major",
+      "clinical_severity_rationale": "Inconsistent pyramid extents can shift or crop tissue when a receiver changes resolution levels.",
+      "likely_fix_owners": [
+        "converter",
+        "source_metadata"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Receivers cannot register pyramid levels to one physical slide coordinate system.",
+      "primary_domain": "geometry",
+      "rule_id": "intrinsic-wsi-dicom-2026c-pyramid-geometry",
+      "rule_kind": "intrinsic_set",
+      "summary": "VL WSI instances sharing a Pyramid UID describe the same physical slide extent within one coarser-level pixel of tolerance."
+    },
+    {
+      "applicability": "VL WSI instances containing Source Image Sequence; class agreement is checked for referenced objects present in the evaluated set.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-source-relationship"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "Source Image Sequence uses the Image SOP Instance Reference Macro to identify source SOP Class and SOP Instance UIDs.",
+          "section": "C.7.6.1 and Table 10-11",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.6.html"
+        }
+      ],
+      "clinical_severity": "major",
+      "clinical_severity_rationale": "An incorrect source relationship can attach derived pixels to the wrong source object or object type.",
+      "likely_fix_owners": [
+        "converter",
+        "relationship_mapping",
+        "archive"
+      ],
+      "operational_severity": "major",
+      "operational_severity_rationale": "Provenance traversal and archive relationship resolution become ambiguous or wrong.",
+      "primary_domain": "identity",
+      "rule_id": "intrinsic-wsi-dicom-2026c-source-relationship",
+      "rule_kind": "intrinsic_set",
+      "summary": "Source Image references are non-self-referential, use valid UIDs, and use the actual SOP Class UID when the referenced instance is present."
+    },
+    {
+      "applicability": "VL WSI instances evaluated against the public 2026c core profile: VOLUME, TILED_FULL, one focal plane, and no extended depth of field.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-core-image-profile"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "The VL Whole Slide Microscopy Image IOD and Image Module define mandatory image flavor, acquisition, tiling, focal-plane, presentation, and specimen-label attributes and conditions.",
+          "section": "A.32.8 and C.8.12.4",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.12.4.html"
+        }
+      ],
+      "clinical_severity": "major",
+      "clinical_severity_rationale": "Contradictory image flavor or acquisition metadata can cause an image to be handled as the wrong WSI object type.",
+      "likely_fix_owners": [
+        "converter",
+        "source_metadata"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Receivers may reject an object whose mandatory WSI profile attributes are absent or contradictory.",
+      "primary_domain": "conformance",
+      "rule_id": "intrinsic-wsi-dicom-2026c-core-image-profile",
+      "rule_kind": "intrinsic",
+      "summary": "Mandatory VL WSI core-profile image attributes describe one TILED_FULL VOLUME layer with one focal plane and no extended depth of field."
+    },
+    {
+      "applicability": "Every VL WSI instance in the public 2026c core profile.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-slide-coordinate-system"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "Total Pixel Matrix Origin and Image Orientation (Slide) locate and orient the total pixel matrix in the Slide Coordinate System Frame of Reference.",
+          "section": "C.8.12.14",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.12.14.html"
+        }
+      ],
+      "clinical_severity": "critical",
+      "clinical_severity_rationale": "Invalid origin or orientation can place tissue at the wrong physical slide location.",
+      "likely_fix_owners": [
+        "converter",
+        "source_metadata"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Receivers cannot assemble or align WSI layers reliably without a valid slide coordinate system.",
+      "primary_domain": "geometry",
+      "rule_id": "intrinsic-wsi-dicom-2026c-slide-coordinate-system",
+      "rule_kind": "intrinsic",
+      "summary": "The total-matrix origin is complete and Image Orientation (Slide) contains finite orthonormal direction cosines."
+    },
+    {
+      "applicability": "Every VL WSI instance in the public 2026c core profile, which contains exactly one optical path.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-optical-path-structure"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "The Optical Path Module identifies each optical path, its illumination, and the functional-group reference to that path.",
+          "section": "C.8.12.5 and C.8.12.6",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.12.5.html"
+        }
+      ],
+      "clinical_severity": "major",
+      "clinical_severity_rationale": "An unresolved or incorrectly described optical path can change how stored channels and color are interpreted.",
+      "likely_fix_owners": [
+        "converter",
+        "scanner_metadata_provider"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Receivers may reject or misassociate frames when optical-path counts, identifiers, or references disagree.",
+      "primary_domain": "color",
+      "rule_id": "intrinsic-wsi-dicom-2026c-optical-path-structure",
+      "rule_kind": "intrinsic",
+      "summary": "The core profile declares one complete optical path and every functional-group reference resolves to its identifier."
+    },
+    {
+      "applicability": "Every VL WSI instance and evaluated set in the public 2026c core profile.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-specimen-container"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "The Specimen Module requires container identity and a specimen description; Type 2 issuer, container type, and preparation sequences remain present even when empty.",
+          "section": "C.7.6.22",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.7.6.22.html"
+        }
+      ],
+      "clinical_severity": "critical",
+      "clinical_severity_rationale": "A missing or malformed container/specimen relationship can detach an image from the physical slide and preparation history.",
+      "likely_fix_owners": [
+        "source_metadata",
+        "converter"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Mandatory specimen and container structures are required for pathology workflow identity and exchange.",
+      "primary_domain": "identity",
+      "rule_id": "intrinsic-wsi-dicom-2026c-specimen-container",
+      "rule_kind": "intrinsic",
+      "summary": "Container identity, microscope-slide type, specimen descriptions, issuer sequences, and preparation-sequence structure satisfy the core profile."
+    },
+    {
+      "applicability": "Every VL WSI set evaluated as one slide under the public 2026c core profile.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-clinical-identity-set"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "Patient, Study, Series, Frame of Reference, container, and specimen identities retain coherent information-entity relationships across a VL WSI set.",
+          "section": "A.32.8, C.7.1, C.7.2, C.7.3, C.7.4.1, and C.7.6.22",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_A.32.8.3.html"
+        }
+      ],
+      "clinical_severity": "critical",
+      "clinical_severity_rationale": "Cross-instance identity conflicts can associate pixels with the wrong patient, study, series, or physical slide.",
+      "likely_fix_owners": [
+        "source_metadata",
+        "converter",
+        "archive"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Archives group and retrieve instances using these identities and may merge or split inconsistent sets.",
+      "primary_domain": "identity",
+      "rule_id": "intrinsic-wsi-dicom-2026c-clinical-identity-set",
+      "rule_kind": "intrinsic_set",
+      "summary": "Study, series, Frame of Reference, patient, container, and issuer identities remain internally consistent across the evaluated set."
+    },
+    {
+      "applicability": "Every VL Whole Slide Microscopy Image SOP Instance, in both the general and core-2026c validation profiles. Requirements are generated from the pinned DICOM 2026c DocBook tables; a condition that depends on facts the object cannot carry is counted as undeterminable and never fails.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-iod-modules"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "Each Module of the VL Whole Slide Microscopy Image IOD is present or absent as its Usage (M, C, or U) and usage condition require.",
+          "section": "A.32.8 Table A.32.8-1",
+          "url": "https://dicom.nema.org/medical/dicom/2026c/output/chtml/part03/sect_A.32.8.html"
+        },
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "Only the listed Functional Group Macros are used, with their Usage, condition, and Shared or Per-Frame placement constraints.",
+          "section": "A.32.8.4 Table A.32.8-2",
+          "url": "https://dicom.nema.org/medical/dicom/2026c/output/chtml/part03/sect_A.32.8.4.html"
+        },
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "A Functional Group is not in both the Shared and the Per-Frame Functional Groups Sequence, and the Per-Frame Functional Groups Sequence has as many Items as there are Frames.",
+          "section": "C.7.6.16 Table C.7.6.16-1 and C.7.6.16.1.1",
+          "url": "https://dicom.nema.org/medical/dicom/2026c/output/chtml/part03/sect_C.7.6.16.html"
+        }
+      ],
+      "clinical_severity": "major",
+      "clinical_severity_rationale": "A missing or misplaced Module or Functional Group can withhold pixel spacing, frame type, or per-frame position needed to display and measure the slide.",
+      "likely_fix_owners": [
+        "converter"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Receivers and archives may reject an instance whose mandatory Modules or Functional Groups are absent, forbidden, or misplaced.",
+      "primary_domain": "conformance",
+      "rule_id": "intrinsic-wsi-dicom-2026c-iod-modules",
+      "rule_kind": "intrinsic",
+      "summary": "Modules of Table A.32.8-1 and Functional Group Macros of Table A.32.8-2 follow their Usage, conditions, and Shared or Per-Frame placement; no unlisted Functional Group Macro is used; and the Per-Frame Functional Groups Sequence has one Item per Frame."
+    },
+    {
+      "applicability": "Every VL Whole Slide Microscopy Image SOP Instance, in both the general and core-2026c validation profiles. Requirements are generated from the pinned DICOM 2026c DocBook tables; a condition that depends on facts the object cannot carry is counted as undeterminable and never fails.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-iod-attribute-presence"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.5",
+          "requirement": "Type 1 and 2 Data Elements are present, Type 1 and 1C Values are not empty, and Type 1C and 2C Data Elements are present when their condition is met and absent otherwise unless the condition permits presence.",
+          "section": "7.4",
+          "url": "https://dicom.nema.org/medical/dicom/2026c/output/chtml/part05/sect_7.4.html"
+        },
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "The Attribute Types and conditions of every applicable Module and Functional Group Macro, recursively within Sequence Items.",
+          "section": "A.32.8 and the Module and Macro tables it includes",
+          "url": "https://dicom.nema.org/medical/dicom/2026c/output/chtml/part03/sect_A.32.8.html"
+        }
+      ],
+      "clinical_severity": "major",
+      "clinical_severity_rationale": "A missing required Attribute can remove identity, acquisition, color, or geometry facts that a reader needs to interpret the slide.",
+      "likely_fix_owners": [
+        "converter",
+        "source_metadata"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Strict receivers reject instances with missing Type 1 or Type 2 Attributes or empty Type 1 Values.",
+      "primary_domain": "conformance",
+      "rule_id": "intrinsic-wsi-dicom-2026c-iod-attribute-presence",
+      "rule_kind": "intrinsic",
+      "summary": "Every Type 1, 1C, 2, and 2C Attribute of the applicable Modules and Functional Group Macros is present and, for Type 1 and 1C, has a Value, recursively in Sequence Items; Type 1C and 2C Attributes are absent when their condition is not met and presence is not otherwise permitted."
+    },
+    {
+      "applicability": "Every VL Whole Slide Microscopy Image SOP Instance, in both the general and core-2026c validation profiles. Requirements are generated from the pinned DICOM 2026c DocBook tables; a condition that depends on facts the object cannot carry is counted as undeterminable and never fails.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-iod-enumerated-values"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "Attributes whose description lists Enumerated Values, for all Values, for one numbered Value, or under a stated condition, take only those Values.",
+          "section": "A.32.8 and the Module and Macro tables it includes",
+          "url": "https://dicom.nema.org/medical/dicom/2026c/output/chtml/part03/sect_A.32.8.html"
+        },
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "Whole Slide Microscopy Image Module Enumerated Values, including Samples per Pixel by Photometric Interpretation.",
+          "section": "C.8.12.4 and C.8.12.4.1.5",
+          "url": "https://dicom.nema.org/medical/dicom/2026c/output/chtml/part03/sect_C.8.12.4.html"
+        }
+      ],
+      "clinical_severity": "major",
+      "clinical_severity_rationale": "A non-enumerated Value such as signed Pixel Representation, planar pixel order, or an unsupported Image Type can make pixels or the image flavor be interpreted incorrectly.",
+      "likely_fix_owners": [
+        "converter",
+        "source_metadata"
+      ],
+      "operational_severity": "major",
+      "operational_severity_rationale": "Strict receivers reject non-enumerated Values; lenient receivers may apply undefined behavior.",
+      "primary_domain": "conformance",
+      "rule_id": "intrinsic-wsi-dicom-2026c-iod-enumerated-values",
+      "rule_kind": "intrinsic",
+      "summary": "Attributes whose Module or Macro definition lists Enumerated Values, including per-Value and conditional Enumerated Values, contain only those Values."
+    },
+    {
+      "applicability": "Every VL Whole Slide Microscopy Image SOP Instance, in both the general and core-2026c validation profiles. Requirements are generated from the pinned DICOM 2026c DocBook tables; a condition that depends on facts the object cannot carry is counted as undeterminable and never fails. The encoded VR is compared with PS3.6 only for explicit VR Transfer Syntaxes.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-iod-vr-vm"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.6",
+          "requirement": "Each public Data Element has the VR and VM listed in the Registry of DICOM Data Elements.",
+          "section": "6 Table 6-1",
+          "url": "https://dicom.nema.org/medical/dicom/2026c/output/chtml/part06/chapter_6.html#table_6-1"
+        },
+        {
+          "edition": "2026c",
+          "part": "PS3.5",
+          "requirement": "The number of Values satisfies the Value Multiplicity, and the explicit VR field contains the VR specified for the Data Element.",
+          "section": "6.4 and 7.1.2",
+          "url": "https://dicom.nema.org/medical/dicom/2026c/output/chtml/part05/sect_6.4.html"
+        }
+      ],
+      "clinical_severity": "minor",
+      "clinical_severity_rationale": "A VR or VM error rarely changes displayed pixels but can cause a Value to be parsed or split incorrectly.",
+      "likely_fix_owners": [
+        "converter",
+        "archive"
+      ],
+      "operational_severity": "major",
+      "operational_severity_rationale": "Parsers that trust PS3.6 may misread, coerce, or reject Data Elements with the wrong VR or Value count.",
+      "primary_domain": "conformance",
+      "rule_id": "intrinsic-wsi-dicom-2026c-iod-vr-vm",
+      "rule_kind": "intrinsic",
+      "summary": "Every encoded public Data Element is in the PS3.6 2026c registry, uses a VR that PS3.6 specifies for it (explicit VR only), and has a Value count admitted by its PS3.6 Value Multiplicity."
+    },
+    {
+      "applicability": "Every VL Whole Slide Microscopy Image SOP Instance, in both the general and core-2026c validation profiles. Requirements are generated from the pinned DICOM 2026c DocBook tables; a condition that depends on facts the object cannot carry is counted as undeterminable and never fails.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-iod-value-format"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.5",
+          "requirement": "Each Value conforms to the character repertoire, format, and length of its Value Representation.",
+          "section": "6.2 Table 6.2-1",
+          "url": "https://dicom.nema.org/medical/dicom/2026c/output/chtml/part05/sect_6.2.html"
+        },
+        {
+          "edition": "2026c",
+          "part": "PS3.5",
+          "requirement": "UID components are digits without leading zeros, separated by periods, at most 64 characters.",
+          "section": "9.1",
+          "url": "https://dicom.nema.org/medical/dicom/2026c/output/chtml/part05/chapter_9.html#sect_9.1"
+        },
+        {
+          "edition": "2026c",
+          "part": "PS3.5",
+          "requirement": "Value Lengths are even.",
+          "section": "7.1.1",
+          "url": "https://dicom.nema.org/medical/dicom/2026c/output/chtml/part05/chapter_7.html#sect_7.1.1"
+        }
+      ],
+      "clinical_severity": "minor",
+      "clinical_severity_rationale": "Malformed dates, times, decimals, or text rarely change pixels but can corrupt identity, acquisition time, or geometry Values after parsing.",
+      "likely_fix_owners": [
+        "converter",
+        "source_metadata"
+      ],
+      "operational_severity": "major",
+      "operational_severity_rationale": "Receivers and databases may reject, truncate, or misindex malformed Values such as invalid UIDs or dates.",
+      "primary_domain": "conformance",
+      "rule_id": "intrinsic-wsi-dicom-2026c-iod-value-format",
+      "rule_kind": "intrinsic",
+      "summary": "String Values follow the PS3.5 format, repertoire, and length of their VR (for example UIDs without leading-zero components, valid DA, TM, and DT, uppercase CS, LO without control characters, DS at most 16 bytes, IS at most 12 bytes, PN component limits), and Value Lengths are even."
+    },
+    {
+      "applicability": "Every VL Whole Slide Microscopy Image SOP Instance, in both the general and core-2026c validation profiles. Requirements are generated from the pinned DICOM 2026c DocBook tables; a condition that depends on facts the object cannot carry is counted as undeterminable and never fails.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-iod-sequence-items"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "Sequence Attribute descriptions that require exactly one, at most one, one or more, or a counted number of Items.",
+          "section": "A.32.8 and the Module and Macro tables it includes",
+          "url": "https://dicom.nema.org/medical/dicom/2026c/output/chtml/part03/sect_A.32.8.html"
+        },
+        {
+          "edition": "2026c",
+          "part": "PS3.5",
+          "requirement": "The Type and Attribute Description of a Sequence determine whether and how many Items are present.",
+          "section": "7.4.6 and 7.5",
+          "url": "https://dicom.nema.org/medical/dicom/2026c/output/chtml/part05/sect_7.4.6.html"
+        }
+      ],
+      "clinical_severity": "major",
+      "clinical_severity_rationale": "Extra Items make the governing Item ambiguous, for example two Pixel Measures, Plane Position, or Total Pixel Matrix Origin Items.",
+      "likely_fix_owners": [
+        "converter"
+      ],
+      "operational_severity": "major",
+      "operational_severity_rationale": "Receivers may use an arbitrary Item or reject the instance when a single-Item Sequence has several Items.",
+      "primary_domain": "conformance",
+      "rule_id": "intrinsic-wsi-dicom-2026c-iod-sequence-items",
+      "rule_kind": "intrinsic",
+      "summary": "Sequences whose Module or Macro definition constrains the number of Items (exactly one, at most one, one or more, or a count given by another Attribute) contain that number of Items; empty Type 1 Sequences are reported by attribute presence."
+    },
+    {
+      "applicability": "Every VL Whole Slide Microscopy Image file, in both validation profiles. The File Meta Information is re-read as encoded, not as reconstructed by a parser.",
+      "check_names": [
+        "intrinsic-wsi-dicom-2026c-file-meta"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.10",
+          "requirement": "The preamble, DICM prefix, and File Meta Information elements, their Types and Values, the Group Length, version 00H 01H, and Media Storage SOP Class and Instance UIDs that identify the Data Set.",
+          "section": "7.1 Table 7.1-1",
+          "url": "https://dicom.nema.org/medical/dicom/2026c/output/chtml/part10/chapter_7.html#sect_7.1"
+        },
+        {
+          "edition": "2026c",
+          "part": "PS3.6",
+          "requirement": "The VR and VM of each File Meta Element.",
+          "section": "7 Table 7-1",
+          "url": "https://dicom.nema.org/medical/dicom/2026c/output/chtml/part06/chapter_7.html#table_7-1"
+        }
+      ],
+      "clinical_severity": "major",
+      "clinical_severity_rationale": "A Media Storage SOP UID that differs from the Data Set can make a file be indexed or retrieved as a different instance.",
+      "likely_fix_owners": [
+        "converter",
+        "archive"
+      ],
+      "operational_severity": "critical",
+      "operational_severity_rationale": "Media readers and archives may refuse or misindex a file whose File Meta Information is incomplete or inconsistent with its Data Set.",
+      "primary_domain": "conformance",
+      "rule_id": "intrinsic-wsi-dicom-2026c-file-meta",
+      "rule_kind": "intrinsic",
+      "summary": "The 128-byte preamble, DICM prefix, and File Meta Information follow PS3.10 Table 7.1-1: Type 1 elements present with valid Values, File Meta Information Version 00H 01H, a Group Length that covers the group in ascending tag order, no group 0002 element in the Data Set, and Media Storage SOP Class and Instance UIDs equal to the Data Set SOP Class and Instance UIDs."
+    },
+    {
+      "applicability": "Each discovered DICOM instance when dciodvfy is available.",
+      "check_names": [
+        "dciodvfy"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "The VL Whole Slide Microscopy Image IOD defines a tiled multi-frame slide image and its required modules.",
+          "section": "A.32.8",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_A.32.8.html"
+        }
+      ],
+      "clinical_severity": "none",
+      "clinical_severity_rationale": "The aggregate validator result is technical evidence; individual diagnostics require rule-level adjudication before assigning clinical risk.",
+      "likely_fix_owners": [
+        "source_metadata",
+        "converter",
+        "validator"
+      ],
+      "operational_severity": "major",
+      "operational_severity_rationale": "A failed independent IOD validation predicts receiver rejection or inconsistent interpretation.",
+      "primary_domain": "conformance",
+      "rule_id": "observer-dciodvfy-2026c-vl-wsi-iod",
+      "rule_kind": "independent_validator",
+      "summary": "dicom3tools dciodvfy independently evaluates each instance against DICOM IOD and module requirements."
+    },
+    {
+      "applicability": "The complete discovered DICOM set when dcentvfy is available.",
+      "check_names": [
+        "dcentvfy"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "The VL Whole Slide Microscopy IOD and its information entities define the relationships evaluated across an instance set.",
+          "section": "A.32.8",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_A.32.8.html"
+        }
+      ],
+      "clinical_severity": "none",
+      "clinical_severity_rationale": "The aggregate validator result needs diagnostic adjudication before assigning clinical risk.",
+      "likely_fix_owners": [
+        "source_metadata",
+        "converter",
+        "archive",
+        "validator"
+      ],
+      "operational_severity": "major",
+      "operational_severity_rationale": "Entity or relationship inconsistencies can break archive grouping and retrieval.",
+      "primary_domain": "conformance",
+      "rule_id": "observer-dcentvfy-2026c-vl-wsi-set",
+      "rule_kind": "independent_validator",
+      "summary": "dicom3tools dcentvfy independently evaluates entity and relationship consistency across the DICOM set."
+    },
+    {
+      "applicability": "Each validator-supported DICOM set when validate_iods is available.",
+      "check_names": [
+        "validate_iods"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "The VL Whole Slide Microscopy Image IOD defines the applicable information modules and conditions.",
+          "section": "A.32.8",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_A.32.8.html"
+        }
+      ],
+      "clinical_severity": "none",
+      "clinical_severity_rationale": "The aggregate validator result needs diagnostic adjudication before assigning clinical risk.",
+      "likely_fix_owners": [
+        "source_metadata",
+        "converter",
+        "validator"
+      ],
+      "operational_severity": "major",
+      "operational_severity_rationale": "An independent IOD failure can identify attributes that other consumers reject or interpret differently.",
+      "primary_domain": "conformance",
+      "rule_id": "observer-validate-iods-2026c-vl-wsi-iod",
+      "rule_kind": "independent_validator",
+      "summary": "validate_iods independently evaluates the discovered DICOM instances against its VL WSI IOD definitions."
+    },
+    {
+      "applicability": "Each discovered DICOM instance when dcmvalidate and an explicit IOD definition are configured.",
+      "check_names": [
+        "dcmvalidate"
+      ],
+      "citations": [
+        {
+          "edition": "2026c",
+          "part": "PS3.3",
+          "requirement": "The VL Whole Slide Microscopy Image IOD defines the applicable information modules and conditions.",
+          "section": "A.32.8",
+          "url": "https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_A.32.8.html"
+        }
+      ],
+      "clinical_severity": "none",
+      "clinical_severity_rationale": "The aggregate validator result needs diagnostic adjudication before assigning clinical risk.",
+      "likely_fix_owners": [
+        "source_metadata",
+        "converter",
+        "validator"
+      ],
+      "operational_severity": "major",
+      "operational_severity_rationale": "A failed independent IOD validation predicts receiver rejection or inconsistent interpretation.",
+      "primary_domain": "conformance",
+      "rule_id": "observer-dcm4che-2026c-vl-wsi-iod",
+      "rule_kind": "independent_validator",
+      "summary": "dcm4che dcmvalidate independently evaluates each instance using the explicitly supplied VL WSI IOD definition."
+    }
+  ],
+  "scope": "DICOM VL Whole Slide Microscopy Image Storage evaluation",
+  "coverage_scope": "Selected WSI rule families of catalog v4, plus seven VL WSI IOD requirement families generated from the pinned DICOM 2026c DocBook tables (PS3.3 A.32.8 and the Module and Macro tables it includes, PS3.6 Tables 6-1 and 7-1, PS3.10 Table 7.1-1): Module and Functional Group usage and placement with the Per-Frame Item count; Type 1, 1C, 2, and 2C presence recursively in Sequence Items; Enumerated Values; PS3.6 VR (explicit VR only) and VM; PS3.5 Value formats; Sequence Item counts; and File Meta Information. Not covered: Context Group (CID) and Defined Term constraints; value constraints stated only in prose (for example Bits Stored equal to Bits Allocated, Specimen Label in Image fixed by Image Type, Number of Optical Paths equal to the Optical Path Sequence Item count, equal Lossy Image Compression Method and Ratio multiplicity); conditions undeterminable from the object, which never fail; files whose Transfer Syntax UID is absent or unrecognized, which the evaluated engine cannot open; LABEL, OVERVIEW, and THUMBNAIL flavors, TILED_SPARSE, multiple optical paths or focal planes, and concatenations beyond the generated requirements; semantic reference integrity and source fidelity outside the selected families. This is not certification or exhaustive normative coverage.",
+  "validation_profile": "core-2026c"
+}

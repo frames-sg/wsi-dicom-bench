@@ -26,8 +26,14 @@ wsi-dicom-bench challenge run \
   --output /new/evidence-directory
 ```
 
-The bundled v4 suite manifest is an installed package resource. An existing evidence
-directory can be checked without modifying it:
+The bundled v4 suite manifest is an installed package resource. Packages that include the
+October 2026 amendment also bundle `manifest-v5.json` (catalog v5, core profile v3), which adds
+the standard-derived VL WSI IOD requirement checks. Use it, in place of `manifest-v4.json`, for
+`wsi-dicom` builds that declare rule set `wsi-dicom-core-profile-2026c-v3`; catalog v4 accepts
+only builds that declare `wsi-dicom-core-profile-2026c-v2`. Pass the manifest file itself: a
+directory holding both manifests is ambiguous. The workbench defaults to catalog v5, and
+`--catalog` with the v4 catalog and v2 profile selects the earlier contract. An existing
+evidence directory can be checked without modifying it:
 
 ```sh
 wsi-dicom-bench challenge check --evidence /path/to/evidence
@@ -47,7 +53,7 @@ must be installed unless `--allow-missing-tools` is given. `wsi-dicom` releases
 through 0.8.0 still decode frames themselves. The workbench detects them and
 passes `--max-pixel-frames 0`, so frames are decoded once.
 
-The v4 protocol describes the benchmark scope and limitations. The engineered
+The v4 and v5 protocols describe the benchmark scope and limitations. The engineered
 cases are not a prevalence sample, certification, or an independent blinded
 replication.
 

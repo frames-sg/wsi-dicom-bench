@@ -74,8 +74,11 @@ def build_manifest(source_manifest: Path, controls_root: Path, output: Path) -> 
         raise RuntimeError(f"output already exists: {output}")
     manifest = json.loads(source_manifest.read_text(encoding="utf-8"))
     controls, cases = manifest_identifier_items(manifest)
-    if manifest.get("schema_version") != "wsi-dicom-negative-bench-manifest-v4":
-        raise ValueError("inventory rebuild requires the current challenge specification")
+    if manifest.get("schema_version") not in {
+        "wsi-dicom-negative-bench-manifest-v4",
+        "wsi-dicom-negative-bench-manifest-v5",
+    }:
+        raise ValueError("inventory rebuild requires a current challenge specification")
     refreshed = []
     for control in controls:
         identifier = control["control_id"]

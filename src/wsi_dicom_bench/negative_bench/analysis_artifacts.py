@@ -60,7 +60,7 @@ def _write_artifacts(
     _write_csv(package / "adjudication.csv", adjudication)
 
     text = _results_markdown(summary, domain_rows)
-    (analysis / "USCAP-results.md").write_text(text, encoding="utf-8")
+    (analysis / "results.md").write_text(text, encoding="utf-8")
     _write_validator_svg(analysis / "validator-detection.svg", summary)
 
 
@@ -91,9 +91,9 @@ def _results_markdown(summary: dict, domain_rows: list[dict]) -> str:
     )
     return f"""# WSI-DICOM Negative Bench results: {summary['challenge_id']}
 
-WSI-DICOM Bench detected {summary['bench_detected']} of {summary['evaluation_cases']} locked single-defect cases (sensitivity {sensitivity:.1f}%, exact 95% CI {sensitivity_ci[0]:.1f}–{sensitivity_ci[1]:.1f}%) and accepted {summary['valid_controls_accepted']} of {summary['valid_controls']} unmodified controls (valid-control specificity {specificity:.1f}%, exact 95% CI {specificity_ci[0]:.1f}–{specificity_ci[1]:.1f}%). The prespecified rule was localized in {summary['rule_localized_detected_cases']} of {summary['evaluation_cases']} cases ({localization:.1f}%). Intrinsic rules alone detected {summary['intrinsic_detected']} of {summary['evaluation_cases']} cases.
+WSI-DICOM Bench detected {summary['bench_detected']} of {summary['evaluation_cases']} locked single-defect cases (sensitivity {sensitivity:.1f}%, exact 95% CI {sensitivity_ci[0]:.1f}–{sensitivity_ci[1]:.1f}%) and accepted {summary['valid_controls_accepted']} of {summary['valid_controls']} unmodified controls (valid-control specificity {specificity:.1f}%, exact 95% CI {specificity_ci[0]:.1f}–{specificity_ci[1]:.1f}%). The expected rule was localized in {summary['rule_localized_detected_cases']} of {summary['evaluation_cases']} cases ({localization:.1f}%). Intrinsic rules alone detected {summary['intrinsic_detected']} of {summary['evaluation_cases']} cases.
 
-Detected cases by domain were {domain_sensitivity}. Domain-localized cases were {domain_localization}. Undetected cases were {', '.join(summary['cases_not_detected']) or 'none'}. Cases without the prespecified rule localization were {', '.join(summary['cases_not_rule_localized']) or 'none'}.
+Detected cases by domain were {domain_sensitivity}. Domain-localized cases were {domain_localization}. Undetected cases were {', '.join(summary['cases_not_detected']) or 'none'}. Cases without the expected rule localization were {', '.join(summary['cases_not_rule_localized']) or 'none'}.
 
 Independent validators detected {validator_counts['dciodvfy']}/{total} cases with dciodvfy, {validator_counts['dcentvfy']}/{total} with dcentvfy, and {validator_counts['validate_iods']}/{total} with validate_iods. Binary agreement with intrinsic detection was {agreement['dciodvfy']['agreeing_cases']}/{agreement['dciodvfy']['executed_cases']}, {agreement['dcentvfy']['agreeing_cases']}/{agreement['dcentvfy']['executed_cases']}, and {agreement['validate_iods']['agreeing_cases']}/{agreement['validate_iods']['executed_cases']}, respectively. Intrinsic rules uniquely detected {unique['wsi_dicom_intrinsic']} cases; dciodvfy uniquely detected {unique['dciodvfy']}. {dcmvalidate_result}
 

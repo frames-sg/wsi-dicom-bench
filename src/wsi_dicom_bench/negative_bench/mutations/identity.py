@@ -101,6 +101,16 @@ def incorrect_source_image_reference_class(context: MutationContext) -> Mutation
     reference.ReferencedSOPClassUID = context.parameters["referenced_sop_class_uid"]
     reference.ReferencedSOPInstanceUID = target.SOPInstanceUID
     owner.SourceImageSequence = [reference]
+    # A referencing Instance lists its references in the Common Instance Reference
+    # Module (PS3.3 C.12.2); the listing names the true class, so the only defect is
+    # the class in Source Image Sequence.
+    listed = Dataset()
+    listed.ReferencedSOPClassUID = target.SOPClassUID
+    listed.ReferencedSOPInstanceUID = target.SOPInstanceUID
+    referenced_series = Dataset()
+    referenced_series.SeriesInstanceUID = target.SeriesInstanceUID
+    referenced_series.ReferencedInstanceSequence = Sequence([listed])
+    owner.ReferencedSeriesSequence = Sequence([referenced_series])
     owner_path = context.input_dir / "derived.dcm"
     target_path = context.input_dir / "source.dcm"
     save(owner, owner_path)

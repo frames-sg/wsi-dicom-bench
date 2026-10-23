@@ -9,8 +9,11 @@ from pathlib import Path
 from wsi_dicom_bench.file_digest import sha256_file
 
 
+MAX_EXPLICIT_FRAME_POSITIONS = 16
+
+
 def inspect_dicom_set(paths: list[Path]) -> dict:
-    """Extract bounded geometry, color, compression, and identity facts."""
+    """Extract bounded geometry, pixel, color, compression, and identity facts."""
     if not paths:
         raise ValueError("at least one DICOM path is required")
     try:
@@ -63,23 +66,63 @@ def instance_facts(path: Path, dataset) -> dict:
     total_rows = int_value(dataset, "TotalPixelMatrixRows")
     total_columns = int_value(dataset, "TotalPixelMatrixColumns")
     frame_count = int_value(dataset, "NumberOfFrames")
-    expected_full_frame_count = None
+    full_grid_frame_capacity = None
     if rows and columns and total_rows and total_columns:
-        expected_full_frame_count = math.ceil(total_rows / rows) * math.ceil(
+        full_grid_frame_capacity = math.ceil(total_rows / rows) * math.ceil(
             total_columns / columns
         )
+    dimension_organization_type = text_value(dataset, "DimensionOrganizationType")
+    number_of_optical_paths = int_value(dataset, "NumberOfOpticalPaths")
+    total_pixel_matrix_focal_planes = int_value(
+        dataset, "TotalPixelMatrixFocalPlanes"
+    )
+    if dimension_organization_type is None:
+        expected_full_frame_count = full_grid_frame_capacity
+    elif (
+        dimension_organization_type == "TILED_FULL"
+        and full_grid_frame_capacity is not None
+        and number_of_optical_paths is not None
+        and number_of_optical_paths > 0
+        and total_pixel_matrix_focal_planes is not None
+        and total_pixel_matrix_focal_planes > 0
+    ):
+        expected_full_frame_count = (
+            full_grid_frame_capacity
+            * number_of_optical_paths
+            * total_pixel_matrix_focal_planes
+        )
+    else:
+        expected_full_frame_count = None
+    per_frame_group_count, explicit_positions = explicit_frame_position_sample(dataset)
     return {
         "path": str(path),
         "sha256": sha256_file(path),
         "transfer_syntax_uid": str(getattr(dataset.file_meta, "TransferSyntaxUID", "")),
+        "file_meta": file_meta_version_facts(dataset),
         "geometry": {
             "rows": rows,
             "columns": columns,
             "number_of_frames": frame_count,
             "total_pixel_matrix_rows": total_rows,
             "total_pixel_matrix_columns": total_columns,
+            "dimension_organization_type": dimension_organization_type,
+            "number_of_optical_paths": number_of_optical_paths,
+            "total_pixel_matrix_focal_planes": total_pixel_matrix_focal_planes,
+            "full_grid_frame_capacity": full_grid_frame_capacity,
             "expected_full_frame_count": expected_full_frame_count,
+            "per_frame_functional_group_count": per_frame_group_count,
+            "explicit_frame_position_sample": explicit_positions,
+            "explicit_frame_position_sample_truncated": (
+                per_frame_group_count > MAX_EXPLICIT_FRAME_POSITIONS
+            ),
             "pixel_spacing_mm": shared_pixel_spacing(dataset),
+        },
+        "pixel": {
+            "samples_per_pixel": int_value(dataset, "SamplesPerPixel"),
+            "bits_allocated": int_value(dataset, "BitsAllocated"),
+            "bits_stored": int_value(dataset, "BitsStored"),
+            "high_bit": int_value(dataset, "HighBit"),
+            "pixel_representation": int_value(dataset, "PixelRepresentation"),
         },
         "color": {
             "photometric_interpretation": text_value(
@@ -102,6 +145,46 @@ def instance_facts(path: Path, dataset) -> dict:
             "lossy_ratios": list_value(dataset, "LossyImageCompressionRatio"),
         },
     }
+
+
+def file_meta_version_facts(dataset) -> dict:
+    file_meta = getattr(dataset, "file_meta", None)
+    value = (
+        getattr(file_meta, "FileMetaInformationVersion", None)
+        if file_meta is not None
+        else None
+    )
+    if value is None:
+        return {"information_version_hex": None, "version_1_compatible": None}
+    try:
+        raw = bytes(value)
+    except (TypeError, ValueError):
+        return {"information_version_hex": None, "version_1_compatible": False}
+    # PS3.10 version 1 compatibility is advertised by bit 0 of the second byte;
+    # readers must not reject other bits in either byte.
+    return {
+        "information_version_hex": raw.hex(),
+        "version_1_compatible": len(raw) == 2 and bool(raw[1] & 1),
+    }
+
+
+def explicit_frame_position_sample(dataset) -> tuple[int, list[dict[str, int]]]:
+    frame_groups = (
+        getattr(dataset, "PerFrameFunctionalGroupsSequence", None) or []
+    )
+    positions = []
+    for frame_group in frame_groups[:MAX_EXPLICIT_FRAME_POSITIONS]:
+        plane_positions = (
+            getattr(frame_group, "PlanePositionSlideSequence", None) or []
+        )
+        if not plane_positions:
+            continue
+        row = int_value(plane_positions[0], "RowPositionInTotalImagePixelMatrix")
+        column = int_value(plane_positions[0], "ColumnPositionInTotalImagePixelMatrix")
+        if row is None or column is None:
+            continue
+        positions.append({"row_position": row, "column_position": column})
+    return len(frame_groups), positions
 
 
 def shared_pixel_spacing(dataset) -> list[float] | None:

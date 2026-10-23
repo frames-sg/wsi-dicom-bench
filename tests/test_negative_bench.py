@@ -786,7 +786,7 @@ class NegativeBenchAnalysisTests(unittest.TestCase):
             self.assertEqual([row["id"] for row in rows], ["VC-ONE", "NB-ONE"])
             domains = json.loads((package / "analysis/domain-metrics.json").read_text())
             self.assertEqual(domains[0]["controls_passing_domain"], 1)
-            self.assertTrue((package / "analysis/USCAP-results.md").is_file())
+            self.assertTrue((package / "analysis/results.md").is_file())
             self.assertTrue((package / "analysis/validator-detection.svg").is_file())
 
             with (package / "adjudication.csv").open(newline="") as stream:
@@ -1017,13 +1017,13 @@ class NegativeBenchFinalizationTests(unittest.TestCase):
         )
         for relative in (
             "adjudication.csv",
-            "analysis/USCAP-results.md",
             "analysis/case-validator-matrix.csv",
             "analysis/case-validator-matrix.json",
             "analysis/disagreements.csv",
             "analysis/disagreements.json",
             "analysis/domain-metrics.csv",
             "analysis/domain-metrics.json",
+            "analysis/results.md",
             "analysis/validator-detection.svg",
         ):
             path = package / relative
