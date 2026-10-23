@@ -377,6 +377,28 @@ class ManifestV5IntegrityTests(unittest.TestCase):
         self.assertEqual(set(ALL_MUTATIONS) - used, {"invalid_specimen_uid", "total_matrix_too_large"})
 
 
+class SourceReferenceMutationTests(unittest.TestCase):
+    def test_wrong_source_class_pair_lists_its_reference_with_the_true_class(self):
+        from wsi_dicom_bench.negative_bench.mutations import generate_case
+
+        case = next(case for case in load(MANIFEST_V5)["evaluation_cases"] if case["case_id"] == "NB-ID-006")
+        control = BENCH / "controls-v4" / f"{case['source_control_ids'][0]}.dcm"
+        with tempfile.TemporaryDirectory() as temporary:
+            paths, _ = generate_case(case, control, Path(temporary))
+            derived, source = (pydicom.dcmread(path, stop_before_pixels=True) for path in paths)
+        cited = derived.SourceImageSequence[0]
+        self.assertEqual(str(cited.ReferencedSOPClassUID), case["mutation_parameters"]["referenced_sop_class_uid"])
+        self.assertEqual(cited.ReferencedSOPInstanceUID, source.SOPInstanceUID)
+        # The Common Instance Reference listing is correct, so the wrong class is the only defect.
+        (series,) = derived.ReferencedSeriesSequence
+        (listed,) = series.ReferencedInstanceSequence
+        self.assertEqual(series.SeriesInstanceUID, source.SeriesInstanceUID)
+        self.assertEqual(
+            (listed.ReferencedSOPClassUID, listed.ReferencedSOPInstanceUID),
+            (source.SOPClassUID, source.SOPInstanceUID),
+        )
+
+
 class StructureMutationTests(unittest.TestCase):
     CONTROL = BENCH / "controls-v4" / "CP02-JPEG-16F.dcm"
 
