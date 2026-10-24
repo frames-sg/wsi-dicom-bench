@@ -16,7 +16,7 @@ inside the evidence package:
 
 ```sh
 python -m pip wheel --no-deps \
-  "git+https://github.com/frames-sg/wsi-dicom-bench@968b25ded082a7e7e0a20d4ca5b3283fb636588b" \
+  "git+https://github.com/frames-sg/wsi-dicom-bench@23c8fda7ab2a289090fdd69bf966015fe5f6fb0e" \
   --wheel-dir ./benchmark-wheelhouse
 python -m pip install ./benchmark-wheelhouse/wsi_dicom_bench-*.whl "dicom-validator==0.8.3"
 mkdir -p .dicom-validator-init
