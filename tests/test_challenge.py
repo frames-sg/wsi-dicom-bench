@@ -221,7 +221,7 @@ class CommandTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            versioned = root / "manifest-v4.json"
+            versioned = root / "manifest-v6.json"
             versioned.write_text("{}\n", encoding="utf-8")
             self.assertEqual(_suite_manifest(root), versioned.resolve())
             (root / "manifest.json").write_text("{}\n", encoding="utf-8")

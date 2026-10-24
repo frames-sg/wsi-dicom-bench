@@ -16,27 +16,23 @@ inside the evidence package:
 
 ```sh
 python -m pip wheel --no-deps \
-  "git+https://github.com/frames-sg/wsi-dicom-bench@1987f59efd6fb1387b3d3aa9d655197141b914bb" \
+  "git+https://github.com/frames-sg/wsi-dicom-bench@968b25ded082a7e7e0a20d4ca5b3283fb636588b" \
   --wheel-dir ./benchmark-wheelhouse
 python -m pip install ./benchmark-wheelhouse/wsi_dicom_bench-*.whl
-suite_path="$(python -c 'import importlib.resources; print(importlib.resources.files("wsi_dicom_bench.negative_bench").joinpath("manifest-v4.json"))')"
+suite_path="$(python -c 'import importlib.resources; print(importlib.resources.files("wsi_dicom_bench.negative_bench").joinpath("manifest-v6.json"))')"
 wsi-dicom-bench challenge run \
   --suite "$suite_path" \
   --wsi-dicom /absolute/path/to/wsi-dicom \
   --output /new/evidence-directory
 ```
 
-The bundled v4 suite manifest is an installed package resource. Packages that include the
-October 2026 amendments also bundle `manifest-v5.json` (catalog v5, core profile v3), which adds
-the standard-derived VL WSI IOD requirement checks, and `manifest-v6.json` (catalog v6, core
-profile v4), which adds value set, WSI image, attribute relation, series set, pixel attribute,
-codestream, and Data Set encoding checks. Each catalog accepts only `wsi-dicom` builds that
-declare its rule set: `wsi-dicom-core-profile-2026c-v2` for catalog v4,
-`wsi-dicom-core-profile-2026c-v3` for catalog v5, and `wsi-dicom-core-profile-2026c-v4` for
-catalog v6. Pass the matching manifest file itself: a suite directory holding several manifests
-resolves to `manifest-v4.json`. The workbench defaults to catalog v6, and `--catalog` with an
-earlier catalog and its profile selects that contract. An existing evidence directory can be
-checked without modifying it:
+The bundled suite manifest `manifest-v6.json` is an installed package resource, and the
+packaged suite directory resolves to it. The suite pairs catalog v6 with core profile v4: the
+selected WSI rule families, the standard-derived VL WSI IOD requirement checks, and value set,
+WSI image, attribute relation, series set, pixel attribute, codestream, and Data Set encoding
+checks. Catalog v6 accepts only `wsi-dicom` builds that declare rule set
+`wsi-dicom-core-profile-2026c-v4` (or `wsi-dicom-general-v3` for the general profile), and the
+workbench defaults to it. An existing evidence directory can be checked without modifying it:
 
 ```sh
 wsi-dicom-bench challenge check --evidence /path/to/evidence
@@ -56,8 +52,8 @@ must be installed unless `--allow-missing-tools` is given. `wsi-dicom` releases
 through 0.8.0 still decode frames themselves. The workbench detects them and
 passes `--max-pixel-frames 0`, so frames are decoded once.
 
-The v4, v5, and v6 protocols describe the benchmark scope and limitations. The engineered
-cases are not a prevalence sample, certification, or an independent blinded
+The v6 protocol (`protocol-v6.md`) describes the benchmark scope and limitations. The
+engineered cases are not a prevalence sample, certification, or an independent blinded
 replication.
 
 For disconnected reproduction, add the `pydicom==3.0.2` wheel to the retained

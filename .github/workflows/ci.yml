@@ -30,7 +30,7 @@ jobs:
           "${RUNNER_TEMP}/test-environment/bin/python" -m pip install dist/*.whl
           "${RUNNER_TEMP}/test-environment/bin/python" -m pip install "numpy==2.4.4"
           env -u PYTHONPATH "${RUNNER_TEMP}/test-environment/bin/python" -m unittest discover -s tests
-      - name: Generate the bundled v4, v5, and v6 suites from an unrelated directory
+      - name: Generate the bundled v6 suite from an unrelated directory
         shell: bash
         run: |
           python -m venv "${RUNNER_TEMP}/portable-environment"
@@ -45,15 +45,12 @@ jobs:
 
           from wsi_dicom_bench.negative_bench.generate import generate_challenge
 
-          for version, case_count in (("v4", 69), ("v5", 149), ("v6", 352)):
-              manifest = files("wsi_dicom_bench").joinpath(
-                  f"negative_bench/manifest-{version}.json"
-              )
-              output = Path(sys.argv[1]) / f"generated-suite-{version}"
-              generate_challenge(Path(str(manifest)), output)
-              document = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
-              assert len(document["valid_controls"]) == 14
-              assert len(document["evaluation_cases"]) == case_count
-              assert len(list((output / "controls").iterdir())) == 14
-              assert len(list((output / "cases").iterdir())) == case_count
+          manifest = files("wsi_dicom_bench").joinpath("negative_bench/manifest-v6.json")
+          output = Path(sys.argv[1]) / "generated-suite-v6"
+          generate_challenge(Path(str(manifest)), output)
+          document = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
+          assert len(document["valid_controls"]) == 14
+          assert len(document["evaluation_cases"]) == 352
+          assert len(list((output / "controls").iterdir())) == 14
+          assert len(list((output / "cases").iterdir())) == 352
           PY

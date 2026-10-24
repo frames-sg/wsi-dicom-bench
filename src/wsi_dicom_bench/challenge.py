@@ -47,10 +47,8 @@ def _read_object(path: Path, description: str) -> dict:
     return document
 
 
-# Bundled manifests in preference order. The packaged suite directory holds all of
-# them and resolves to the default v4 suite; the v5 and v6 amendments are selected by
-# passing their manifest file, or resolve from a directory that holds only one.
-BUNDLED_SUITE_MANIFESTS = ("manifest-v4.json", "manifest-v5.json", "manifest-v6.json")
+# The bundled suite manifest, to which the packaged suite directory resolves.
+BUNDLED_SUITE_MANIFEST = "manifest-v6.json"
 
 
 def _suite_manifest(suite: Path) -> Path:
@@ -60,12 +58,12 @@ def _suite_manifest(suite: Path) -> Path:
     if not suite.is_dir():
         raise ChallengeInfrastructureError(f"suite does not exist: {suite}")
     generated = suite / "manifest.json"
-    bundled = [suite / name for name in BUNDLED_SUITE_MANIFESTS if (suite / name).is_file()]
-    if generated.is_file() == bool(bundled):
+    bundled = suite / BUNDLED_SUITE_MANIFEST
+    if generated.is_file() == bundled.is_file():
         raise ChallengeInfrastructureError(
             f"suite directory must contain exactly one supported manifest: {suite}"
         )
-    return generated if generated.is_file() else bundled[0]
+    return generated if generated.is_file() else bundled
 
 
 def _require_distribution_payload(evidence: Path) -> None:

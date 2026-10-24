@@ -47,7 +47,7 @@ def run_challenge(package: Path, wsi_dicom: Path) -> dict:
             )
     catalog_name = Path(
         manifest.get("rule_catalog", {}).get(
-            "path", "rules/wsi-dicom-bench-rules-2026c-v4.json"
+            "path", "rules/wsi-dicom-bench-rules-2026c-v6.json"
         )
     ).name
     profile_path = None

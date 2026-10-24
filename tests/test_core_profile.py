@@ -12,11 +12,11 @@ import pydicom
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = REPO_ROOT / "src" / "wsi_dicom_bench"
-PROFILE_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-core-profile-2026c-v2.json"
-CATALOG_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v4.json"
-MANIFEST_PATH = PACKAGE_ROOT / "negative_bench" / "manifest-v4.json"
+PROFILE_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-core-profile-2026c-v4.json"
+CATALOG_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v6.json"
+MANIFEST_PATH = PACKAGE_ROOT / "negative_bench" / "manifest-v6.json"
 EXPECTED_LOCK_PATH = (
-    PACKAGE_ROOT / "negative_bench" / "expected-results-lock-v4.json"
+    PACKAGE_ROOT / "negative_bench" / "expected-results-lock-v6.json"
 )
 
 
@@ -42,11 +42,11 @@ class CoreProfileCoverageTests(unittest.TestCase):
 
         summary = validate_profile_coverage(profile, catalog, manifest)
 
-        self.assertEqual(profile["profile_id"], "wsi-dicom-core-profile-2026c-v2")
-        self.assertEqual(profile["profile_version"], "2")
+        self.assertEqual(profile["profile_id"], "wsi-dicom-core-profile-2026c-v4")
+        self.assertEqual(profile["profile_version"], "4")
         self.assertEqual(profile["dicom_edition"], "2026c")
         self.assertEqual(summary["uncovered_requirements"], [])
-        self.assertEqual(summary["intrinsic_rule_count"], 18)
+        self.assertEqual(summary["intrinsic_rule_count"], 32)
         self.assertEqual(summary["intrinsic_rules_without_negative_cases"], [])
         self.assertEqual(
             profile["required_external_validators"],
@@ -116,13 +116,13 @@ class CoreProfileCoverageTests(unittest.TestCase):
             broken = copy.deepcopy(baseline)
             broken["core_profile"][field] = value
             with self.subTest(field=field), tempfile.TemporaryDirectory() as temporary:
-                lock_path = Path(temporary) / "expected-results-lock-v4.json"
+                lock_path = Path(temporary) / "expected-results-lock-v6.json"
                 lock_path.write_text(json.dumps(broken), encoding="utf-8")
                 with self.assertRaisesRegex(GenerationError, "core-profile identity"):
                     _verify_expected_results_lock(
                         lock_path,
                         MANIFEST_PATH,
-                        MANIFEST_PATH.with_name("protocol-v4.md"),
+                        MANIFEST_PATH.with_name("protocol-v6.md"),
                         CATALOG_PATH,
                         PROFILE_PATH,
                     )
@@ -200,15 +200,6 @@ class CoreProfileCoverageTests(unittest.TestCase):
                 self.assertNotIn(expected_group, target.SharedFunctionalGroupsSequence[0])
                 self.assertIn("PixelMeasuresSequence", target.SharedFunctionalGroupsSequence[0])
                 self.assertEqual(len(paths), 2 if name == "remove_derivation_image" else 1)
-
-    def test_manifest_inventory_rebuild_uses_the_current_case_specification(self):
-        from wsi_dicom_bench.negative_bench.build_core_profile_manifest import build_manifest
-        source = PACKAGE_ROOT / "negative_bench/manifest-v4.json"
-        with tempfile.TemporaryDirectory() as temporary:
-            output = Path(temporary) / "manifest.json"
-            rebuilt = build_manifest(source, PACKAGE_ROOT / "negative_bench/controls-v4", output)
-            self.assertEqual(rebuilt, json.loads(source.read_text()))
-            self.assertEqual(json.loads(output.read_text()), rebuilt)
 
     def test_current_generator_materializes_multifile_controls(self):
         from wsi_dicom_bench.negative_bench.generate import _materialize_controls

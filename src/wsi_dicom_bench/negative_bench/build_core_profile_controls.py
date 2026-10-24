@@ -199,8 +199,8 @@ def build_controls(source: Path, output: Path) -> None:
         shutil.move(staging, output)
 
 
-# The v4 lossy JPEG 2000 controls code their components with the irreversible ICT
-# but declare YBR_RCT (PS3.5 8.2.4 and 8.2.14); v6 corrects only that declaration.
+# The controls-v4 lossy JPEG 2000 controls code their components with the irreversible ICT
+# but declare YBR_RCT (PS3.5 8.2.4 and 8.2.14); controls-v6 corrects only that declaration.
 ICT_CONTROLS = ("CP05-J2K-LOSSY-4F", "CP08-HTJ2K-LOSSY-4F")
 
 

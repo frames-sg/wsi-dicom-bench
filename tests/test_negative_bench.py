@@ -15,7 +15,8 @@ import pydicom
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = REPO_ROOT / "src" / "wsi_dicom_bench"
-MANIFEST = PACKAGE_ROOT / "negative_bench" / "manifest-v4.json"
+MANIFEST = PACKAGE_ROOT / "negative_bench" / "manifest-v6.json"
+CORE_COHORT = "core-profile-evaluation-v2"
 EVIDENCE_ROOT = os.environ.get("WSI_DICOM_BENCH_EVIDENCE_ROOT")
 
 
@@ -45,19 +46,19 @@ class NegativeBenchGenerationTests(unittest.TestCase):
             for document in (
                 [],
                 {
-                    "schema_version": "wsi-dicom-negative-bench-manifest-v4",
+                    "schema_version": "wsi-dicom-negative-bench-manifest-v6",
                     "resource_limits": [],
                     "valid_controls": [],
                     "evaluation_cases": [],
                 },
                 {
-                    "schema_version": "wsi-dicom-negative-bench-manifest-v4",
+                    "schema_version": "wsi-dicom-negative-bench-manifest-v6",
                     "resource_limits": {"max_controls": 1, "max_cases": 1},
                     "valid_controls": [None],
                     "evaluation_cases": [],
                 },
                 {
-                    "schema_version": "wsi-dicom-negative-bench-manifest-v4",
+                    "schema_version": "wsi-dicom-negative-bench-manifest-v6",
                     "resource_limits": {"max_controls": 1, "max_cases": 1},
                     "valid_controls": [{"control_id": ["unhashable"]}],
                     "evaluation_cases": [],
@@ -69,7 +70,7 @@ class NegativeBenchGenerationTests(unittest.TestCase):
                         load_manifest(manifest_path)
 
             malicious = {
-                "schema_version": "wsi-dicom-negative-bench-manifest-v4",
+                "schema_version": "wsi-dicom-negative-bench-manifest-v6",
                 "challenge_id": "unsafe",
                 "resource_limits": {
                     "max_controls": 1,
@@ -143,10 +144,10 @@ class NegativeBenchGenerationTests(unittest.TestCase):
             _verify_expected_results_lock,
         )
 
-        protocol = MANIFEST.with_name("protocol-v4.md")
-        catalog = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v4.json"
+        protocol = MANIFEST.with_name("protocol-v6.md")
+        catalog = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v6.json"
         baseline = json.loads(
-            MANIFEST.with_name("expected-results-lock-v4.json").read_text()
+            MANIFEST.with_name("expected-results-lock-v6.json").read_text()
         )
         invalid_locks = {
             "files": {**baseline, "files": []},
@@ -168,7 +169,7 @@ class NegativeBenchGenerationTests(unittest.TestCase):
                     lock_path.write_text(json.dumps(document), encoding="utf-8")
                     with self.assertRaises(GenerationError):
                         _verify_expected_results_lock(
-                            lock_path, MANIFEST, protocol, catalog, PACKAGE_ROOT / "rules/wsi-dicom-core-profile-2026c-v2.json"
+                            lock_path, MANIFEST, protocol, catalog, PACKAGE_ROOT / "rules/wsi-dicom-core-profile-2026c-v4.json"
                         )
 
     def test_repository_operation_scripts_own_their_import_path(self):
@@ -220,13 +221,11 @@ class NegativeBenchGenerationTests(unittest.TestCase):
             build_registry,
         )
 
-        manifests = [
-            json.loads(MANIFEST.read_text()),
-        ]
+        # MUTATION_REGISTRY is the inventory of the core-profile cohort.
         expected = {
             case["mutation_name"]
-            for manifest in manifests
-            for case in manifest["evaluation_cases"]
+            for case in json.loads(MANIFEST.read_text())["evaluation_cases"]
+            if case["cohort"] == CORE_COHORT
         }
         self.assertEqual(
             set(MUTATION_REGISTRY) - expected,
@@ -242,10 +241,11 @@ class NegativeBenchGenerationTests(unittest.TestCase):
             MANIFEST.with_name("adjudications-v1.json").read_text(encoding="utf-8")
         )["cases"]
         controls = manifest["valid_controls"]
-        cases = manifest["evaluation_cases"]
+        cases = [case for case in manifest["evaluation_cases"] if case["cohort"] == CORE_COHORT]
 
         self.assertEqual(len(controls), 14)
         self.assertEqual(len(cases), 69)
+        self.assertEqual(len({case["deterministic_seed"] for case in manifest["evaluation_cases"]}), 352)
         self.assertEqual(
             {syntax for control in controls for syntax in control.get("transfer_syntax_uids", [control.get("transfer_syntax_uid")])},
             {
@@ -275,7 +275,7 @@ class NegativeBenchGenerationTests(unittest.TestCase):
             all(not Path(path).is_absolute() for control in controls for path in control.get("original_paths", [control.get("original_path")]))
         )
         self.assertTrue(
-            set(adjudications).issubset({case["case_id"] for case in cases})
+            set(adjudications).issubset({case["case_id"] for case in manifest["evaluation_cases"]})
         )
         self.assertFalse(any(case_id.startswith("TH-") for case_id in adjudications))
 
@@ -289,9 +289,9 @@ class NegativeBenchGenerationTests(unittest.TestCase):
             generated = json.loads((output / "manifest.json").read_text())
 
             self.assertEqual(len(generated["valid_controls"]), 14)
-            self.assertEqual(len(generated["evaluation_cases"]), 69)
+            self.assertEqual(len(generated["evaluation_cases"]), 352)
             self.assertEqual(len(list((output / "controls").rglob("*.dcm"))), 15)
-            self.assertEqual(len(list((output / "cases").glob("*/input/*.dcm"))), 79)
+            self.assertEqual(len(list((output / "cases").glob("*/input/*.dcm"))), 368)
             derived_paths = sorted((output / "cases/CP-CF-011/input").glob("*.dcm"))
             self.assertEqual(len(derived_paths), 2)
             self.assertNotIn(
@@ -411,9 +411,9 @@ class NegativeBenchGenerationTests(unittest.TestCase):
 
             first_manifest = json.loads((first / "manifest.json").read_text())
             self.assertEqual(len(first_manifest["valid_controls"]), 14)
-            self.assertEqual(len(first_manifest["evaluation_cases"]), 69)
+            self.assertEqual(len(first_manifest["evaluation_cases"]), 352)
             self.assertEqual(len(list((first / "controls").rglob("*.dcm"))), 15)
-            self.assertEqual(len(list((first / "cases").glob("*/input/*.dcm"))), 79)
+            self.assertEqual(len(list((first / "cases").glob("*/input/*.dcm"))), 368)
             self.assertEqual(
                 (first / "reproduction" / "requirements.txt").read_text(),
                 "pydicom==3.0.2\n",
@@ -473,7 +473,7 @@ class NegativeBenchGenerationTests(unittest.TestCase):
                 }
             ]
             manifest["evaluation_cases"] = []
-            manifest_path = root / "manifest-v4.json"
+            manifest_path = root / "manifest-v6.json"
             manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
             output = root / "challenge"
 
@@ -516,7 +516,7 @@ class NegativeBenchRunTests(unittest.TestCase):
             def fake_run(command, *, stdout_path, stderr_path, **kwargs):
                 self.assertEqual(
                     Path(command[command.index("--catalog") + 1]).name,
-                    "wsi-dicom-bench-rules-2026c-v4.json",
+                    "wsi-dicom-bench-rules-2026c-v6.json",
                 )
                 output_index = command.index("--output") + 1
                 workbench = Path(command[output_index])

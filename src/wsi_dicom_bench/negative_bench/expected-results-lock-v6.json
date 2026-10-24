@@ -11,11 +11,11 @@
   "files": [
     {
       "path": "bench/negative_bench/protocol-v6.md",
-      "sha256": "25cd3f437e29657ecf84fa269bf41b78cbc04445324447466885eae674978364"
+      "sha256": "394eb93aeeb125e4c61b7e7af4df3422aaeea707ba25a9c4291c64b9a696db95"
     },
     {
       "path": "bench/negative_bench/manifest-v6.json",
-      "sha256": "9f6b615a8d9d2524b2a6196a377c3d5b4135b1d58623e19d47a2f04ccd08c52b"
+      "sha256": "4935467ab3c6be995df3d4b5cbb19a237eebfd4761778f96d4a684ccd30153a0"
     },
     {
       "path": "rules/wsi-dicom-bench-rules-2026c-v6.json",

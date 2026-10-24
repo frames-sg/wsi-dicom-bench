@@ -34,20 +34,21 @@ def build_registry(
     return registry
 
 
-CATALOG_V4_DOMAINS = (
+CORE_PROFILE_DOMAINS = (
     ("pixel", pixel.HANDLERS),
     ("geometry", geometry.HANDLERS),
     ("color", color.HANDLERS),
     ("identity", identity.HANDLERS),
     ("conformance", conformance.HANDLERS),
 )
-# The catalog-v4 mutation inventory stays exact; the v5 and v6 amendments add their
-# single-defect IOD structure, relation, codestream and encoding mutations only to ALL_MUTATIONS,
-# which generation dispatches through and which rejects any name that two domains would own.
-MUTATION_REGISTRY: dict[str, MutationHandler] = build_registry(CATALOG_V4_DOMAINS)
+# The core-profile cohort's mutation inventory stays exact; the IOD structure and
+# requirement-statement cohorts add their single-defect structure, relation, codestream and
+# encoding mutations only to ALL_MUTATIONS, which generation dispatches through and which
+# rejects any name that two domains would own.
+MUTATION_REGISTRY: dict[str, MutationHandler] = build_registry(CORE_PROFILE_DOMAINS)
 ALL_MUTATIONS: dict[str, MutationHandler] = build_registry(
     (
-        *CATALOG_V4_DOMAINS,
+        *CORE_PROFILE_DOMAINS,
         ("structure", structure.HANDLERS),
         ("relations", relations.HANDLERS),
         ("codestream", codestream.HANDLERS),

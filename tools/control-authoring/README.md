@@ -16,4 +16,5 @@ cargo run --release --locked \
 ```
 
 The output directory must not already exist. Control changes require a new authored suite
-and expectation lock; they must not overwrite or relabel the frozen v4 resources.
+and expectation lock; they must not overwrite or relabel the frozen controls-v2, controls-v4,
+or controls-v6 resources.

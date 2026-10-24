@@ -7,7 +7,7 @@ Each case breaks one normative statement that a catalog-v6 rule enforces and nam
 defect (a Sequence's Type 1 members, the Common Instance Reference listing of a
 reference) is otherwise conformant, so the case has one defect.
 
-The expected rules are authored from the rule definitions. Like the v5 structure
+The expected rules are authored from the rule definitions. Like the IOD structure
 cohort, they are set by running the frozen candidate and adjudicating each result
 against DICOM 2026c before the manifest is locked; they are not blinded.
 """
@@ -18,22 +18,7 @@ from functools import partial
 
 from .codestream_cases import CODESTREAM_CASES
 from .encoding_cases import ENCODING_CASES
-from .iod_amendment_cases import (
-    PS33_DIMENSION,
-    PS33_FRAME_TYPE,
-    PS33_MFFG,
-    PS33_PATH_ID,
-    PS33_SERIES,
-    SHARED,
-    _cascade,
-    _case as _spec,
-    _cite,
-    _code,
-    _edits,
-    _expected,
-    _op,
-    full_rule_id,
-)
+from .iod_amendment_cases import SHARED, _case as _spec, _cite, _code, _edits, _op
 
 
 PS33_SELECTOR = _cite("PS3.3", "10.17 Table 10-20", "part03/sect_10.17.html")
@@ -923,116 +908,6 @@ UNCOVERED = {
     "Ps5_7_1_2_85dc52": "a Value Length that overstates its Value leaves the parser unable to read the file, so the other rules give no verdict and the case cannot be single-defect",
 }
 
-# v6-rule failures of carried-forward v5 cases, each adjudicated against DICOM 2026c as an
-# expected failing rule (it reports the mutated Attribute or the defined inconsistency) or an
-# adjudicated cascade (it reports an unchanged Attribute whose requirement the mutation changed).
-PS35_ENCAPSULATION = _cite("PS3.5", "A.4", "part05/sect_A.4.html")
-PS35_NATIVE = _cite("PS3.5", "8.1.1", "part05/chapter_8.html#sect_8.1.1")
-UNDELIMITED = (
-    "The case breaks the Frame delimitation of the encapsulated Pixel Data, so no Frame's "
-    "codestream can be checked; the codestream rule reports that, naming the defect."
-)
-PER_FRAME_COUNT = "Table C.7.6.16-1 requires as many Per-Frame Items as Frames."
-
-
-def _superseded(rule: str, replacement: str, rationale: str) -> dict:
-    """An expected rule of the carried case that ``replacement`` now enforces instead."""
-    return {
-        "rule_id": full_rule_id(rule),
-        "disposition": "superseded_expected_rule",
-        "replacement_rule_id": full_rule_id(replacement),
-        "rationale": rationale,
-    }
-
-
-def _moved_count(observed: str) -> list[dict]:
-    """The Per-Frame Item count moved from iod-modules to iod-sequence-items."""
-    return [
-        _superseded("iod-modules", "iod-sequence-items",
-                    "The candidate enforces the Item count of Table C.7.6.16-1 with the other "
-                    "generated Sequence Item counts, and catalog v6 assigns it to iod-sequence-items."),
-        _expected("iod-sequence-items", observed, PS33_MFFG, PER_FRAME_COUNT),
-    ]
-
-
-def _undelimited(observed: str) -> dict:
-    return _expected("codestream", f"Pixel Data Frames cannot be delimited, so no codestream was checked: {observed}",
-                     PS35_ENCAPSULATION, UNDELIMITED)
-
-
-def _dangling_path(identifier: str) -> dict:
-    return _cascade(
-        "wsi-image",
-        f'Shared Functional Groups Sequence[1] > Optical Path Identification Sequence > Optical Path Identifier "{identifier}" names no Optical Path Sequence Item',
-        PS33_PATH_ID,
-        "The Frames' unchanged Optical Path Identifier no longer resolves once the case removes "
-        "what it names; each Frame's Optical Path Identification resolves to an Optical Path Item.",
-    )
-
-
-CARRIED_FORWARD_V6: dict[str, list[dict]] = {
-    "NB-PX-001": [
-        *_moved_count("Per-Frame Functional Groups Sequence (5200,9230): 16 Items where 17 (the Value of (0028,0008)) are required"),
-        _undelimited("Extended Offset Table Lengths has 16 entries for 17 frames"),
-    ],
-    "NB-PX-002": [_undelimited("Pixel Data has no fragments")],
-    "NB-PX-003": [_undelimited("Pixel Data frame offsets are not strictly increasing from zero")],
-    "NB-PX-004": [_undelimited("Pixel Data frame offset 293 does not identify a fragment boundary")],
-    "NB-PX-005": [_undelimited("Pixel Data frame 7 declares 125 bytes but only 118 are available")],
-    "NB-PX-006": [
-        _expected("codestream", "Frame 1: SIZ marker segment is malformed",
-                  _cite("PS3.5", "A.4.4", "part05/sect_A.4.4.html"),
-                  "The case truncates the Frame's codestream inside its main header; a Frame is one "
-                  "complete codestream."),
-    ],
-    "NB-CF-005": [
-        _cascade("pixel-structure",
-                 "Pixel Data (7FE0,0010) holds 48 bytes; Native Format requires 16 bytes for 2 Rows x 2 Columns x 1 Samples per Pixel x 4 Frame(s) at 8 Bits Allocated",
-                 PS35_NATIVE,
-                 "The case keeps the three-sample Pixel Data unchanged and sets Samples per Pixel to 1, "
-                 "which changes the length Native Format requires of it."),
-    ],
-    "CP-ID-002": [
-        _expected("series-set", "Series belongs to two Studies", PS33_SERIES,
-                  "The case defines the inconsistency: two Instances of one Series in different Studies."),
-    ],
-    "CP-ID-003": [
-        _expected("series-set",
-                  "Frame of Reference UID is shared by images of slides SYNTH-CP01-EVRLE-4F-ANISO and CONFLICTING-CONTAINER",
-                  PS33_FRAME_OF_REFERENCE,
-                  "The case defines the inconsistency: one slide-related Frame of Reference for two slides."),
-    ],
-    "CP-CF-002": [
-        _cascade("wsi-image", "Specimen Label in Image (0048,0010) is NO; it shall be YES for Image Type Value 3 LABEL",
-                 PS33_WSI_ATTRIBUTES,
-                 "The unchanged Specimen Label in Image is fixed by Image Type Value 3, which the case "
-                 "changes to LABEL."),
-    ],
-    "CP-CF-004": [
-        _expected("wsi-image", "Specimen Label in Image (0048,0010) is YES; it shall be NO for Image Type Value 3 VOLUME",
-                  PS33_WSI_ATTRIBUTES, "The case sets Specimen Label in Image against the VOLUME flavor that fixes it."),
-    ],
-    "CP-CL-002": [_dangling_path("0")],
-    "CP-CL-003": [_dangling_path("0")],
-    "CP-CL-006": [
-        _expected("wsi-image",
-                  'Shared Functional Groups Sequence[1] > Optical Path Identification Sequence > Optical Path Identifier "missing" names no Optical Path Sequence Item',
-                  PS33_PATH_ID, "The case sets the Frames' Optical Path Identifier to one no Optical Path Item has."),
-    ],
-    "IOD-MOD-006": _moved_count("Per-Frame Functional Groups Sequence (5200,9230): 15 Items where 16 (the Value of (0028,0008)) are required"),
-    "IOD-MOD-007": _moved_count("Per-Frame Functional Groups Sequence (5200,9230): 5 Items where 4 (the Value of (0028,0008)) are required"),
-    "IOD-PRS-009": [
-        _expected("wsi-image", "Shared Functional Groups Sequence[1] > Frame Type (0008,9007) has 0 Values; exactly four are required",
-                  PS33_FRAME_TYPE, "The case empties Frame Type, which has four Values in VL WSI."),
-    ],
-    "IOD-PRS-012": [
-        _expected("dimension-order", "Dimension Index Pointer (0048,021E) names an Attribute no Frame has",
-                  PS33_DIMENSION,
-                  "Without its Functional Group Pointer, the Dimension Index Item's pointer names an "
-                  "Attribute outside every Frame's Functional Group Items."),
-    ],
-}
-
 # Core profile v4 rows: one per catalog-v6 rule, mapped to this cohort's cases.
 PROFILE_ROWS = (
     ("CP-V6-VS-001", "PS3.16", "Annex B and Annex A", "value_set",
@@ -1057,8 +932,6 @@ PROFILE_ROWS = (
      "The Data Set as encoded in the file's bytes follows PS3.5 element order, VR, length, private block and character set encoding.",
      "encoding"),
 )
-# Profile v3 rows whose requirement a v6 rule now enforces, with that rule.
-PROFILE_REMAPS = {"CP-IOD-FG-002": "iod-sequence-items"}
 # Controls that pass every rule of the rows above and cover native, JPEG, JPEG 2000 and
 # HTJ2K encodings in color and MONOCHROME2.
 PROFILE_POSITIVE_CONTROLS = (

@@ -24,15 +24,8 @@ from .report import build_report, render_summary
 
 RULES_DIR = Path(str(importlib.resources.files("wsi_dicom_bench.rules")))
 DEFAULT_CATALOG = RULES_DIR / "wsi-dicom-bench-rules-2026c-v6.json"
-# The catalogs that pair with a core profile. Catalogs v4 and v5 remain selectable
-# with --catalog for binaries of their contracts.
-PROFILE_CATALOGS = frozenset(
-    {
-        "wsi-dicom-bench-rules-2026c-v4",
-        "wsi-dicom-bench-rules-2026c-v5",
-        "wsi-dicom-bench-rules-2026c-v6",
-    }
-)
+# The catalogs that pair with a core profile.
+PROFILE_CATALOGS = frozenset({"wsi-dicom-bench-rules-2026c-v6"})
 
 
 def expected_profile_id(catalog: dict) -> str | None:

@@ -1,9 +1,11 @@
-"""Authored v5 amendment data: carried-forward adjudications and the IOD structure cohort.
+"""Single-defect cases of the ``iod-structure-evaluation-v1`` cohort.
 
-``CARRIED_FORWARD`` records, for each v4 case on which the frozen candidate failed a v5 IOD
-rule, whether that failure is an expected failing rule or an adjudicated cascade, with the
-observed message, the DICOM 2026c citation, and the rationale. ``STRUCTURE_CASES`` defines
-the single-defect cases of the ``iod-structure-evaluation-v1`` cohort.
+``STRUCTURE_CASES`` defines each case with the rules expected to report its defect. Where the
+frozen candidate also failed a requirement-statement rule on the case, the case records in
+``adjudications`` whether that failure is an expected failing rule, with the observed message,
+the DICOM 2026c citation, and the rationale, and which authored expected rule it supersedes
+when it now enforces that rule's requirement. The citation and ``iod_edits`` builders here are
+shared with the requirement-statement tables.
 """
 
 from __future__ import annotations
@@ -40,12 +42,8 @@ PS33_WSI_IMAGE = _cite("PS3.3", "C.8.12.4 Table C.8.12.4-1", "part03/sect_C.8.12
 PS33_SPECIMEN = _cite("PS3.3", "C.7.6.22 Table C.7.6.22-2", "part03/sect_C.7.6.22.html")
 PS33_OPTICAL = _cite("PS3.3", "C.8.12.5 Table C.8.12.5-1", "part03/sect_C.8.12.5.html")
 PS33_TILE_ORG = _cite("PS3.3", "C.8.12.14 Table C.8.12.14-1", "part03/sect_C.8.12.14.html")
-PS33_EQUIPMENT = _cite("PS3.3", "C.7.5.2 Table C.7-8b", "part03/sect_C.7.5.2.html")
 PS33_PATIENT = _cite("PS3.3", "C.7.1.1 Table C.7-1", "part03/sect_C.7.html#sect_C.7.1.1")
 PS33_STUDY = _cite("PS3.3", "C.7.2.1 Table C.7-3", "part03/sect_C.7.2.html#sect_C.7.2.1")
-PS33_SERIES = _cite("PS3.3", "C.7.3.1 Table C.7-5a", "part03/sect_C.7.3.html#sect_C.7.3.1")
-PS33_FOR = _cite("PS3.3", "C.7.4.1 Table C.7-6", "part03/sect_C.7.4.html#sect_C.7.4.1")
-PS33_ACQ_CONTEXT = _cite("PS3.3", "C.7.6.14 Table C.7.6.14-1", "part03/sect_C.7.6.14.html")
 PS33_GENERAL_IMAGE = _cite("PS3.3", "C.7.6.1 Table C.7-9", "part03/sect_C.7.6.html#sect_C.7.6.1")
 PS33_PYRAMID = _cite("PS3.3", "C.7.11.1 Table C.7.11.1-1", "part03/sect_C.7.11.html#sect_C.7.11.1")
 PS33_DIMENSION = _cite("PS3.3", "C.7.6.17 Table C.7.6.17-1", "part03/sect_C.7.6.17.html")
@@ -56,8 +54,6 @@ PS33_FRAME_TYPE = _cite("PS3.3", "C.8.12.9 Table C.8.12.9-1", "part03/sect_C.8.1
 PS33_PIXEL_MEASURES = _cite("PS3.3", "C.7.6.16.2.1 Table C.7.6.16-2", "part03/sect_C.7.6.16.2.html#sect_C.7.6.16.2.1")
 PS33_FRAME_CONTENT = _cite("PS3.3", "C.7.6.16.2.2 Table C.7.6.16-3", "part03/sect_C.7.6.16.2.html#sect_C.7.6.16.2.2")
 PS33_HL7 = _cite("PS3.3", "10.14 Table 10-17", "part03/sect_10.14.html")
-PS33_SAMPLES = _cite("PS3.3", "C.8.12.4.1.5", "part03/sect_C.8.12.4.html#sect_C.8.12.4.1.5")
-PS35_TYPES = _cite("PS3.5", "7.4.2", "part05/sect_7.4.2.html")
 PS35_VR = _cite("PS3.5", "6.2 Table 6.2-1", "part05/sect_6.2.html")
 PS35_UID = _cite("PS3.5", "9.1", "part05/chapter_9.html#sect_9.1")
 PS36_REGISTRY = _cite("PS3.6", "6 Table 6-1", "part06/chapter_6.html")
@@ -74,236 +70,27 @@ def _expected(rule: str, observed: str, citation: dict, rationale: str) -> dict:
     }
 
 
-def _cascade(rule: str, observed: str, citation: dict, rationale: str) -> dict:
-    return {**_expected(rule, observed, citation, rationale), "disposition": "adjudicated_cascade"}
+def _superseded(rule: str, replacement: str, rationale: str) -> dict:
+    """An authored expected rule of the case that ``replacement`` now enforces instead."""
+    return {
+        "rule_id": full_rule_id(rule),
+        "disposition": "superseded_expected_rule",
+        "replacement_rule_id": full_rule_id(replacement),
+        "rationale": rationale,
+    }
 
 
-def _missing(rule: str, attribute: str, kind: str, citation: dict) -> dict:
-    return _expected(
-        rule,
-        f"{attribute}: Type {kind} missing",
-        citation,
-        f"The case removes {attribute.rsplit(' (', 1)[0]}, a Type {kind} Attribute whose "
-        "requirement applies to this object, so the rule reports the authored deletion.",
-    )
+PER_FRAME_COUNT = "Table C.7.6.16-1 requires as many Per-Frame Items as Frames."
 
 
-# Adjudicated IOD-rule outcomes of the frozen candidate on carried-forward v4 cases.
-# Cases absent from this table produced no IOD-rule failure on the candidate.
-CARRIED_FORWARD = {
-    "NB-PX-001": [
-        _expected(
-            "iod-modules",
-            "Per-Frame Functional Groups Sequence (5200,9230): 16 Items for Number of Frames 17",
-            PS33_MFFG,
-            "The case defines the defect as Number of Frames 17 without a matching "
-            "functional-group Item; Table C.7.6.16-1 requires one Per-Frame Item per Frame.",
-        ),
-    ],
-    "NB-CO-001": [
-        _missing("iod-attribute-presence", "Optical Path Sequence[1] > ICC Profile (0028,2000)", "1C", PS33_OPTICAL),
-    ],
-    "NB-ID-001": [
-        _missing("iod-attribute-presence", "Specimen Description Sequence (0040,0560)", "1", PS33_SPECIMEN),
-    ],
-    "NB-ID-002": [
-        _missing(
-            "iod-attribute-presence",
-            "Specimen Description Sequence[1] > Specimen Identifier (0040,0551)",
-            "1",
-            PS33_SPECIMEN,
-        ),
-    ],
-    "NB-ID-004": [
-        _expected(
-            "file-meta",
-            "Media Storage SOP Instance UID (0002,0003) does not match SOP Instance UID (0008,0018)",
-            PS310_META,
-            "Media Storage SOP Instance UID identifies the SOP Instance of the Data Set that "
-            "follows; the patched File Meta UID differs from it.",
-        ),
-    ],
-    "NB-CF-001": [
-        _expected(
-            "iod-attribute-presence",
-            "Lossy Image Compression (0028,2110): Type 1 missing; Lossy Image Compression "
-            "Ratio and Method: Type 1C present although its condition is not met",
-            PS33_WSI_IMAGE,
-            "Lossy Image Compression is Type 1. With it absent, the retained Ratio and "
-            "Method no longer meet 'Required if Lossy Image Compression is 01' and PS3.5 "
-            "7.4.2 forbids them; those two messages are consequences within the same rule.",
-        ),
-    ],
-    "NB-CF-002": [
-        _cascade(
-            "iod-attribute-presence",
-            "Lossy Image Compression Ratio (0028,2112) and Method (0028,2114): Type 1C "
-            "present although its condition is not met",
-            PS35_TYPES,
-            "The authored defect is lossy Pixel Data declared lossless, localized by "
-            "lossy-history. Setting Lossy Image Compression to 00 leaves the unchanged Ratio "
-            "and Method present without their condition; PS3.5 7.4.2 forbids that, so the "
-            "failure is a correct consequence, not a second mutation.",
-        ),
-    ],
-    "NB-CF-003": [
-        _missing("iod-attribute-presence", "Lossy Image Compression Method (0028,2114)", "1C", PS33_WSI_IMAGE),
-    ],
-    "NB-CF-005": [
-        _expected(
-            "iod-enumerated-values",
-            'Samples per Pixel (0028,0002) "1" is not an Enumerated Value [3]',
-            PS33_SAMPLES,
-            "C.8.12.4.1.5 gives Samples per Pixel the Enumerated Value 3 when Photometric "
-            "Interpretation is not MONOCHROME2; the case sets 1 with RGB retained.",
-        ),
-        _cascade(
-            "iod-attribute-presence",
-            "Planar Configuration (0028,0006): Type 1C present although its condition is not met",
-            _cite("PS3.3", "C.7.6.3 Table C.7-11c; PS3.5 7.4.2", "part03/sect_C.7.6.3.html"),
-            "Planar Configuration is unchanged. It is 'Required if Samples per Pixel has a "
-            "Value greater than 1', so PS3.5 7.4.2 forbids it once Samples per Pixel is 1.",
-        ),
-    ],
-    "CP-CF-001": [_missing("iod-attribute-presence", "Acquisition DateTime (0008,002A)", "1", PS33_WSI_IMAGE)],
-    "CP-CF-002": [
-        _cascade(
-            "iod-modules",
-            "Multi-Resolution Pyramid Module present although its usage condition is not "
-            "met; Slide Label Module required but none of its Attributes is present",
-            PS33_A328,
-            "Image Type Value 3 LABEL makes the Slide Label Module required and permits the "
-            "Multi-Resolution Pyramid Module only for VOLUME or THUMBNAIL (Table A.32.8-1).",
-        ),
-        _cascade(
-            "iod-attribute-presence",
-            "Label Text (2200,0002) and Barcode Value (2200,0005): Type 2 missing",
-            _cite("PS3.3", "C.8.12.8 Table C.8.12.8-1", "part03/sect_C.8.12.8.html"),
-            "Once LABEL makes the Slide Label Module required, its Type 2 Label Text and "
-            "Barcode Value are required; the unchanged object lacks them.",
-        ),
-        _cascade(
-            "iod-enumerated-values",
-            'Number of Frames (0028,0008) "4" is not an Enumerated Value [1]',
-            PS33_WSI_IMAGE,
-            "Number of Frames has the Enumerated Value 1 when Image Type Value 3 is "
-            "THUMBNAIL, LABEL, or OVERVIEW; the unchanged object has four Frames.",
-        ),
-    ],
-    "CP-CF-003": [_missing("iod-attribute-presence", "Focus Method (0048,0011)", "1", PS33_WSI_IMAGE)],
-    "CP-CF-005": [
-        _expected(
-            "iod-attribute-presence",
-            "Rescale Intercept (0028,1052), Rescale Slope (0028,1053), Presentation LUT "
-            "Shape (2050,0020): Type 1C missing",
-            PS33_WSI_IMAGE,
-            "All three are Type 1C 'Required if Photometric Interpretation is MONOCHROME2'; "
-            "the case removes them from a MONOCHROME2 object.",
-        ),
-    ],
-    "CP-CF-006": [
-        _expected(
-            "iod-enumerated-values",
-            'Rescale Slope (0028,1053) "2" is not an Enumerated Value [1]',
-            PS33_WSI_IMAGE,
-            "Rescale Slope has the Enumerated Value 1 in the Whole Slide Microscopy Image Module.",
-        ),
-    ],
-    "CP-CF-007": [
-        _expected(
-            "iod-modules",
-            "Acquisition Context Module (Usage M): none of its Attributes is present",
-            PS33_A328,
-            "The removed Type 2 Acquisition Context Sequence is the only non-Type-3 "
-            "Attribute of the mandatory Acquisition Context Module, which is now absent.",
-        ),
-        _missing("iod-attribute-presence", "Acquisition Context Sequence (0040,0555)", "2", PS33_ACQ_CONTEXT),
-    ],
-    "CP-CF-008": [_missing("iod-attribute-presence", "Manufacturer (0008,0070)", "1", PS33_EQUIPMENT)],
-    "CP-CF-009": [_missing("iod-attribute-presence", "Device Serial Number (0018,1000)", "1", PS33_EQUIPMENT)],
-    "CP-CF-010": [
-        _expected(
-            "iod-modules",
-            "Whole Slide Microscopy Image Frame Type Functional Group (Usage M) absent from "
-            "the Shared and every Per-Frame Item",
-            PS33_FG,
-            "Table A.32.8-2 makes this Functional Group mandatory and Shared; the case removes it.",
-        ),
-    ],
-    "CP-CF-012": [_missing("iod-attribute-presence", "Position Reference Indicator (0020,1040)", "2", PS33_FOR)],
-    "CP-CF-013": [
-        _expected(
-            "iod-enumerated-values",
-            'Pixel Representation (0028,0103) "1" is not an Enumerated Value [0]',
-            PS33_WSI_IMAGE,
-            "Pixel Representation has the Enumerated Value 0 in the Whole Slide Microscopy Image Module.",
-        ),
-    ],
-    "CP-CF-015": [
-        _expected(
-            "iod-enumerated-values",
-            'Planar Configuration (0028,0006) "1" is not an Enumerated Value [0]',
-            PS33_WSI_IMAGE,
-            "Planar Configuration has the Enumerated Value 0 in the Whole Slide Microscopy Image Module.",
-        ),
-    ],
-    "CP-CF-016": [_missing("iod-attribute-presence", "Content Date (0008,0023)", "1", PS33_MFFG)],
-    "CP-CL-002": [_missing("iod-attribute-presence", "Optical Path Sequence (0048,0105)", "1", PS33_OPTICAL)],
-    "CP-CL-003": [
-        _missing("iod-attribute-presence", "Optical Path Sequence[1] > Optical Path Identifier (0048,0106)", "1", PS33_OPTICAL),
-    ],
-    "CP-CL-004": [
-        _missing(
-            "iod-attribute-presence",
-            "Optical Path Sequence[1] > Illumination Type Code Sequence (0022,0016)",
-            "1",
-            PS33_OPTICAL,
-        ),
-    ],
-    "CP-CL-005": [
-        _expected(
-            "iod-attribute-presence",
-            "Illumination Wave Length (0022,0055) and Illumination Color Code Sequence "
-            "(0048,0108): Type 1C missing",
-            PS33_OPTICAL,
-            "Each is required if the other is absent; the case removes both.",
-        ),
-    ],
-    "CP-GE-001": [_missing("iod-attribute-presence", "Total Pixel Matrix Origin Sequence (0048,0008)", "1", PS33_TILE_ORG)],
-    "CP-GE-002": [
-        _missing(
-            "iod-attribute-presence",
-            "Total Pixel Matrix Origin Sequence[1] > X Offset in Slide Coordinate System (0040,072A)",
-            "1",
-            PS33_TILE_ORG,
-        ),
-    ],
-    "CP-GE-003": [_missing("iod-attribute-presence", "Image Orientation (Slide) (0048,0102)", "1C", PS33_TILE_ORG)],
-    "CP-ID-005": [_missing("iod-attribute-presence", "Container Identifier (0040,0512)", "1", PS33_SPECIMEN)],
-    "CP-ID-006": [
-        _missing("iod-attribute-presence", "Issuer of the Container Identifier Sequence (0040,0513)", "2", PS33_SPECIMEN),
-    ],
-    "CP-ID-007": [
-        _missing(
-            "iod-attribute-presence",
-            "Specimen Description Sequence[1] > Specimen Preparation Sequence (0040,0610)",
-            "2",
-            PS33_SPECIMEN,
-        ),
-    ],
-    "CP-ID-008": [
-        _expected(
-            "iod-attribute-presence",
-            "Specimen Preparation Sequence[1] > Specimen Preparation Step Content Item "
-            "Sequence (0040,0612): Type 1 missing",
-            PS33_SPECIMEN,
-            "The case adds a preparation Item without its Type 1 content-item Sequence.",
-        ),
-    ],
-    "CP-ID-009": [_missing("iod-attribute-presence", "Patient's Birth Date (0010,0030)", "2", PS33_PATIENT)],
-    "CP-ID-010": [_missing("iod-attribute-presence", "Study Date (0008,0020)", "2", PS33_STUDY)],
-    "CP-ID-011": [_missing("iod-attribute-presence", "Series Number (0020,0011)", "2", PS33_SERIES)],
-}
+def _moved_count(observed: str) -> list[dict]:
+    """The Per-Frame Item count moved from iod-modules to iod-sequence-items."""
+    return [
+        _superseded("iod-modules", "iod-sequence-items",
+                    "The candidate enforces the Item count of Table C.7.6.16-1 with the other "
+                    "generated Sequence Item counts, and catalog v6 assigns it to iod-sequence-items."),
+        _expected("iod-sequence-items", observed, PS33_MFFG, PER_FRAME_COUNT),
+    ]
 
 
 def _case(
@@ -317,7 +104,7 @@ def _case(
     rationale: str,
     **fields,
 ) -> dict:
-    """One case specification; extra ``fields`` (v6 ``requirement_ids``) follow ``expected``."""
+    """One case specification; extra ``fields`` (``requirement_ids``, ``adjudications``) follow ``expected``."""
     return {
         "case_id": case_id,
         "control": control,
@@ -331,7 +118,7 @@ def _case(
     }
 
 
-# Builders of ``iod_edits`` operations, shared with the v6 requirement-statement tables.
+# Builders of ``iod_edits`` operations, shared with the requirement-statement tables.
 def _op(operation: str, path: list, value: object = None, vr: str | None = None) -> dict:
     entry = {"operation": operation, "path": path}
     if operation != "delete":
@@ -353,6 +140,8 @@ SHARED = ["SharedFunctionalGroupsSequence", 0]
 PIXEL_MEASURES = [*SHARED, "PixelMeasuresSequence", 0]
 FRAME_TYPE = [*SHARED, "WholeSlideMicroscopyImageFrameTypeSequence", 0]
 LEADING_ZERO_UID = "2.25.0123456789"
+# Rationale templates. "catalog-v4" names the core-profile rule families; the rationales are
+# part of the frozen case record, so their text does not change.
 ONLY = "Only the targeted rule reports this {what} defect; no catalog-v4 rule does."
 ALSO = "The {rule} rule independently reports the same defect, so both rules are expected."
 
@@ -388,12 +177,14 @@ STRUCTURE_CASES = (
           {"path": ["PerFrameFunctionalGroupsSequence"], "item_index": 15},
           ("iod-modules", "tile-geometry"),
           "Remove Per-Frame Functional Groups Sequence Item 16 of 16, retaining Number of Frames 16 and all Pixel Data.",
-          PS33_MFFG, "Table C.7.6.16-1 requires as many Per-Frame Items as Frames. " + ALSO.format(rule="tile-geometry")),
+          PS33_MFFG, "Table C.7.6.16-1 requires as many Per-Frame Items as Frames. " + ALSO.format(rule="tile-geometry"),
+          adjudications=_moved_count("Per-Frame Functional Groups Sequence (5200,9230): 15 Items where 16 (the Value of (0028,0008)) are required")),
     _case("IOD-MOD-007", "CP05-J2K-LOSSY-4F", "iod_duplicate_sequence_item",
           {"path": ["PerFrameFunctionalGroupsSequence"], "item_index": 3},
           ("iod-modules", "tile-geometry"),
           "Append a copy of Per-Frame Functional Groups Sequence Item 4, giving 5 Items for Number of Frames 4.",
-          PS33_MFFG, "Table C.7.6.16-1 requires as many Per-Frame Items as Frames. " + ALSO.format(rule="tile-geometry")),
+          PS33_MFFG, "Table C.7.6.16-1 requires as many Per-Frame Items as Frames. " + ALSO.format(rule="tile-geometry"),
+          adjudications=_moved_count("Per-Frame Functional Groups Sequence (5200,9230): 5 Items where 4 (the Value of (0028,0008)) are required")),
     _case("IOD-MOD-008", "CP02-JPEG-16F", "iod_insert_attribute",
           {"path": ["PerFrameFunctionalGroupsSequence", 0, "PixelMeasuresSequence"],
            "value": [{"PixelSpacing": ["0.0005", "0.0005"], "SliceThickness": "0.001"}]},
@@ -438,7 +229,9 @@ STRUCTURE_CASES = (
           PS33_PLANE, "X Offset is Type 1 in the Plane Position (Slide) Macro. " + ONLY.format(what="Attribute")),
     _case("IOD-PRS-009", "CP09-J2K-LOSSLESS-4F", "iod_empty_attribute", {"path": [*FRAME_TYPE, "FrameType"]},
           ("iod-attribute-presence", "core-image-profile"), "Set the shared Frame Type (0008,9007) to zero length.",
-          PS33_FRAME_TYPE, "Frame Type is Type 1. " + ALSO.format(rule="core-image-profile")),
+          PS33_FRAME_TYPE, "Frame Type is Type 1. " + ALSO.format(rule="core-image-profile"),
+          adjudications=[_expected("wsi-image", "Shared Functional Groups Sequence[1] > Frame Type (0008,9007) has 0 Values; exactly four are required",
+                                   PS33_FRAME_TYPE, "The case empties Frame Type, which has four Values in VL WSI.")]),
     _case("IOD-PRS-010", "CP14-MONO16-EVRLE", "iod_delete_attribute", {"path": [*PIXEL_MEASURES, "SliceThickness"]},
           ("iod-attribute-presence",), "Remove Slice Thickness (0018,0050) from the shared Pixel Measures Item.",
           PS33_PIXEL_MEASURES, "Slice Thickness is Type 1C, required when Volumetric Properties is VOLUME and Image Type Value 3 is not LABEL or OVERVIEW. " + ONLY.format(what="Attribute")),
@@ -448,7 +241,11 @@ STRUCTURE_CASES = (
     _case("IOD-PRS-012", "CP10-EVRLE-16F", "iod_delete_attribute",
           {"path": ["DimensionIndexSequence", 1, "FunctionalGroupPointer"]},
           ("iod-attribute-presence",), "Remove Functional Group Pointer (0020,9167) from Dimension Index Sequence Item 2, whose Dimension Index Pointer names an Attribute of the Plane Position (Slide) Functional Group.",
-          PS33_DIMENSION, "Functional Group Pointer is Type 1C, required when the Dimension Index Pointer names an Attribute within a Functional Group Sequence. " + ONLY.format(what="Attribute")),
+          PS33_DIMENSION, "Functional Group Pointer is Type 1C, required when the Dimension Index Pointer names an Attribute within a Functional Group Sequence. " + ONLY.format(what="Attribute"),
+          adjudications=[_expected("dimension-order", "Dimension Index Pointer (0048,021E) names an Attribute no Frame has",
+                                   PS33_DIMENSION,
+                                   "Without its Functional Group Pointer, the Dimension Index Item's pointer names an "
+                                   "Attribute outside every Frame's Functional Group Items.")]),
     _case("IOD-PRS-013", "CP04-J2K-LOSSLESS-16F", "iod_delete_attribute", {"path": ["ImagedVolumeDepth"]},
           ("iod-attribute-presence", "core-image-profile"), "Remove Imaged Volume Depth (0048,0003) from a VOLUME image.",
           PS33_WSI_IMAGE, "Imaged Volume Depth is Type 1C, required when Image Type Value 3 is VOLUME. " + ALSO.format(rule="core-image-profile")),

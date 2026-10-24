@@ -9,16 +9,12 @@ DOCTOR_SCHEMA = "wsi-dicom-doctor-report-v1"
 VALIDATION_SCHEMA = "wsi-dicom-validation-report-v1"
 # The wsi-dicom rule set each catalog was written for. A binary that declares a
 # different rule set emits checks the catalog does not map, so the pairing is exact.
-CATALOG_V4_RULE_SETS = {
-    "core-2026c": "wsi-dicom-core-profile-2026c-v2",
-    "general": "wsi-dicom-general-v1",
-}
 RULE_SET_IDS_BY_CATALOG = {
-    "wsi-dicom-bench-rules-2026c-v2": CATALOG_V4_RULE_SETS,
-    "wsi-dicom-bench-rules-2026c-v4": CATALOG_V4_RULE_SETS,
-    "wsi-dicom-bench-rules-2026c-v5": {
-        "core-2026c": "wsi-dicom-core-profile-2026c-v3",
-        "general": "wsi-dicom-general-v2",
+    # Format-coverage runs use catalog v2 with the general profile. Its core rule set is
+    # the identifier its binaries declared; no core profile pairs with catalog v2.
+    "wsi-dicom-bench-rules-2026c-v2": {
+        "core-2026c": "wsi-dicom-core-profile-2026c-v2",
+        "general": "wsi-dicom-general-v1",
     },
     "wsi-dicom-bench-rules-2026c-v6": {
         "core-2026c": "wsi-dicom-core-profile-2026c-v4",

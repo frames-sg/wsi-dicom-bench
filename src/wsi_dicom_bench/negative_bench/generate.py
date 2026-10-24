@@ -36,12 +36,10 @@ MANIFEST_VERSIONS = {
     "wsi-dicom-negative-bench-manifest-v1": "v1",
     "wsi-dicom-negative-bench-manifest-v2": "v2",
     "wsi-dicom-negative-bench-manifest-v3": "v3",
-    "wsi-dicom-negative-bench-manifest-v4": "v4",
-    "wsi-dicom-negative-bench-manifest-v5": "v5",
     "wsi-dicom-negative-bench-manifest-v6": "v6",
 }
 # Versions whose expected-results lock also binds a core profile.
-PROFILED_VERSIONS = {"v3", "v4", "v5", "v6"}
+PROFILED_VERSIONS = {"v3", "v6"}
 
 # The only words a generated Patient's Name or Patient ID may hold.
 PLACEHOLDER_WORDS = {"", "RESEARCH", "PLACEHOLDER", "ANONYMOUS", "ANON"}

@@ -10,8 +10,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = REPO_ROOT / "src" / "wsi_dicom_bench"
-CATALOG_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v4.json"
-PROFILE_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-core-profile-2026c-v2.json"
+CATALOG_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v6.json"
+PROFILE_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-core-profile-2026c-v4.json"
 
 
 class WorkbenchCatalogTests(unittest.TestCase):
@@ -59,13 +59,10 @@ class WorkbenchCatalogTests(unittest.TestCase):
         self.assertTrue(any("profile" in error for error in validation_contract_errors(validation, catalog, True)))
 
     def test_default_catalog_is_the_current_v6_catalog(self):
-        # The v6 amendment makes catalog v6 the default; catalogs v4 and v5 stay selectable.
         from wsi_dicom_bench.workbench.cli import DEFAULT_CATALOG, expected_profile_id
 
-        current = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v6.json"
-        self.assertEqual(DEFAULT_CATALOG.name, current.name)
-        self.assertEqual(DEFAULT_CATALOG.read_bytes(), current.read_bytes())
-        self.assertTrue(CATALOG_PATH.is_file())
+        self.assertEqual(DEFAULT_CATALOG.name, CATALOG_PATH.name)
+        self.assertEqual(DEFAULT_CATALOG.read_bytes(), CATALOG_PATH.read_bytes())
         self.assertEqual(
             expected_profile_id(json.loads(CATALOG_PATH.read_text())),
             json.loads(PROFILE_PATH.read_text())["profile_id"],
@@ -95,6 +92,20 @@ class WorkbenchCatalogTests(unittest.TestCase):
             "intrinsic-wsi-dicom-2026c-clinical-identity-set",
             "intrinsic-wsi-dicom-2026c-pyramid-geometry",
             "intrinsic-wsi-dicom-2026c-source-relationship",
+            "intrinsic-wsi-dicom-2026c-iod-modules",
+            "intrinsic-wsi-dicom-2026c-iod-attribute-presence",
+            "intrinsic-wsi-dicom-2026c-iod-enumerated-values",
+            "intrinsic-wsi-dicom-2026c-iod-vr-vm",
+            "intrinsic-wsi-dicom-2026c-iod-value-format",
+            "intrinsic-wsi-dicom-2026c-iod-sequence-items",
+            "intrinsic-wsi-dicom-2026c-file-meta",
+            "intrinsic-wsi-dicom-2026c-iod-value-sets",
+            "intrinsic-wsi-dicom-2026c-wsi-image",
+            "intrinsic-wsi-dicom-2026c-attribute-relations",
+            "intrinsic-wsi-dicom-2026c-series-set",
+            "intrinsic-wsi-dicom-2026c-pixel-attributes",
+            "intrinsic-wsi-dicom-2026c-codestream",
+            "intrinsic-wsi-dicom-2026c-encoding",
             "pixel-decode",
             "pixel-djpeg",
             "pixel-opj-decompress",
@@ -105,7 +116,7 @@ class WorkbenchCatalogTests(unittest.TestCase):
             "dcmvalidate",
         }
         self.assertEqual(set(index), expected_checks)
-        self.assertEqual(catalog["catalog_version"], "wsi-dicom-bench-rules-2026c-v4")
+        self.assertEqual(catalog["catalog_version"], "wsi-dicom-bench-rules-2026c-v6")
         self.assertEqual(
             len({rule["rule_id"] for rule in catalog["rules"]}),
             len(catalog["rules"]),
@@ -523,7 +534,7 @@ class WorkbenchCliTests(unittest.TestCase):
 
         validation = {
             "profile": "general",
-            "rule_set_id": "wsi-dicom-general-v1",
+            "rule_set_id": "wsi-dicom-general-v3",
             "files": ["slide.dcm"],
             "checks": [{"name": "pixel-djpeg", "path": "slide.dcm", "status": "passed"}],
             "schema_version": "wsi-dicom-validation-report-v1",
@@ -600,26 +611,13 @@ class WorkbenchCliTests(unittest.TestCase):
             dataset.save_as(dicom_path, enforce_file_format=True)
 
             fake = root / "fake-wsi-dicom"
+            # Every intrinsic and set check of the catalog, and the required external validators.
             checks = [
-                "intrinsic-wsi-dicom-2026c-tile-geometry",
-                "intrinsic-wsi-dicom-2026c-identity-set",
-                "intrinsic-wsi-dicom-2026c-image-metadata",
-                "intrinsic-pixel-structure",
-                "intrinsic-wsi-dicom-2026c-icc-profile",
-                "intrinsic-wsi-dicom-2026c-monochrome-presentation",
-                "intrinsic-wsi-dicom-2026c-lossy-history",
-                "intrinsic-wsi-dicom-2026c-specimen-identity",
-                "intrinsic-wsi-dicom-2026c-specimen-uid-set",
-                "intrinsic-wsi-dicom-2026c-dimension-order",
-                "intrinsic-wsi-dicom-2026c-core-image-profile",
-                "intrinsic-wsi-dicom-2026c-slide-coordinate-system",
-                "intrinsic-wsi-dicom-2026c-optical-path-structure",
-                "intrinsic-wsi-dicom-2026c-specimen-container",
-                "intrinsic-wsi-dicom-2026c-clinical-identity-set",
-                "dciodvfy",
-                "dcentvfy",
-                "validate_iods",
-            ]
+                name
+                for rule in json.loads(CATALOG_PATH.read_text())["rules"]
+                if rule["rule_kind"] in {"intrinsic", "intrinsic_set"}
+                for name in rule["check_names"]
+            ] + ["dciodvfy", "dcentvfy", "validate_iods"]
             fake.write_text(
                 "#!/usr/bin/env python3\n"
                 "import json, pathlib, sys\n"
@@ -675,9 +673,9 @@ class WorkbenchCliTests(unittest.TestCase):
         self.assertEqual(report["slide"]["slide_id"], "SLIDE-001")
         self.assertEqual(report["domains"]["identity"]["status"], "passed")
         self.assertFalse(report["validator_comparison"]["disagreement"])
-        self.assertEqual(report["catalog"]["version"], "wsi-dicom-bench-rules-2026c-v4")
-        self.assertEqual(report["profile"]["id"], "wsi-dicom-core-profile-2026c-v2")
-        self.assertEqual(report["profile"]["version"], "2")
+        self.assertEqual(report["catalog"]["version"], "wsi-dicom-bench-rules-2026c-v6")
+        self.assertEqual(report["profile"]["id"], "wsi-dicom-core-profile-2026c-v4")
+        self.assertEqual(report["profile"]["version"], "4")
         self.assertEqual(len(report["profile"]["sha256"]), 64)
         self.assertEqual(report["software"]["wsi_dicom"]["version"], "wsi-dicom 0.7.4")
         self.assertEqual(len(report["software"]["wsi_dicom"]["sha256"]), 64)

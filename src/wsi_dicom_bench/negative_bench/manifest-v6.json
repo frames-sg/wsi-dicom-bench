@@ -29970,7 +29970,7 @@
       "sha256": "e9efedc70aec4d4d15f91e799ea96c9b3fa3e76b21a929f2a3cee65ce4c9b774",
       "version": "wsi-dicom 0.9.0"
     },
-    "carried_forward_cases": "v5 mutations and expected rules unchanged; cases on the corrected controls rebased onto them; candidate v6-rule failures adjudicated in requirement_rule_adjudications",
+    "carried_forward_cases": "core-profile and IOD structure cases keep their authored mutations and seeds; cases on the corrected controls are rebased onto them; candidate failures of the requirement-statement rules are adjudicated in requirement_rule_adjudications",
     "method": "Each case was generated and run through the frozen candidate; every failing rule was checked against the cited DICOM 2026c text before it was recorded as expected or as an adjudicated cascade."
   },
   "expected_results_lock": "expected-results-lock-v6.json",
