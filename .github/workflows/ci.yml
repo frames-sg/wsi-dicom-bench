@@ -30,7 +30,7 @@ jobs:
           "${RUNNER_TEMP}/test-environment/bin/python" -m pip install dist/*.whl
           "${RUNNER_TEMP}/test-environment/bin/python" -m pip install "numpy==2.4.4"
           env -u PYTHONPATH "${RUNNER_TEMP}/test-environment/bin/python" -m unittest discover -s tests
-      - name: Generate the bundled v6 suite from an unrelated directory
+      - name: Generate the bundled v6 and v7 suites from an unrelated directory
         shell: bash
         run: |
           python -m venv "${RUNNER_TEMP}/portable-environment"
@@ -44,6 +44,7 @@ jobs:
           from pathlib import Path
 
           from wsi_dicom_bench.negative_bench.generate import generate_challenge
+          from wsi_dicom_bench.negative_bench.v7_challenge import generate_v7_challenge
 
           manifest = files("wsi_dicom_bench").joinpath("negative_bench/manifest-v6.json")
           output = Path(sys.argv[1]) / "generated-suite-v6"
@@ -53,4 +54,16 @@ jobs:
           assert len(document["evaluation_cases"]) == 352
           assert len(list((output / "controls").iterdir())) == 14
           assert len(list((output / "cases").iterdir())) == 352
+
+          manifest = files("wsi_dicom_bench").joinpath("negative_bench/manifest-v7.json")
+          output = Path(sys.argv[1]) / "generated-suite-v7"
+          generate_v7_challenge(Path(str(manifest)), output)
+          document = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
+          assert len(document["valid_controls"]) == 66
+          assert len(document["evaluation_cases"]) == 697
+          assert len(document["http_evaluation_cases"]) == 142
+          assert len(list((output / "controls").iterdir())) == (
+              len(document["valid_controls"]) + len(document["mutation_sources"])
+          )
+          assert len(list((output / "cases").iterdir())) == 719
           PY

@@ -4,7 +4,9 @@ A relation defect needs more than one Data Element: an Image Laterality that dis
 with Laterality, a Selector Attribute and its Value Number, or two Instances of one Series
 that disagree. ``iod_edits`` applies an ordered list of operations to one object;
 ``iod_edit_pair`` copies the control as a second SOP Instance of its Series (with its own
-Instance Number, so the pair is otherwise consistent) and applies operations to either.
+Instance Number, so the pair is otherwise consistent) and applies operations to either.  Its
+opt-in ``same_sop_instance`` mode restores the first copy's SOP and Instance identity after the
+edits, for defects between two stored versions of one SOP Instance.
 Each operation is ``{"operation": "insert" | "set" | "replace" | "delete", "path": [...],
 "value": ..., "vr": ...}`` with paths as in ``structure``; every change is recorded. A string
 ``"{self.Keyword}"`` (or ``"{first.Keyword}"`` and ``"{second.Keyword}"`` in a pair) inside a
@@ -66,6 +68,21 @@ def iod_edit_pair(context: MutationContext) -> MutationResult:
     edits = {label: _resolved(parameters[label], instances) for label in instances if parameters.get(label)}
     for label, operations in edits.items():
         _apply(context, instances[label], operations, label)
+    same_sop_instance = parameters.get("same_sop_instance", False)
+    if not isinstance(same_sop_instance, bool):
+        raise GenerationError("same_sop_instance must be a boolean")
+    if same_sop_instance:
+        before = str(second.SOPInstanceUID)
+        second.SOPInstanceUID = first.SOPInstanceUID
+        second.file_meta.MediaStorageSOPInstanceUID = first.SOPInstanceUID
+        if "InstanceNumber" in first:
+            second.InstanceNumber = first.InstanceNumber
+        context.changes.append({
+            "kind": "same_sop_instance_versions",
+            "attribute": "SOPInstanceUID",
+            "before": before,
+            "after": str(first.SOPInstanceUID),
+        })
     context.changes[0]["value"] = [str(first.SOPInstanceUID), str(second.SOPInstanceUID)]
     first_path = context.input_dir / "first.dcm"
     second_path = context.input_dir / "second.dcm"

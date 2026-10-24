@@ -496,15 +496,19 @@ class ManifestV6IntegrityTests(unittest.TestCase):
         self.assertFalse(claimed & set(requirement_cases.UNCOVERED))
 
     def test_every_mutation_is_used_by_the_suite(self):
-        from wsi_dicom_bench.negative_bench.mutations import ALL_MUTATIONS
+        from wsi_dicom_bench.negative_bench.mutations import ALL_MUTATIONS, V7_ONLY_MUTATIONS
 
         used = {case["mutation_name"] for case in self.v6["evaluation_cases"]}
-        self.assertEqual(set(ALL_MUTATIONS) - used, {"invalid_specimen_uid", "total_matrix_too_large"})
+        self.assertEqual(
+            set(ALL_MUTATIONS) - used - V7_ONLY_MUTATIONS,
+            {"invalid_specimen_uid", "total_matrix_too_large"},
+        )
 
     def test_mutation_registries_cover_the_carried_cohorts_without_unused_handlers(self):
         from wsi_dicom_bench.negative_bench.mutations import (
             ALL_MUTATIONS,
             MUTATION_REGISTRY,
+            V7_ONLY_MUTATIONS,
             codestream,
             encoding,
             relations,
@@ -515,8 +519,14 @@ class ManifestV6IntegrityTests(unittest.TestCase):
         requirement = {*relations.HANDLERS, *codestream.HANDLERS, *encoding.HANDLERS}
         # Beyond the core-profile inventory, every mutation of the carried cohorts is a structure
         # mutation, and no structure name shadows a core-profile one.
-        self.assertEqual(set(ALL_MUTATIONS) - set(MUTATION_REGISTRY) - requirement, set(structure.HANDLERS))
-        self.assertEqual(set(ALL_MUTATIONS) - used - requirement, {"invalid_specimen_uid", "total_matrix_too_large"})
+        self.assertEqual(
+            set(ALL_MUTATIONS) - set(MUTATION_REGISTRY) - requirement - V7_ONLY_MUTATIONS,
+            set(structure.HANDLERS),
+        )
+        self.assertEqual(
+            set(ALL_MUTATIONS) - used - requirement - V7_ONLY_MUTATIONS,
+            {"invalid_specimen_uid", "total_matrix_too_large"},
+        )
 
 
 class RequirementCoverageTests(unittest.TestCase):

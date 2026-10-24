@@ -6,12 +6,14 @@ import tempfile
 import unittest
 import sys
 from pathlib import Path
+from unittest import mock
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = REPO_ROOT / "src" / "wsi_dicom_bench"
 CATALOG_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v6.json"
 PROFILE_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-core-profile-2026c-v4.json"
+V7_CATALOG_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-v7.json"
 
 
 class WorkbenchCatalogTests(unittest.TestCase):
@@ -428,6 +430,103 @@ class WorkbenchDicomInspectionTests(unittest.TestCase):
 
 
 class WorkbenchCliTests(unittest.TestCase):
+    def test_candidate_declared_unreadable_file_is_a_bounded_limitation(self):
+        from argparse import Namespace
+
+        from wsi_dicom_bench.workbench.catalog import load_catalog
+        from wsi_dicom_bench.workbench.cli import _candidate_unreadable_files
+        from wsi_dicom_bench.workbench.report import build_report
+
+        bad = "/challenge/bad.dcm"
+        good = "/challenge/good.dcm"
+        validation = {
+            "schema_version": "wsi-dicom-validation-report-v1",
+            "profile": "general",
+            "rule_set_id": "wsi-dicom-general-v4",
+            "dicom_edition": "2026d",
+            "files": [bad, good],
+            "checks": [
+                {
+                    "name": "intrinsic-pixel-structure",
+                    "path": bad,
+                    "status": "failed",
+                    "message": "failed to read DICOM file: Premature data set end",
+                },
+                {
+                    "name": "intrinsic-pixel-structure",
+                    "path": good,
+                    "status": "passed",
+                    "message": "conformant",
+                },
+                {
+                    "name": "intrinsic-wsi-dicom-encoding",
+                    "path": good,
+                    "status": "failed",
+                    "message": "failed to read DICOM file: unrelated check",
+                },
+                {
+                    "name": "dciodvfy",
+                    "path": bad,
+                    "status": "failed",
+                    "message": "dciodvfy independently rejected the malformed object",
+                },
+            ],
+        }
+        unreadable = _candidate_unreadable_files(validation)
+        self.assertEqual(unreadable, [{
+            "path": bad,
+            "reason": "failed to read DICOM file: Premature data set end",
+        }])
+
+        args = Namespace(
+            catalog=V7_CATALOG_PATH,
+            profile=None,
+            validation_profile="general",
+            allow_missing_tools=False,
+            max_pixel_frames=1,
+            max_input_bytes=None,
+            command_timeout_secs=60,
+            evaluation_timeout_secs=300,
+            dicom_validator_standard_path=None,
+            wsi_dicom=Path("wsi-dicom"),
+        )
+        decoding = {
+            "policy": {"max_frame_bytes": 1024},
+            "decoders": [],
+            "checks": [],
+            "wsi_dicom_pixel_decode": "not_supported",
+            "candidate_unreadable_files": unreadable,
+        }
+        execution = {"returncode": 0, "document_error": None}
+        with mock.patch(
+            "wsi_dicom_bench.workbench.report.software_inventory", return_value={}
+        ), mock.patch(
+            "wsi_dicom_bench.workbench.report.inspect_dicom_set",
+            return_value={"slide_id": "GOOD", "instance_count": 1, "instances": []},
+        ) as inspect:
+            report = build_report(
+                args,
+                load_catalog(V7_CATALOG_PATH),
+                None,
+                {"schema_version": "wsi-dicom-doctor-report-v1", "tools": []},
+                validation,
+                decoding,
+                execution,
+                {"returncode": 1, "document_error": None},
+            )
+
+        self.assertEqual(report["status"], "failed")
+        self.assertEqual(report["contract_errors"], [])
+        self.assertEqual(report["limitations"]["candidate_unreadable_files"], unreadable)
+        self.assertEqual(
+            [
+                finding["status"] for finding in report["findings"]
+                if finding["check_name"] == "dciodvfy"
+            ],
+            ["failed"],
+        )
+        inspect.assert_called_once_with([Path(good)])
+
     def test_failed_process_documents_retain_diagnostics_and_never_pass(self):
         from wsi_dicom_bench.workbench.cli import main
 

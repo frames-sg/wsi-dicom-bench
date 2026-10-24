@@ -1,0 +1,50 @@
+{
+  "challenge_id": "wsi-dicom-negative-bench-v7",
+  "expected_counts": {
+    "advisory_cases": 3,
+    "core_profile_evaluation_cases": 3,
+    "evaluation_cases": 697,
+    "http_evaluation_cases": 142,
+    "json_evaluation_cases": 16,
+    "valid_controls": 66
+  },
+  "files": [
+    {
+      "path": "bench/negative_bench/protocol-v7.md",
+      "sha256": "525f559635b73a244b75c2c6bff650773db56545184fdd4625719617c1e286ac"
+    },
+    {
+      "path": "bench/negative_bench/manifest-v7.json",
+      "sha256": "d82a8f2fe77d1c4084742a26516473aebd7ca7b63d4443fc60ee4c53f674dd11"
+    },
+    {
+      "path": "rules/wsi-dicom-bench-rules-v7.json",
+      "sha256": "d0e33be20e04f384b9e466b070611385def62e0c39e637b424f6e762bc4a16cc"
+    },
+    {
+      "path": "rules/wsi-dicom-requirements-v1.json",
+      "sha256": "2e10beb3ae12e83564346527598e2a54d098ac5ca0cafc714faa79052e16140d"
+    },
+    {
+      "path": "bench/negative_bench/statement-coverage-v7.json",
+      "sha256": "c6510fa9d2e2b854cb0fc60c043cb97976858bbabca11af2351715d958b759da"
+    }
+  ],
+  "known_policy_failure": {
+    "known_policy_failure": true,
+    "status": "ready_with_known_policy_failure",
+    "unchecked_statement_ids": [
+      "Ps5_8_2_5_5c5c79",
+      "Ps5_8_2_5_6cde8d",
+      "Ps5_8_2_6_405812",
+      "Ps5_8_2_6_4d8fa8",
+      "Ps5_8_2_6_571188",
+      "Ps5_A_11_ce7500",
+      "Ps5_A_6_e0a5fd"
+    ],
+    "unchecked_statement_scope_pairs": 16
+  },
+  "lock_state": "frozen_checked_coverage_with_known_policy_failure",
+  "locked_at_date": "2026-10-24",
+  "schema_version": "wsi-dicom-negative-bench-expected-results-lock-v7"
+}

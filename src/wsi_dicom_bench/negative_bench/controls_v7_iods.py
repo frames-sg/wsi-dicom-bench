@@ -6,8 +6,9 @@ Every control here is a valid object derived from the existing VL WSI control
 joins that slide's Patient, Study and Specimen, and uses its Frame of Reference wherever
 the IOD places the object in the slide coordinate system. Each control is its own Series.
 
-Derivation. ``build(output)`` reads only the two CP12 files and writes every control in
-one pass. Pixel content is a fixed function of the source raster (no random numbers), all
+Derivation. ``build(output)`` reads the two CP12 files and the committed v7 WSI
+Concatenation control and writes every control in one pass. Pixel content is a fixed function
+of the source raster (no random numbers), all
 new UIDs are ``2.25`` UIDs hashed from ``UID_NAMESPACE``, the control id and a role, and
 every date and time is the source's 1970-01-01 00:00:00. The objects are written by
 highdicom (``HIGHDICOM_VERSION``), which is not a dependency of this package: run the
@@ -17,8 +18,10 @@ builder from a throwaway environment that has it, with this package on ``PYTHONP
         build <empty-output-dir>
 
 The File-set control ``V7-FILESET`` is written by dcmtk ``dcmmkdir`` (on PATH, 3.7.0) from
-byte copies of the CP12 pyramid and of the 2D and 3D annotations and the BINARY SEG built
-here. Out of scope by the owner's decision: VL Microscopic, VL Slide-Coordinates
+corrected copies of the CP12 pyramid and copies of the 2D and 3D annotations and the BINARY SEG
+built here. CP12's two Frames at Column Position 3 encode X Offset 0.001 mm, having applied the
+row spacing along X; this builder recomputes every source Frame offset from row/column position
+before deriving or packaging it. Out of scope by the owner's decision: VL Microscopic, VL Slide-Coordinates
 Microscopic, and both Confocal Microscopy IODs.
 
 ``verify`` re-hashes the committed files against ``CONTROLS`` and needs only the standard
@@ -31,6 +34,7 @@ import argparse
 import copy
 import hashlib
 import shutil
+import struct
 import sys
 import tempfile
 from pathlib import Path
@@ -72,10 +76,6 @@ TOOL_LIMITS = {
         "image). Accession Number (0008,0050) is in the General Study Module of both IODs "
         "(PS3.3 C.7.2.1) and its Value is identical (RESEARCH); dcentvfy exits 0."
     ),
-    "candidate-no-kos-sr-rules": (
-        "the frozen candidate predates KOS and SR support: iod-modules is 'skipped' with "
-        "'... is not a SOP Class of the pathology-slide IODs ...; no IOD rules apply'."
-    ),
     "dciodvfy-dicomdir-annotation": (
         "dciodvfy on the DICOMDIR reports 'Error - </DirectoryRecordSequence(0004,1220)[9]/"
         "DirectoryRecordType(0004,1430)[1]> - Unrecognized enumerated value = <ANNOTATION>' "
@@ -85,17 +85,30 @@ TOOL_LIMITS = {
         "Content Time and Content Identification keys in ANNOTATION records, which F.5.4 and "
         "F.5.47 allow ('Any other Attribute of the ... IE Modules', Type 3; Table 10-12)."
     ),
+    "dciodvfy-pm-stored-color-range": (
+        "dciodvfy reports Minimum/Maximum Stored Value Mapped (0028,1231/1232) as "
+        "'Non-string attribute while verifying string enumerated value'. Both are FD Values in "
+        "the Stored Value Color Range Macro (PS3.3 C.7.6.16.2.26 Table C.7.6.16.2.26-1); "
+        "there is no string Enumerated Value to verify."
+    ),
+    "validate_iods-pm-color-range": (
+        "validate_iods applies the integer Image Pixel requirements (Bits Stored, High Bit and "
+        "Pixel Representation) to Float Pixel Data and also reports every legal Parametric Map "
+        "Functional Group as unexpected. PS3.5 8.2 requires those integer Attributes to be "
+        "absent for Float Pixel Data; the Functional Group messages are the existing "
+        "validate_iods-functional-groups tool limit."
+    ),
+    "sr-tcoord-macro-tools": (
+        "dciodvfy exits 0 but warns that Temporal Range Type and Referenced Sample Positions "
+        "are not in the Comprehensive SR IOD, and validate_iods rejects Referenced Waveform "
+        "Channels in its WAVEFORM Content Item. They are the defining Attributes of the "
+        "TCOORD and WAVEFORM Content Item Macros in PS3.3 C.18.7 and C.18.5; Comprehensive "
+        "SR admits both Value Types in Table A.35.3-2."
+    ),
     "validate_iods-dicomdir": (
         "validate_iods on the File-set directory prints 'Missing SOP Class UID' for the "
         "DICOMDIR (it has no Basic Directory IOD), the validate_iods-no-ann line for each "
         "annotation, and validate_iods-functional-groups for the SEG."
-    ),
-    "candidate-no-fileset": (
-        "the frozen candidate's directory mode only reads '*.dcm' files ('DICOM validation "
-        "failed: no .dcm files found under .../fileset'), and File IDs cannot carry an "
-        "extension (PS3.10 8.2), so it cannot validate a File-set as a set; given the DICOMDIR "
-        "file it reports iod-modules 'skipped' for SOP Class 1.2.840.10008.1.3.10 ('no IOD "
-        "rules apply') and runs no File-set checks."
     ),
     "dcentvfy-single-file": (
         "dcentvfy on a derived object alone reports 'Missing SOPInstanceUID that was "
@@ -123,7 +136,7 @@ CONTROLS: tuple[dict, ...] = (
             "highdicom 0.28.2 Segmentation from CP12 level-0; mask = mean RGB < 64; Pixel Data "
             "re-packed without per-Frame byte padding"
         ),
-        "sha256": {"seg-binary.dcm": "d50b81ae5c99b4ad0350608253bab8afcbaa33022f7a752a60a37f879e89bc42"},
+        "sha256": {"seg-binary.dcm": "6a0d84694596fe72fb10c13930945f240cf64ab380bec2ee74f25f31cf693cbd"},
         "external": {
             "dciodvfy": "no errors, no warnings",
             "dcentvfy": "set: no errors",
@@ -143,7 +156,7 @@ CONTROLS: tuple[dict, ...] = (
         ),
         "references": SOURCE["paths"][:1],
         "built_with": "highdicom 0.28.2 Segmentation from CP12 level-0; p = (255 - mean RGB) / 255",
-        "sha256": {"seg-fractional.dcm": "f672b51762102c72754b86a7f3d9a061be9a7e97ad311f20052b4747e70f25ae"},
+        "sha256": {"seg-fractional.dcm": "3adc6b925bb9089305d3cefc2766e4903a9dcc741cc586da7bd3cf5a5ac95994"},
         "external": {
             "dciodvfy": "no errors, no warnings",
             "dcentvfy": "set: no errors",
@@ -167,7 +180,7 @@ CONTROLS: tuple[dict, ...] = (
             "highdicom 0.28.2 Segmentation (LABELMAP) from CP12 level-0; label 1 if mean RGB < "
             "64, 2 if < 128, else 0; empty Patient Orientation added"
         ),
-        "sha256": {"seg-labelmap.dcm": "5fa1b8a5db00f0b1d29738dc1186e739117be085331e332bf7027868124b8a5c"},
+        "sha256": {"seg-labelmap.dcm": "1016817b3afca3382f55998d717e1168ed468fa5bd49831ac164047ee7c73005"},
         "external": {
             "dciodvfy": (
                 "no errors, no warnings (without Patient Orientation: 'Error - "
@@ -179,6 +192,77 @@ CONTROLS: tuple[dict, ...] = (
             "validate_iods": "tool limit validate_iods-functional-groups (rc 4)",
         },
         "candidate": "general: every intrinsic check passed; set: every intrinsic check passed",
+    },
+    {
+        "id": "V7-SEG-LABELMAP-PALETTE",
+        "paths": ("seg-labelmap-palette.dcm",),
+        "sop_class_uid": "1.2.840.10008.5.1.4.1.1.66.7",
+        "iod": "Label Map Segmentation (palette color)",
+        "exercises": (
+            "Label Map Segmentation derived from V7-SEG-LABELMAP with a three-entry, 8-bit "
+            "RGB Palette Color Lookup Table encoded in the unsegmented Data Attributes"
+        ),
+        "references": SOURCE["paths"][:1],
+        "built_with": "V7-SEG-LABELMAP plus a deterministic RGB Palette Color Lookup Table",
+        "sha256": {"seg-labelmap-palette.dcm": "5094c20c34ae81c40cc0b99ca3ce42fa1e6eec64f3cc6e4212bdef2237336c58"},
+        "external": {
+            "dciodvfy": "no errors, no warnings",
+            "dcentvfy": "set: no errors",
+            "validate_iods": "tool limit validate_iods-functional-groups (rc 4)",
+        },
+        "candidate": "general: every intrinsic check passed; set: every intrinsic check passed",
+    },
+    {
+        "id": "V7-SEG-NO-FOR-SET",
+        "paths": (
+            "sets/seg-no-for/segmentation.dcm",
+            "sets/seg-no-for/source-image.dcm",
+        ),
+        "iod": "Segmentation plus Multi-frame True Color Secondary Capture source",
+        "exercises": (
+            "A BINARY Segmentation without a Frame of Reference, using Derivation Image "
+            "Functional Groups to reference a four-frame 2x2 Secondary Capture image that also "
+            "has no Frame of Reference; both objects have the same spatial sampling and extent"
+        ),
+        "references": (),
+        "built_with": (
+            "V7-SEG-BINARY stripped of slide-coordinate Functional Groups and retargeted to a "
+            "deterministic Multi-frame True Color Secondary Capture derivative of CP12 level-0"
+        ),
+        "sha256": {
+            "sets/seg-no-for/segmentation.dcm": "95f29f8d0cf0f92611b8fbf67a7b1141162f160eaab56038c55fbbad508cf081",
+            "sets/seg-no-for/source-image.dcm": "d09c948fcdf65c5dbe9147a514ae1d0eddbb3a787006d773c424d1813d2340ec",
+        },
+        "external": {
+            "dciodvfy": "both files: no errors, no warnings",
+            "dcentvfy": "set: no errors",
+            "validate_iods": "both files: no errors (rc 0)",
+        },
+        "candidate": "general: every intrinsic check passed as a set",
+    },
+    {
+        "id": "V7-SEG-FOR-SET",
+        "paths": (
+            "sets/seg-for/segmentation.dcm",
+            "sets/seg-for/source-image.dcm",
+        ),
+        "iod": "Segmentation plus its VL WSI source image",
+        "exercises": (
+            "A BINARY Segmentation and its referenced CP12 VL WSI image, sharing one Frame of "
+            "Reference UID"
+        ),
+        "references": (),
+        "built_with": "V7-SEG-BINARY plus corrected CP12 level-0",
+        "sha256": {
+            "sets/seg-for/segmentation.dcm": "e9757c4af6e03a89eb32211d6cb89542683f0a1b0a29ab37bba772de013791ce",
+            "sets/seg-for/source-image.dcm": "027ae7cfb897542d431c387313a037063a26eee3f4fc558aed563876697bd904",
+        },
+        "external": {
+            "dciodvfy": "SEG: no errors, no warnings; WSI: no errors",
+            "dcentvfy": "set: no errors",
+            "validate_iods": "both files: no errors (rc 0)",
+        },
+        "candidate": "general: every intrinsic check passed as a set",
     },
     {
         "id": "V7-PM-FLOAT",
@@ -196,11 +280,27 @@ CONTROLS: tuple[dict, ...] = (
         "built_with": (
             "highdicom 0.28.2 ParametricMap from CP12 level-0; OD = -log10((mean RGB + 1) / 256)"
         ),
-        "sha256": {"pm-float.dcm": "ab8670b0fc896935705591eccc2543b0b27f627773a0cc6ef30eb2061453ac60"},
+        "sha256": {"pm-float.dcm": "e215294f58bdb70142627f75ef88696e0339c744f8198df9a1f12c6b46dff882"},
         "external": {
             "dciodvfy": "no errors, no warnings",
             "dcentvfy": "set: no errors",
             "validate_iods": "tool limit validate_iods-functional-groups (rc 8)",
+        },
+        "candidate": "general: every intrinsic check passed; set: every intrinsic check passed",
+    },
+    {
+        "id": "V7-PM-ICC",
+        "paths": ("pm-icc.dcm",),
+        "sop_class_uid": "1.2.840.10008.5.1.4.1.1.30",
+        "iod": "Parametric Map (ICC profile)",
+        "exercises": "V7-PM-FLOAT with the CP12 sRGB Input Device ICC Profile and Color Space SRGB",
+        "references": SOURCE["paths"][:1],
+        "built_with": "V7-PM-FLOAT plus the CP12 optical path ICC Profile",
+        "sha256": {"pm-icc.dcm": "e821bcf94ae0c2bffcfb73a548c70572f49d5be87f53c9bd0ce287b267662e7c"},
+        "external": {
+            "dciodvfy": "tool limit dciodvfy-pm-stored-color-range (rc 1)",
+            "dcentvfy": "set: no errors",
+            "validate_iods": "tool limit validate_iods-pm-color-range (rc 13)",
         },
         "candidate": "general: every intrinsic check passed; set: every intrinsic check passed",
     },
@@ -218,7 +318,7 @@ CONTROLS: tuple[dict, ...] = (
         ),
         "references": SOURCE["paths"][:1],
         "built_with": "highdicom 0.28.2 MicroscopyBulkSimpleAnnotations from CP12 level-0",
-        "sha256": {"ann-2d.dcm": "4800f018c177b754fd3780846b2fca1d489ac694089d18bcd2e0602932de8a13"},
+        "sha256": {"ann-2d.dcm": "0b5269f15d16a7a9868f31ceb46f116c41ac605bbe3a5281e7a594af06e97f47"},
         "external": {
             "dciodvfy": "no errors, no warnings",
             "dcentvfy": "set: no errors",
@@ -240,13 +340,58 @@ CONTROLS: tuple[dict, ...] = (
         ),
         "references": SOURCE["paths"][:1],
         "built_with": "highdicom 0.28.2 MicroscopyBulkSimpleAnnotations from CP12 level-0",
-        "sha256": {"ann-3d.dcm": "71e805e73d5a9afa99d2bb0f2eaedb6e3771884e5444ef4201b9bb8b0144208c"},
+        "sha256": {"ann-3d.dcm": "5b72795661cc465db275202d6e67638de4e590c18eb4eacf25a75742a61fb05b"},
         "external": {
             "dciodvfy": "no errors, no warnings",
             "dcentvfy": "set: no errors",
             "validate_iods": "tool limit validate_iods-no-ann (rc 1)",
         },
         "candidate": "general: every intrinsic check passed; set: every intrinsic check passed",
+    },
+    {
+        "id": "V7-ANN-ICC",
+        "paths": ("ann-icc.dcm",),
+        "sop_class_uid": "1.2.840.10008.5.1.4.1.1.91.1",
+        "iod": "Microscopy Bulk Simple Annotations (ICC profile)",
+        "exercises": "V7-ANN-2D with the CP12 sRGB Input Device ICC Profile and Color Space SRGB",
+        "references": SOURCE["paths"][:1],
+        "built_with": "V7-ANN-2D plus the CP12 optical path ICC Profile",
+        "sha256": {"ann-icc.dcm": "cc000cf2500dd3898c9a5bd3d3f9698831ce2a92a8edcc9bb24d43a6216a481f"},
+        "external": {
+            "dciodvfy": "no errors, no warnings",
+            "dcentvfy": "set: no errors",
+            "validate_iods": "tool limit validate_iods-no-ann (rc 1)",
+        },
+        "candidate": "general: every intrinsic check passed; set: every intrinsic check passed",
+    },
+    {
+        "id": "V7-ANN-CONCAT-SET",
+        "paths": (
+            "sets/ann-concat/annotations.dcm",
+            "sets/ann-concat/reference-image.dcm",
+            "sets/ann-concat/source-image.dcm",
+        ),
+        "iod": "Microscopy Bulk Simple Annotations plus a WSI Concatenation member",
+        "exercises": (
+            "A valid 2D Bulk Annotations object and one valid VL WSI Concatenation member; "
+            "the control does not reference that member"
+        ),
+        "references": (),
+        "built_with": (
+            "V7-ANN-2D with a distinct deterministic identity plus part 1 of "
+            "W7-CONCATENATION-2X4F"
+        ),
+        "sha256": {
+            "sets/ann-concat/annotations.dcm": "1f9ee9fc83770c06b208723d1603e49db6605cf0d49e2251fa8cbf44b5106a14",
+            "sets/ann-concat/reference-image.dcm": "027ae7cfb897542d431c387313a037063a26eee3f4fc558aed563876697bd904",
+            "sets/ann-concat/source-image.dcm": "18b5ef567c69cc0742551e6ca9bf1e7235f6deca947800d9abae2f35516f04b5",
+        },
+        "external": {
+            "dciodvfy": "all three files: no errors",
+            "dcentvfy": "set: no errors",
+            "validate_iods": "all three files: no errors (rc 0)",
+        },
+        "candidate": "general: every intrinsic check passed as a set",
     },
     {
         "id": "V7-KOS-ACQ-COMPLETE",
@@ -269,10 +414,7 @@ CONTROLS: tuple[dict, ...] = (
             "dcentvfy": "set: rc 0, tool limit dcentvfy-accession-ie (one warning)",
             "validate_iods": "no errors (rc 0)",
         },
-        "candidate": (
-            "general: every intrinsic check passed, iod-modules skipped "
-            "(candidate-no-kos-sr-rules); set: same, rc 0"
-        ),
+        "candidate": "general: every intrinsic check passed; set: same, rc 0",
     },
     {
         "id": "V7-KOS-REJECTED-QUALITY",
@@ -297,10 +439,7 @@ CONTROLS: tuple[dict, ...] = (
             "dcentvfy": "set: rc 0, tool limit dcentvfy-accession-ie (one warning)",
             "validate_iods": "no errors (rc 0)",
         },
-        "candidate": (
-            "general: every intrinsic check passed, iod-modules skipped "
-            "(candidate-no-kos-sr-rules); set: same, rc 0"
-        ),
+        "candidate": "general: every intrinsic check passed; set: same, rc 0",
     },
     {
         "id": "V7-SR-TID1500",
@@ -323,10 +462,7 @@ CONTROLS: tuple[dict, ...] = (
             "dcentvfy": "set: rc 0, tool limit dcentvfy-accession-ie (two warnings)",
             "validate_iods": "no errors (rc 0)",
         },
-        "candidate": (
-            "general: every intrinsic check passed, iod-modules skipped "
-            "(candidate-no-kos-sr-rules); set: same, rc 0"
-        ),
+        "candidate": "general: every intrinsic check passed; set: same, rc 0",
     },
     {
         "id": "V7-SR-3D",
@@ -347,10 +483,74 @@ CONTROLS: tuple[dict, ...] = (
             "dcentvfy": "set: rc 0, tool limit dcentvfy-accession-ie (two warnings)",
             "validate_iods": "no errors (rc 0)",
         },
-        "candidate": (
-            "general: every intrinsic check passed, iod-modules skipped "
-            "(candidate-no-kos-sr-rules); set: same, rc 0"
+        "candidate": "general: every intrinsic check passed; set: same, rc 0",
+    },
+    {
+        "id": "V7-SR-BASIC-TEXT",
+        "paths": ("sr-basic-text.dcm",),
+        "sop_class_uid": "1.2.840.10008.5.1.4.1.1.88.11",
+        "iod": "Basic Text SR",
+        "exercises": "Basic Text SR with one by-value TEXT Content Item and no declared Template",
+        "references": (),
+        "built_with": "V7-SR-TID1500 simplified to Basic Text SR content",
+        "sha256": {"sr-basic-text.dcm": "f8a4a450aac8f6b289d1d480ac690b58d8a1d1eed67e433f2995ad6ea03053e6"},
+        "external": {
+            "dciodvfy": "no errors, no warnings",
+            "dcentvfy": "no errors",
+            "validate_iods": "no errors (rc 0)",
+        },
+        "candidate": "general: every intrinsic check passed",
+    },
+    {
+        "id": "V7-SR-ENHANCED",
+        "paths": ("sr-enhanced.dcm",),
+        "sop_class_uid": "1.2.840.10008.5.1.4.1.1.88.22",
+        "iod": "Enhanced SR",
+        "exercises": "Enhanced SR with the by-value TID 1500 measurement content of V7-SR-TID1500",
+        "references": SOURCE["paths"][:1],
+        "built_with": "highdicom 0.28.2 EnhancedSR + MeasurementReport",
+        "sha256": {"sr-enhanced.dcm": "f4014f24e81171b0a5862fae2c73f49056073983c9df0403df8894dfd8c534e7"},
+        "external": {
+            "dciodvfy": "no errors, no warnings",
+            "dcentvfy": "set: rc 0, tool limit dcentvfy-accession-ie (two warnings)",
+            "validate_iods": "no errors (rc 0)",
+        },
+        "candidate": "general: every intrinsic check passed; set: same, rc 0",
+    },
+    {
+        "id": "V7-SR-TCOORD",
+        "paths": ("sr-tcoord.dcm",),
+        "sop_class_uid": "1.2.840.10008.5.1.4.1.1.88.33",
+        "iod": "Comprehensive SR (TCOORD and WAVEFORM)",
+        "exercises": (
+            "Comprehensive SR with no declared Template; a TCOORD POINT at sample 1 selects "
+            "from one channel of one multiplex group of a WAVEFORM Content Item"
         ),
+        "references": ("waveform.dcm",),
+        "built_with": "V7-SR-TID1500 simplified to one TCOORD/WAVEFORM content branch",
+        "sha256": {"sr-tcoord.dcm": "4683dc534d17876cd7237cbafc066f10c49b3f85d9f9e901248c9d8db62d7427"},
+        "external": {
+            "dciodvfy": "rc 0, tool limit sr-tcoord-macro-tools (two warnings)",
+            "dcentvfy": "set with V7-WAVEFORM: rc 0, tool limit dcentvfy-accession-ie (one warning)",
+            "validate_iods": "tool limit sr-tcoord-macro-tools (rc 1)",
+        },
+        "candidate": "general: every intrinsic check passed; set with V7-WAVEFORM: same",
+    },
+    {
+        "id": "V7-WAVEFORM",
+        "paths": ("waveform.dcm",),
+        "sop_class_uid": "1.2.840.10008.5.1.4.1.1.9.1.2",
+        "iod": "General ECG Waveform",
+        "exercises": "One multiplex group with one channel and four signed 16-bit samples",
+        "references": (),
+        "built_with": "pydicom from fixed values and the CP12 Patient and Study",
+        "sha256": {"waveform.dcm": "ff891d4775305b33300e6f24a50636b241bade69718bdc16b71fb024090605bb"},
+        "external": {
+            "dciodvfy": "no errors, no warnings",
+            "dcentvfy": "set with V7-SR-TCOORD: rc 0, tool limit dcentvfy-accession-ie (one warning)",
+            "validate_iods": "no errors (rc 0)",
+        },
+        "candidate": "general: no intrinsic check failed; set with V7-SR-TCOORD: every intrinsic check passed",
     },
     {
         "id": "V7-FILESET",
@@ -367,7 +567,8 @@ CONTROLS: tuple[dict, ...] = (
         "exercises": (
             "Media Storage Directory (Basic Directory IOD), General Purpose profile "
             "STD-GEN-CD/DVD-RAM/BD, File-set ID CP12SLIDE: one PATIENT, one STUDY, four SERIES; "
-            "IMAGE records for the CP12 pyramid (WSI0 = level-0, WSI1 = level-1, byte copies) "
+            "IMAGE records for the CP12 pyramid (WSI0 = level-0, WSI1 = level-1, with corrected "
+            "slide-coordinate offsets) "
             "and the BINARY SEG, ANNOTATION records (F.5.47) for the 2D and 3D Bulk "
             "Annotations; every Referenced File ID exists and its SOP Class, SOP Instance and "
             "Transfer Syntax UIDs match the record"
@@ -380,11 +581,11 @@ CONTROLS: tuple[dict, ...] = (
         ),
         "sha256": {
             "fileset/DICOMDIR": "4dfac6397116c567696baf999b230e977d7e1fae1932c6e8e174307039ed0c85",
-            "fileset/SLIDE/WSI0": "218b2b6f6904bf12630a718713b692d1ff26112f4a9af295252117d3f4ec69c0",
+            "fileset/SLIDE/WSI0": "027ae7cfb897542d431c387313a037063a26eee3f4fc558aed563876697bd904",
             "fileset/SLIDE/WSI1": "5b7ae5d4613196d008f629d74595147b98ee193951e2d0e9df9ea8d8425cd0a4",
-            "fileset/SLIDE/ANN2D": "4800f018c177b754fd3780846b2fca1d489ac694089d18bcd2e0602932de8a13",
-            "fileset/SLIDE/ANN3D": "71e805e73d5a9afa99d2bb0f2eaedb6e3771884e5444ef4201b9bb8b0144208c",
-            "fileset/SLIDE/SEG": "d50b81ae5c99b4ad0350608253bab8afcbaa33022f7a752a60a37f879e89bc42",
+            "fileset/SLIDE/ANN2D": "0b5269f15d16a7a9868f31ceb46f116c41ac605bbe3a5281e7a594af06e97f47",
+            "fileset/SLIDE/ANN3D": "5b72795661cc465db275202d6e67638de4e590c18eb4eacf25a75742a61fb05b",
+            "fileset/SLIDE/SEG": "6a0d84694596fe72fb10c13930945f240cf64ab380bec2ee74f25f31cf693cbd",
         },
         "external": {
             "dciodvfy": "DICOMDIR: rc 1, tool limit dciodvfy-dicomdir-annotation (2 errors, 15 warnings)",
@@ -394,7 +595,8 @@ CONTROLS: tuple[dict, ...] = (
             "referenced_files": "all 5 exist; SOP Class, SOP Instance and Transfer Syntax UIDs match",
         },
         "candidate": (
-            "tool limit candidate-no-fileset; each member file alone: every intrinsic check passed"
+            "directory: every intrinsic check passed, including file-set; each member file "
+            "alone: every intrinsic check passed"
         ),
     },
 )
@@ -426,11 +628,32 @@ def _require_highdicom():
 
 def _load_sources():
     import pydicom
+    from wsi_dicom_bench.negative_bench.controls_v7_wsi import slide_offset
 
     level_zero = pydicom.dcmread(SOURCE_DIR / "level-0.dcm")
     level_one = pydicom.dcmread(SOURCE_DIR / "level-1.dcm")
     if level_zero.pixel_array.shape != (4, 2, 2, 3):
         raise RuntimeError("CP12 level-0 is no longer four 2x2 RGB tiles")
+    for dataset in (level_zero, level_one):
+        origin = dataset.TotalPixelMatrixOriginSequence[0]
+        origin_xy = (float(origin.XOffsetInSlideCoordinateSystem),
+                     float(origin.YOffsetInSlideCoordinateSystem))
+        orientation = [float(value) for value in dataset.ImageOrientationSlide]
+        spacing = [float(value) for value in
+                   dataset.SharedFunctionalGroupsSequence[0].PixelMeasuresSequence[0].PixelSpacing]
+        for item in dataset.PerFrameFunctionalGroupsSequence:
+            position = item.PlanePositionSlideSequence[0]
+            x, y = slide_offset(
+                origin_xy,
+                orientation,
+                spacing,
+                int(position.RowPositionInTotalImagePixelMatrix),
+                int(position.ColumnPositionInTotalImagePixelMatrix),
+            )
+            if abs(float(position.XOffsetInSlideCoordinateSystem) - x) > 1e-12:
+                position.XOffsetInSlideCoordinateSystem = f"{x:.12g}"
+            if abs(float(position.YOffsetInSlideCoordinateSystem) - y) > 1e-12:
+                position.YOffsetInSlideCoordinateSystem = f"{y:.12g}"
     return level_zero, level_one
 
 
@@ -590,6 +813,34 @@ def _build_seg_labelmap(hd, level_zero, level_one):
     return control_id, {"seg-labelmap.dcm": seg}
 
 
+def _retag_control(dataset, control_id: str, series_number: int) -> None:
+    """Give a derived control its own deterministic Series and SOP identity."""
+    dataset.SeriesInstanceUID = uid(control_id, "series")
+    dataset.SeriesNumber = series_number
+    dataset.SOPInstanceUID = uid(control_id, "instance")
+    dataset.InstanceNumber = 1
+    _determinize(dataset, control_id)
+
+
+def _build_seg_labelmap_palette(hd, level_zero, level_one):
+    control_id = "V7-SEG-LABELMAP-PALETTE"
+    _, objects = _build_seg_labelmap(hd, level_zero, level_one)
+    seg = objects["seg-labelmap.dcm"]
+    seg.PhotometricInterpretation = "PALETTE COLOR"
+    seg.ICCProfile = _source_icc(level_zero)
+    seg.ColorSpace = "SRGB"
+    descriptor = [3, 0, 8]
+    for color, values in (
+        ("Red", bytes([0, 255, 255, 0])),
+        ("Green", bytes([0, 0, 255, 0])),
+        ("Blue", bytes([0, 0, 255, 0])),
+    ):
+        setattr(seg, f"{color}PaletteColorLookupTableDescriptor", descriptor)
+        setattr(seg, f"{color}PaletteColorLookupTableData", values)
+    _retag_control(seg, control_id, 111)
+    return control_id, {"seg-labelmap-palette.dcm": seg}
+
+
 def _optical_density(level_zero):
     import numpy as np
 
@@ -630,6 +881,34 @@ def _build_pm(hd, level_zero, level_one):
     return control_id, {"pm-float.dcm": pm}
 
 
+def _source_icc(level_zero) -> bytes:
+    return bytes(level_zero.OpticalPathSequence[0].ICCProfile)
+
+
+def _build_pm_icc(hd, level_zero, level_one):
+    from pydicom.dataset import Dataset
+    from pydicom.sequence import Sequence
+
+    control_id = "V7-PM-ICC"
+    _, objects = _build_pm(hd, level_zero, level_one)
+    pm = objects["pm-float.dcm"]
+    pm.PixelPresentation = "COLOR_RANGE"
+    descriptor = [256, 0, 16]
+    ramp = struct.pack("<256H", *(value * 257 for value in range(256)))
+    for color in ("Red", "Green", "Blue"):
+        setattr(pm, f"{color}PaletteColorLookupTableDescriptor", descriptor)
+        setattr(pm, f"{color}PaletteColorLookupTableData", ramp)
+    values = struct.unpack(f"<{len(pm.FloatPixelData) // 4}f", pm.FloatPixelData)
+    stored = Dataset()
+    stored.MinimumStoredValueMapped = min(values)
+    stored.MaximumStoredValueMapped = max(values)
+    pm.SharedFunctionalGroupsSequence[0].StoredValueColorRangeSequence = Sequence([stored])
+    pm.ICCProfile = _source_icc(level_zero)
+    pm.ColorSpace = "SRGB"
+    _retag_control(pm, control_id, 112)
+    return control_id, {"pm-icc.dcm": pm}
+
+
 def _pixel_spacing_um(level_zero) -> tuple[float, float]:
     """(row spacing, column spacing) of level-0 in micrometers."""
     spacing = level_zero.SharedFunctionalGroupsSequence[0].PixelMeasuresSequence[0].PixelSpacing
@@ -667,8 +946,8 @@ def _build_ann_2d(hd, level_zero, level_one):
     # pixel is 0\\0 and the bottom right corner of the matrix is 4\\4 (the sub-pixel
     # convention of PS3.3 C.18.6 and C.37); area from the level-0 Pixel Spacing.
     regions = [
-        np.array([[0.0, 0.0], [2.0, 0.0], [2.0, 4.0], [0.0, 4.0]]),
-        np.array([[2.0, 0.0], [4.0, 0.0], [4.0, 4.0], [2.0, 4.0]]),
+        np.array([[0.0, 4.0], [2.0, 4.0], [2.0, 0.0], [0.0, 0.0]]),
+        np.array([[2.0, 4.0], [4.0, 4.0], [4.0, 0.0], [2.0, 0.0]]),
     ]
     areas = np.array([2.0 * column_um * 4.0 * row_um] * 2, dtype=np.float32)
     tissue = hd.ann.AnnotationGroup(
@@ -699,6 +978,16 @@ def _build_ann_2d(hd, level_zero, level_one):
     return control_id, {"ann-2d.dcm": ann}
 
 
+def _build_ann_icc(hd, level_zero, level_one):
+    control_id = "V7-ANN-ICC"
+    _, objects = _build_ann_2d(hd, level_zero, level_one)
+    ann = objects["ann-2d.dcm"]
+    ann.ICCProfile = _source_icc(level_zero)
+    ann.ColorSpace = "SRGB"
+    _retag_control(ann, control_id, 113)
+    return control_id, {"ann-icc.dcm": ann}
+
+
 def _build_ann_3d(hd, level_zero, level_one):
     import numpy as np
     from pydicom.sr.codedict import codes
@@ -707,7 +996,7 @@ def _build_ann_3d(hd, level_zero, level_one):
     # A tissue outline on the slide surface (Z 0) inside the CP12 imaged volume
     # (0.001 mm wide, 0.002 mm high from the origin at X 0, Y 0), in slide coordinates (mm).
     outline = np.array(
-        [[0.0001, 0.0002, 0.0], [0.0009, 0.0002, 0.0], [0.0009, 0.0018, 0.0], [0.0001, 0.0018, 0.0]]
+        [[0.0001, 0.0018, 0.0], [0.0009, 0.0018, 0.0], [0.0009, 0.0002, 0.0], [0.0001, 0.0002, 0.0]]
     )
     area_um2 = (0.0008 * 1000.0) * (0.0016 * 1000.0)
     group = hd.ann.AnnotationGroup(
@@ -904,18 +1193,316 @@ def _build_sr_3d(hd, level_zero, level_one):
     return control_id, {"sr-3d.dcm": sr}
 
 
+def _build_sr_enhanced(hd, level_zero, level_one):
+    import numpy as np
+
+    control_id = "V7-SR-ENHANCED"
+    row_um, column_um = _pixel_spacing_um(level_zero)
+    region = hd.sr.ImageRegion(
+        graphic_type=hd.sr.GraphicTypeValues.POLYLINE,
+        graphic_data=np.array([[0, 0], [2, 0], [2, 4], [0, 4], [0, 0]], dtype=np.float32),
+        source_image=hd.sr.SourceImageForRegion(
+            referenced_sop_class_uid=level_zero.SOPClassUID,
+            referenced_sop_instance_uid=level_zero.SOPInstanceUID,
+        ),
+        pixel_origin_interpretation=hd.sr.PixelOriginInterpretationValues.VOLUME,
+    )
+    report = _measurement_report(hd, control_id, level_zero, region, 2.0 * column_um * 4.0 * row_um)
+    sr = _sr(hd, hd.sr.EnhancedSR, control_id, 115, report, level_zero)
+    return control_id, {"sr-enhanced.dcm": sr}
+
+
+def _build_sr_basic_text(hd, level_zero, level_one):
+    from pydicom.dataset import Dataset
+    from pydicom.sequence import Sequence
+
+    control_id = "V7-SR-BASIC-TEXT"
+    _, objects = _build_sr_enhanced(hd, level_zero, level_one)
+    sr = objects["sr-enhanced.dcm"]
+    sr.SOPClassUID = "1.2.840.10008.5.1.4.1.1.88.11"
+    sr.file_meta.MediaStorageSOPClassUID = sr.SOPClassUID
+    for keyword in ("ContentTemplateSequence", "CurrentRequestedProcedureEvidenceSequence"):
+        if keyword in sr:
+            del sr[keyword]
+    text = Dataset()
+    text.RelationshipType = "CONTAINS"
+    text.ValueType = "TEXT"
+    concept = Dataset()
+    concept.CodeValue = "121106"
+    concept.CodingSchemeDesignator = "DCM"
+    concept.CodeMeaning = "Comment"
+    text.ConceptNameCodeSequence = Sequence([concept])
+    text.TextValue = "Pathology slide review"
+    sr.ContentSequence = Sequence([text])
+    _retag_control(sr, control_id, 114)
+    return control_id, {"sr-basic-text.dcm": sr}
+
+
+def _build_sr_tcoord(hd, level_zero, level_one):
+    from pydicom.dataset import Dataset
+    from pydicom.sequence import Sequence
+
+    control_id = "V7-SR-TCOORD"
+    _, objects = _build_sr_tid1500(hd, level_zero, level_one)
+    sr = objects["sr-tid1500.dcm"]
+    if "ContentTemplateSequence" in sr:
+        del sr.ContentTemplateSequence
+    waveform_class = "1.2.840.10008.5.1.4.1.1.9.1.2"
+    waveform_uid = uid(control_id, "waveform")
+
+    reference = Dataset()
+    reference.ReferencedSOPClassUID = waveform_class
+    reference.ReferencedSOPInstanceUID = waveform_uid
+    reference.ReferencedWaveformChannels = [1, 1]
+    waveform = Dataset()
+    waveform.RelationshipType = "SELECTED FROM"
+    waveform.ValueType = "WAVEFORM"
+    waveform.ReferencedSOPSequence = Sequence([reference])
+
+    concept = Dataset()
+    concept.CodeValue = "111030"
+    concept.CodingSchemeDesignator = "DCM"
+    concept.CodeMeaning = "Temporal region"
+    temporal = Dataset()
+    temporal.RelationshipType = "CONTAINS"
+    temporal.ValueType = "TCOORD"
+    temporal.ConceptNameCodeSequence = Sequence([concept])
+    temporal.TemporalRangeType = "POINT"
+    temporal.ReferencedSamplePositions = [1]
+    temporal.ContentSequence = Sequence([waveform])
+    sr.ContentSequence = Sequence([temporal])
+
+    study = Dataset()
+    study.StudyInstanceUID = sr.StudyInstanceUID
+    series = Dataset()
+    series.SeriesInstanceUID = uid(control_id, "waveform-series")
+    evidence = Dataset()
+    evidence.ReferencedSOPClassUID = waveform_class
+    evidence.ReferencedSOPInstanceUID = waveform_uid
+    series.ReferencedSOPSequence = Sequence([evidence])
+    study.ReferencedSeriesSequence = Sequence([series])
+    sr.CurrentRequestedProcedureEvidenceSequence = Sequence([study])
+    _retag_control(sr, control_id, 116)
+    return control_id, {"sr-tcoord.dcm": sr}
+
+
+def _build_waveform(hd, level_zero, level_one):
+    from pydicom.dataset import Dataset, FileDataset, FileMetaDataset
+    from pydicom.sequence import Sequence
+    from pydicom.uid import ExplicitVRLittleEndian
+
+    control_id = "V7-WAVEFORM"
+    sop_class = "1.2.840.10008.5.1.4.1.1.9.1.2"
+    sop_instance = uid("V7-SR-TCOORD", "waveform")
+    meta = FileMetaDataset()
+    meta.MediaStorageSOPClassUID = sop_class
+    meta.MediaStorageSOPInstanceUID = sop_instance
+    meta.TransferSyntaxUID = ExplicitVRLittleEndian
+    meta.ImplementationClassUID = uid(control_id, "implementation")
+    waveform = FileDataset("waveform.dcm", {}, file_meta=meta, preamble=b"\0" * 128)
+    for keyword in (
+        "PatientName", "PatientID", "PatientBirthDate", "PatientSex",
+        "StudyInstanceUID", "StudyDate", "StudyTime", "AccessionNumber",
+        "ReferringPhysicianName", "StudyID", "StudyDescription",
+    ):
+        if keyword in level_zero:
+            setattr(waveform, keyword, getattr(level_zero, keyword))
+    waveform.SOPClassUID = sop_class
+    waveform.SOPInstanceUID = sop_instance
+    waveform.SeriesInstanceUID = uid("V7-SR-TCOORD", "waveform-series")
+    waveform.Modality = "ECG"
+    waveform.SeriesNumber = 117
+    waveform.InstanceNumber = 1
+    waveform.ContentDate = FIXED_DATE
+    waveform.ContentTime = FIXED_TIME
+    waveform.AcquisitionDateTime = FIXED_DATE + FIXED_TIME
+    waveform.Manufacturer = MANUFACTURER
+    waveform.AcquisitionContextSequence = Sequence([])
+
+    source = Dataset()
+    source.CodeValue = "2:1"
+    source.CodingSchemeDesignator = "MDC"
+    source.CodeMeaning = "Lead I"
+    units = Dataset()
+    units.CodeValue = "mV"
+    units.CodingSchemeDesignator = "UCUM"
+    units.CodeMeaning = "millivolt"
+    channel = Dataset()
+    channel.ChannelSourceSequence = Sequence([source])
+    channel.ChannelSensitivity = "1"
+    channel.ChannelSensitivityUnitsSequence = Sequence([units])
+    channel.ChannelSensitivityCorrectionFactor = "1"
+    channel.ChannelBaseline = "0"
+    channel.ChannelTimeSkew = "0"
+    channel.WaveformBitsStored = 16
+    channel.FilterLowFrequency = "0.05"
+    channel.FilterHighFrequency = "150"
+
+    group = Dataset()
+    group.TriggerTimeOffset = "0"
+    group.WaveformOriginality = "ORIGINAL"
+    group.NumberOfWaveformChannels = 1
+    group.NumberOfWaveformSamples = 4
+    group.SamplingFrequency = "1000"
+    group.MultiplexGroupLabel = "ECG"
+    group.ChannelDefinitionSequence = Sequence([channel])
+    group.WaveformBitsAllocated = 16
+    group.WaveformSampleInterpretation = "SS"
+    group.WaveformData = struct.pack("<4h", 0, 1, -1, 0)
+    waveform.WaveformSequence = Sequence([group])
+    return control_id, {"waveform.dcm": waveform}
+
+
 BUILDERS = (
     _build_seg_binary,
     _build_seg_fractional,
     _build_seg_labelmap,
+    _build_seg_labelmap_palette,
     _build_pm,
+    _build_pm_icc,
     _build_ann_2d,
+    _build_ann_icc,
     _build_ann_3d,
     _build_kos_acquisition_complete,
     _build_kos_rejected_quality,
     _build_sr_tid1500,
     _build_sr_3d,
+    _build_sr_basic_text,
+    _build_sr_enhanced,
+    _build_sr_tcoord,
+    _build_waveform,
 )
+
+
+def _set_referenced_sop(dataset, before: str, sop_class: str, instance: str) -> None:
+    """Retarget every nested SOP reference to ``before`` while preserving its role."""
+    for element in dataset:
+        if element.VR == "SQ":
+            for item in element.value:
+                _set_referenced_sop(item, before, sop_class, instance)
+    if str(getattr(dataset, "ReferencedSOPInstanceUID", "")) == before:
+        dataset.ReferencedSOPClassUID = sop_class
+        dataset.ReferencedSOPInstanceUID = instance
+
+
+def _build_set_controls(staging: Path, level_zero) -> dict[str, dict[str, str]]:
+    """Build the two positive multi-object controls used by family set cases."""
+    import pydicom
+    from pydicom.uid import MultiFrameTrueColorSecondaryCaptureImageStorage
+
+    digests: dict[str, dict[str, str]] = {}
+
+    annotation_id = "V7-ANN-CONCAT-SET"
+    annotation_root = staging / "sets" / "ann-concat"
+    annotation_root.mkdir(parents=True)
+    annotations = pydicom.dcmread(staging / "ann-2d.dcm")
+    _retag_control(annotations, annotation_id, 118)
+    annotations.save_as(annotation_root / "annotations.dcm", enforce_file_format=True)
+    level_zero.save_as(annotation_root / "reference-image.dcm", enforce_file_format=True)
+    concatenation = (
+        PACKAGE_DIR
+        / "controls-v7"
+        / "wsi"
+        / "W7-CONCATENATION-2X4F"
+        / "part-1.dcm"
+    )
+    shutil.copyfile(concatenation, annotation_root / "source-image.dcm")
+    digests[annotation_id] = {
+        f"sets/ann-concat/{name}": _sha256(annotation_root / name)
+        for name in ("annotations.dcm", "reference-image.dcm", "source-image.dcm")
+    }
+
+    segmentation_id = "V7-SEG-NO-FOR-SET"
+    segmentation_root = staging / "sets" / "seg-no-for"
+    segmentation_root.mkdir(parents=True)
+    source = copy.deepcopy(level_zero)
+    old_source_uid = str(source.SOPInstanceUID)
+    source_uid = uid(segmentation_id, "source-image")
+    source.SOPClassUID = MultiFrameTrueColorSecondaryCaptureImageStorage
+    source.file_meta.MediaStorageSOPClassUID = source.SOPClassUID
+    source.SOPInstanceUID = source_uid
+    source.file_meta.MediaStorageSOPInstanceUID = source_uid
+    source.SeriesInstanceUID = uid(segmentation_id, "source-series")
+    source.SeriesNumber = 119
+    source.Modality = "OT"
+    source.ConversionType = "WSD"
+    source.ImageType = ["DERIVED", "SECONDARY"]
+    source.InstanceNumber = 1
+    source.PatientOrientation = ""
+    source.FrameTime = "0"
+    source.FrameIncrementPointer = [0x0018_1063]
+    for keyword in (
+        "FrameOfReferenceUID",
+        "SharedFunctionalGroupsSequence",
+        "PerFrameFunctionalGroupsSequence",
+        "DimensionOrganizationSequence",
+        "DimensionIndexSequence",
+        "DimensionOrganizationType",
+        "TotalPixelMatrixRows",
+        "TotalPixelMatrixColumns",
+        "TotalPixelMatrixOriginSequence",
+        "ImageOrientationSlide",
+        "ImagedVolumeWidth",
+        "ImagedVolumeHeight",
+        "ImagedVolumeDepth",
+        "TotalPixelMatrixFocalPlanes",
+        "NumberOfOpticalPaths",
+        "OpticalPathSequence",
+        "SpecimenLabelInImage",
+        "FocusMethod",
+        "ExtendedDepthOfField",
+        "PyramidUID",
+        "VolumetricProperties",
+        "PyramidLabel",
+        "PositionReferenceIndicator",
+        "AcquisitionContextSequence",
+    ):
+        source.pop(keyword, None)
+    source.save_as(segmentation_root / "source-image.dcm", enforce_file_format=True)
+
+    segmentation = pydicom.dcmread(staging / "seg-binary.dcm")
+    _retag_control(segmentation, segmentation_id, 120)
+    segmentation.pop("FrameOfReferenceUID", None)
+    segmentation.PatientOrientation = ""
+    segmentation.SharedFunctionalGroupsSequence[0].pop("PixelMeasuresSequence", None)
+    for group in segmentation.PerFrameFunctionalGroupsSequence:
+        group.pop("PlanePositionSlideSequence", None)
+        group.FrameContentSequence[0].DimensionIndexValues = [1]
+    segmentation.DimensionIndexSequence = segmentation.DimensionIndexSequence[:1]
+    for keyword in (
+        "PositionReferenceIndicator",
+        "DimensionOrganizationType",
+        "TotalPixelMatrixColumns",
+        "TotalPixelMatrixRows",
+        "TotalPixelMatrixOriginSequence",
+        "ImageOrientationSlide",
+        "TotalPixelMatrixFocalPlanes",
+    ):
+        segmentation.pop(keyword, None)
+    _set_referenced_sop(
+        segmentation,
+        old_source_uid,
+        str(MultiFrameTrueColorSecondaryCaptureImageStorage),
+        source_uid,
+    )
+    segmentation.save_as(segmentation_root / "segmentation.dcm", enforce_file_format=True)
+    digests[segmentation_id] = {
+        f"sets/seg-no-for/{name}": _sha256(segmentation_root / name)
+        for name in ("segmentation.dcm", "source-image.dcm")
+    }
+
+    frame_id = "V7-SEG-FOR-SET"
+    frame_root = staging / "sets" / "seg-for"
+    frame_root.mkdir(parents=True)
+    frame_segmentation = pydicom.dcmread(staging / "seg-binary.dcm")
+    _retag_control(frame_segmentation, frame_id, 121)
+    frame_segmentation.save_as(frame_root / "segmentation.dcm", enforce_file_format=True)
+    level_zero.save_as(frame_root / "source-image.dcm", enforce_file_format=True)
+    digests[frame_id] = {
+        f"sets/seg-for/{name}": _sha256(frame_root / name)
+        for name in ("segmentation.dcm", "source-image.dcm")
+    }
+    return digests
 
 
 FILESET_ID = "V7-FILESET"
@@ -980,17 +1567,20 @@ def _determinize_dicomdir(path: Path) -> None:
         raise RuntimeError(f"DICOMDIR offsets {stray} do not start a Directory Record")
 
 
-def _build_fileset(staging: Path) -> dict[str, str]:
+def _build_fileset(staging: Path, level_zero, level_one) -> dict[str, str]:
     """Write the File-set with dcmmkdir (General Purpose profile) in a fixed member order."""
     import subprocess
 
     root = staging / FILESET_DIR
+    corrected_sources = {"level-0.dcm": level_zero, "level-1.dcm": level_one}
     for file_id, source in FILESET_MEMBERS:
         kind, name = source.split(":")
-        origin = SOURCE_DIR / name if kind == "source" else staging / name
         destination = root / file_id
         destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(origin, destination)
+        if kind == "source":
+            corrected_sources[name].save_as(destination, enforce_file_format=True)
+        else:
+            shutil.copyfile(staging / name, destination)
     command = ["dcmmkdir", "-Pgp", "+F", FILESET_ID_VALUE, "-I"] + [
         file_id for file_id, _ in FILESET_MEMBERS
     ]
@@ -1021,7 +1611,8 @@ def build(output: Path) -> dict[str, dict[str, str]]:
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 dataset.save_as(destination, enforce_file_format=True)
                 digests[control_id][relative] = _sha256(destination)
-        digests[FILESET_ID] = _build_fileset(staging)
+        digests.update(_build_set_controls(staging, level_zero))
+        digests[FILESET_ID] = _build_fileset(staging, level_zero, level_one)
         shutil.move(staging, output)
     return digests
 

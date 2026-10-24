@@ -30,7 +30,6 @@ from wsi_dicom_bench.path_identifiers import require_portable_identifier
 
 
 EXPECTED_PYDICOM_VERSION = "3.0.2"
-VL_WSI_SOP_CLASS_UID = "1.2.840.10008.5.1.4.1.1.77.1.6"
 # Supported manifest schemas and the version that names their manifest and lock.
 MANIFEST_VERSIONS = {
     "wsi-dicom-negative-bench-manifest-v1": "v1",
@@ -42,7 +41,10 @@ MANIFEST_VERSIONS = {
 PROFILED_VERSIONS = {"v3", "v6"}
 
 # The only words a generated Patient's Name or Patient ID may hold.
-PLACEHOLDER_WORDS = {"", "RESEARCH", "PLACEHOLDER", "ANONYMOUS", "ANON"}
+PLACEHOLDER_WORDS = {
+    "", "RESEARCH", "PLACEHOLDER", "ANONYMOUS", "ANON", "DUMMY", "DUMMY-PATIENT",
+    "GROUP", "MEMBER-1",
+}
 
 
 def _resource_path(package: str, name: str = "") -> Path:
@@ -76,7 +78,15 @@ def load_manifest(path: Path) -> dict:
         raise GenerationError("control count exceeds manifest limit")
     if len(cases) > maximums["max_cases"]:
         raise GenerationError("case count exceeds manifest limit")
-    control_ids = {item["control_id"] for item in controls}
+    mutation_sources = manifest.get("mutation_sources", [])
+    if not isinstance(mutation_sources, list) or not all(
+        isinstance(item, dict) and isinstance(item.get("control_id"), str)
+        for item in mutation_sources
+    ):
+        raise GenerationError("challenge manifest mutation_sources must be an array of controls")
+    control_ids = {item["control_id"] for item in [*controls, *mutation_sources]}
+    if len(control_ids) != len(controls) + len(mutation_sources):
+        raise GenerationError("challenge manifest control IDs are not unique")
     for index, case in enumerate(cases):
         source_ids = case.get("source_control_ids")
         if not isinstance(source_ids, list) or len(source_ids) != 1:
@@ -150,7 +160,7 @@ def _materialize_controls(
     max_file_bytes: int,
 ) -> dict[str, list[Path]]:
     controls: dict[str, list[Path]] = {}
-    for control in manifest["valid_controls"]:
+    for control in [*manifest["valid_controls"], *manifest.get("mutation_sources", [])]:
         if "original_paths" in control:
             originals = control.get("original_paths")
             packages = control.get("package_paths")
@@ -211,6 +221,38 @@ def _materialize_controls(
             if sha256_file(destination) != digest:
                 raise GenerationError(f"copied control SHA-256 mismatch: {destination}")
             copied.append(destination)
+        for auxiliary in control.get("auxiliary_files", []):
+            if not isinstance(auxiliary, dict):
+                raise GenerationError(
+                    f"control auxiliary metadata is invalid: {control['control_id']}"
+                )
+            original = auxiliary.get("original_path")
+            package_path = auxiliary.get("package_path")
+            if not isinstance(original, str) or not isinstance(package_path, str):
+                raise GenerationError(
+                    f"control auxiliary paths are invalid: {control['control_id']}"
+                )
+            package = Path(package_path)
+            if package.is_absolute() or ".." in package.parts or package.parts[:1] != ("controls",):
+                raise GenerationError(f"control auxiliary package path is unsafe: {package_path}")
+            source = Path(original)
+            if not source.is_file():
+                try:
+                    source = manifest_path.parent / Path(original).relative_to(
+                        "bench/negative_bench"
+                    )
+                except ValueError:
+                    source = manifest_path.parent / original
+            if not source.is_file():
+                raise GenerationError(f"control auxiliary source does not exist: {source}")
+            if (
+                source.stat().st_size != auxiliary.get("size_bytes")
+                or sha256_file(source) != auxiliary.get("sha256")
+            ):
+                raise GenerationError(f"control auxiliary metadata differs: {source}")
+            destination = controls_dir.parent / package
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, destination)
         controls[control["control_id"]] = copied
 
     return controls
@@ -230,20 +272,58 @@ def _materialize_cases(
         sources = controls.get(source_id)
         if sources is None:
             raise GenerationError(f"case references unknown control: {source_id}")
-        derived_pair = case["mutation_name"] == "remove_derivation_image" and [p.name for p in sources] == ["level-0.dcm", "level-1.dcm"]
-        if len(sources) != 1 and not derived_pair:
+        mutation = case["mutation_name"]
+        derived_pair = mutation == "remove_derivation_image" and [p.name for p in sources] == ["level-0.dcm", "level-1.dcm"]
+        directory_source = mutation == "iod_set_edits"
+        file_set_source = mutation == "file_set_edits"
+        if len(sources) != 1 and not (derived_pair or directory_source or file_set_source):
             raise GenerationError(
                 f"case source must be a single-file control: {case['case_id']}"
             )
-        source = sources[0]
-        actual_source_digest = [sha256_file(path) for path in sources] if derived_pair else sha256_file(source)
+        if directory_source:
+            source = Path(os.path.commonpath(sources))
+            if not source.is_dir():
+                source = source.parent
+        elif file_set_source:
+            matches = [path for path in sources if path.name == "DICOMDIR"]
+            if len(matches) != 1:
+                raise GenerationError(f"File-set case needs one DICOMDIR: {case['case_id']}")
+            source = matches[0]
+        else:
+            source = sources[0]
+        actual_source_digest = (
+            [sha256_file(path) for path in sources]
+            if isinstance(case["source_control_sha256"], list)
+            else sha256_file(source)
+        )
         if actual_source_digest != case["source_control_sha256"]:
             raise GenerationError(f"case source SHA-256 mismatch: {case['case_id']}")
         outputs, change_log = _generate_case(case, source, input_dir)
+        identity_check = "generated_output"
         for path in outputs:
             if path.stat().st_size > max_file_bytes:
                 raise GenerationError(f"generated file exceeds size limit: {path}")
-            _reject_identifying_metadata(path)
+            try:
+                _reject_identifying_metadata(path)
+            except GenerationError:
+                raise
+            except Exception:
+                # Parser-rejection cases deliberately cannot be reopened. Their source control
+                # already passed the identity policy above, and their bounded raw mutation does
+                # not introduce patient text.
+                raw_rejection_rules = {
+                    "intrinsic-wsi-dicom-pixel-structure",
+                    "intrinsic-wsi-dicom-file-meta",
+                    "intrinsic-wsi-dicom-encoding",
+                }
+                if (
+                    case.get("mutation_name") != "encoding_rewrite"
+                    or not raw_rejection_rules.intersection(
+                        case.get("expected_failing_rules", [])
+                    )
+                ):
+                    raise
+                identity_check = "validated_source_only_generated_output_unparseable"
         report = {
             "schema_version": "wsi-dicom-negative-bench-generation-report-v1",
             "case_id": case["case_id"],
@@ -252,6 +332,7 @@ def _materialize_cases(
             "mutation_name": case["mutation_name"],
             "deterministic_seed": case["deterministic_seed"],
             "changes": change_log,
+            "identity_check": identity_check,
             "outputs": [
                 {
                     "path": str(path.relative_to(case_dir)),
@@ -394,8 +475,6 @@ def _reject_identifying_metadata(path: Path) -> None:
         stop_before_pixels=True,
         specific_tags=["SOPClassUID", "PatientName", "PatientID"],
     )
-    if str(getattr(dataset, "SOPClassUID", "")) != VL_WSI_SOP_CLASS_UID:
-        raise GenerationError(f"control is not VL Whole Slide Microscopy: {path}")
     # Every component of the Patient's Name, and the Patient ID, is a placeholder word.
     words = [
         *re.split(r"[=^]", str(getattr(dataset, "PatientName", ""))),
@@ -497,7 +576,11 @@ def _verify_expected_results_lock(
 
 def _write_generation_sums(root: Path) -> None:
     entries = []
-    for path in sorted(item for item in root.rglob("*") if item.is_file()):
+    files = sorted(
+        (item for item in root.rglob("*") if item.is_file()),
+        key=lambda path: path.relative_to(root).as_posix(),
+    )
+    for path in files:
         if path.name == "generation-SHA256SUMS":
             continue
         entries.append(f"{sha256_file(path)}  {path.relative_to(root)}")

@@ -92,6 +92,34 @@ def duplicate_sop_uid_divergent_series(context: MutationContext) -> MutationResu
     return MutationResult([first_path, second_path], context.changes)
 
 
+def duplicate_sop_uid_different_pixels(context: MutationContext) -> MutationResult:
+    """Give two genuinely different native images one SOP Instance UID."""
+    first = context.dataset
+    second = read_case_source(context.source)
+    shared_uid = set_case_sop(first, context.seed, "shared")
+    second.SOPInstanceUID = shared_uid
+    second.file_meta.MediaStorageSOPInstanceUID = shared_uid
+    pixels = bytearray(second.PixelData)
+    if not pixels:
+        raise GenerationError("duplicate-SOP pixel mutation needs nonempty native Pixel Data")
+    before = pixels[0]
+    pixels[0] ^= 1
+    second.PixelData = bytes(pixels)
+    context.changes.append({
+        "kind": "attribute_change",
+        "attribute": "PixelData",
+        "tag": "(7FE0,0010)",
+        "byte_offset_in_value": 0,
+        "before": before,
+        "after": pixels[0],
+    })
+    first_path = context.input_dir / "first.dcm"
+    second_path = context.input_dir / "second.dcm"
+    save(first, first_path)
+    save(second, second_path)
+    return MutationResult([first_path, second_path], context.changes)
+
+
 def incorrect_source_image_reference_class(context: MutationContext) -> MutationResult:
     owner = context.dataset
     target = read_case_source(context.source)
@@ -226,6 +254,7 @@ HANDLERS = {
     "conflicting_specimen_uid_scope": conflicting_specimen_uid_scope,
     "file_meta_dataset_sop_mismatch": file_meta_dataset_sop_mismatch,
     "duplicate_sop_uid_divergent_series": duplicate_sop_uid_divergent_series,
+    "duplicate_sop_uid_different_pixels": duplicate_sop_uid_different_pixels,
     "incorrect_source_image_reference_class": incorrect_source_image_reference_class,
     "conflicting_patient_study_set": conflicting_patient_study_set,
     "conflicting_study_series_set": conflicting_study_series_set,

@@ -37,6 +37,24 @@ class ChallengePolicyError(RuntimeError):
     """Complete evidence does not satisfy the locked acceptance policy."""
 
 
+def _v7_policy_message(result: dict) -> str:
+    failures = result.get("checked_failures", [])
+    gaps = result.get("known_policy_failure", {})
+    messages = []
+    if failures:
+        identifiers = sorted({str(item.get("id")) for item in failures})
+        messages.append(
+            f"{len(failures)} checked expectation(s) failed in "
+            f"{', '.join(identifiers)}"
+        )
+    if isinstance(gaps, dict) and gaps.get("known_policy_failure"):
+        messages.append(
+            f"{gaps['unchecked_statement_scope_pairs']} Unchecked scope-pairs across "
+            f"{len(gaps['unchecked_statement_ids'])} requirements"
+        )
+    return "v7 locked acceptance policy fails: " + "; ".join(messages)
+
+
 def _read_object(path: Path, description: str) -> dict:
     try:
         document = json.loads(path.read_text(encoding="utf-8"))
@@ -189,6 +207,19 @@ def _preflight_evidence(evidence: Path) -> tuple[dict, dict, dict, str]:
 def check_acceptance(evidence: Path) -> dict:
     """Apply the locked acceptance gate without modifying evidence."""
     evidence = evidence.resolve()
+    manifest_path = evidence / "manifest.json"
+    if manifest_path.is_file():
+        manifest = _read_object(manifest_path, "challenge manifest")
+        if manifest.get("schema_version") == "wsi-dicom-negative-bench-manifest-v7":
+            from .negative_bench.v7_challenge import check_v7_acceptance
+            _require_distribution_payload(evidence)
+            try:
+                result = check_v7_acceptance(evidence)
+            except (GenerationError, OSError, ValueError) as exc:
+                raise ChallengeInfrastructureError(str(exc)) from exc
+            if result["status"] != "passed":
+                raise ChallengePolicyError(_v7_policy_message(result))
+            return result
     manifest, profile, catalog, candidate_sha256 = _preflight_evidence(evidence)
     try:
         gate = validate_evidence_coverage(
@@ -217,6 +248,26 @@ def run(args: argparse.Namespace) -> dict:
     output = args.output.resolve()
     if output.exists():
         raise ChallengeInfrastructureError(f"output path already exists: {output}")
+
+    manifest_document = _read_object(manifest, "challenge manifest")
+    if manifest_document.get("schema_version") == "wsi-dicom-negative-bench-manifest-v7":
+        from .negative_bench.v7_challenge import (
+            check_v7_acceptance,
+            generate_v7_challenge,
+            run_v7_challenge,
+        )
+        try:
+            generate_v7_challenge(manifest, output)
+            _require_distribution_payload(output)
+            run_v7_challenge(output, candidate)
+            result = check_v7_acceptance(output)
+        except ChallengeInfrastructureError:
+            raise
+        except (GenerationError, OSError, ValueError) as exc:
+            raise ChallengeInfrastructureError(str(exc)) from exc
+        if result["status"] != "passed":
+            raise ChallengePolicyError(_v7_policy_message(result))
+        return result
 
     from .negative_bench.analyze import AnalysisError, analyze_challenge
     from .negative_bench.generate import generate_challenge

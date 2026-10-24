@@ -6,8 +6,25 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any, Callable
 
+from pydicom.dataset import Dataset
+
 from ..model import GenerationError, MutationContext, MutationResult
-from . import codestream, color, conformance, encoding, geometry, identity, pixel, relations, structure
+from . import (
+    codestream,
+    codec_statement,
+    color,
+    conformance,
+    deidentification,
+    encoding,
+    file_set,
+    signatures,
+    geometry,
+    identity,
+    object_set,
+    pixel,
+    relations,
+    structure,
+)
 from .dicom import read_case_source, save
 
 
@@ -52,8 +69,19 @@ ALL_MUTATIONS: dict[str, MutationHandler] = build_registry(
         ("structure", structure.HANDLERS),
         ("relations", relations.HANDLERS),
         ("codestream", codestream.HANDLERS),
+        ("codec_statement", codec_statement.HANDLERS),
         ("encoding", encoding.HANDLERS),
+        ("file_set", file_set.HANDLERS),
+        ("deidentification", deidentification.HANDLERS),
+        ("signatures", signatures.HANDLERS),
+        ("object_set", object_set.HANDLERS),
     )
+)
+
+# Draft-v7 mutations are intentionally absent from the frozen v6 manifest.
+V7_ONLY_MUTATIONS = frozenset(
+    {"duplicate_sop_uid_different_pixels", "encrypted_attribute_edit",
+     "file_set_edits", "iod_set_edits", "signature_mac_defect", "codec_statement_defect"}
 )
 
 
@@ -63,11 +91,17 @@ def generate_case(
     handler = ALL_MUTATIONS.get(case["mutation_name"])
     if handler is None:
         raise GenerationError(f"unsupported mutation: {case['mutation_name']}")
+    if source.is_file():
+        dataset = read_case_source(source)
+    elif case["mutation_name"] == "iod_set_edits":
+        dataset = Dataset()
+    else:
+        raise GenerationError(f"mutation source is not a file: {source}")
     context = MutationContext(
         case=case,
         source=source,
         input_dir=input_dir,
-        dataset=read_case_source(source),
+        dataset=dataset,
         changes=[
             {
                 "kind": "harness_identity",

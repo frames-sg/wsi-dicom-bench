@@ -25,7 +25,12 @@ def definition_inventory(root: Path, edition: str = "2026c") -> dict:
     }
 
 
-def python_validator_inventory(wrapper: Path, run_text_command) -> dict:
+def python_validator_inventory(
+    wrapper: Path,
+    run_text_command,
+    edition: str = "2026c",
+    standard_path: Path | None = None,
+) -> dict:
     with wrapper.open("rb") as stream:
         shebang = stream.readline(4096).decode("utf-8", errors="replace").strip()
     if not shebang.startswith("#!"):
@@ -49,11 +54,15 @@ print(json.dumps({'python': sys.version, 'packages': packages}))
 """
     result = json.loads(run_text_command([arguments[0], "-c", program], 30, 8192))
     result["interpreter_sha256"] = sha256_file(Path(arguments[0]))
-    result["definitions"] = definition_inventory(Path.home() / "dicom-validator")
+    definitions = standard_path or Path.home() / "dicom-validator"
+    result["definitions"] = definition_inventory(definitions, edition)
     return result
 
 
-def software_inventory(args: argparse.Namespace, doctor: dict) -> dict:
+def software_inventory(
+    args: argparse.Namespace, doctor: dict, dicom_edition: str = "2026c"
+) -> dict:
+    standard_path = getattr(args, "dicom_validator_standard_path", None)
     version = run_text_command(
         [str(args.wsi_dicom), "--version"],
         timeout_secs=min(args.evaluation_timeout_secs, 30),
@@ -72,7 +81,9 @@ def software_inventory(args: argparse.Namespace, doctor: dict) -> dict:
                 "probe_command": tool.get("command") or [],
                 "probe_stdout": tool.get("probe_stdout"),
                 "probe_stderr": tool.get("probe_stderr"),
-                "runtime": python_validator_inventory(path, run_text_command) if tool.get("name") == "validate_iods" and path and path.is_file() else None,
+                "runtime": python_validator_inventory(
+                    path, run_text_command, dicom_edition, standard_path
+                ) if tool.get("name") == "validate_iods" and path and path.is_file() else None,
             }
         )
     return {

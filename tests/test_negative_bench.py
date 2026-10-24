@@ -218,6 +218,7 @@ class NegativeBenchGenerationTests(unittest.TestCase):
         from wsi_dicom_bench.negative_bench.mutations import (
             MUTATION_REGISTRY,
             MutationRegistrationError,
+            V7_ONLY_MUTATIONS,
             build_registry,
         )
 
@@ -228,7 +229,7 @@ class NegativeBenchGenerationTests(unittest.TestCase):
             if case["cohort"] == CORE_COHORT
         }
         self.assertEqual(
-            set(MUTATION_REGISTRY) - expected,
+            set(MUTATION_REGISTRY) - expected - V7_ONLY_MUTATIONS,
             {"invalid_specimen_uid", "total_matrix_too_large"},
         )
         self.assertTrue(expected.issubset(MUTATION_REGISTRY))
@@ -450,6 +451,47 @@ class NegativeBenchGenerationTests(unittest.TestCase):
                 dataset.save_as(path)
                 with self.assertRaisesRegex(GenerationError, "patient identity policy"):
                     _reject_identifying_metadata(path)
+
+    def test_parser_mutation_cannot_swallow_generated_identity_rejection(self):
+        from wsi_dicom_bench.negative_bench.generate import (
+            GenerationError,
+            _materialize_cases,
+        )
+
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        original = control_source(manifest["valid_controls"][0]["original_path"])
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "source.dcm"
+            dataset = pydicom.dcmread(original)
+            dataset.PatientName = "RESEARCH^PLACEHOLDER"
+            dataset.save_as(source)
+            case = {
+                "case_id": "IDENTITY-REJECTION",
+                "source_control_ids": ["SOURCE"],
+                "source_control_sha256": sha256_file(source),
+                "mutation_name": "encoding_rewrite",
+                "expected_failing_rules": ["intrinsic-wsi-dicom-encoding"],
+                "deterministic_seed": "identity-rejection",
+            }
+
+            def generate(_case, _source, output):
+                output_path = output / "instance.dcm"
+                identifying = pydicom.dcmread(source)
+                identifying.PatientName = "IDENTIFIED^PATIENT"
+                identifying.save_as(output_path)
+                return [output_path], []
+
+            with mock.patch(
+                "wsi_dicom_bench.negative_bench.generate._generate_case",
+                side_effect=generate,
+            ), self.assertRaisesRegex(GenerationError, "patient identity policy"):
+                _materialize_cases(
+                    {"evaluation_cases": [case]},
+                    {"SOURCE": [source]},
+                    root / "cases",
+                    4 * 1024 * 1024,
+                )
 
     def test_identifying_control_is_rejected_without_publishing_output(self):
         from wsi_dicom_bench.negative_bench.generate import GenerationError, generate_challenge

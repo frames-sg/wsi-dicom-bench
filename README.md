@@ -18,21 +18,24 @@ inside the evidence package:
 python -m pip wheel --no-deps \
   "git+https://github.com/frames-sg/wsi-dicom-bench@968b25ded082a7e7e0a20d4ca5b3283fb636588b" \
   --wheel-dir ./benchmark-wheelhouse
-python -m pip install ./benchmark-wheelhouse/wsi_dicom_bench-*.whl
-suite_path="$(python -c 'import importlib.resources; print(importlib.resources.files("wsi_dicom_bench.negative_bench").joinpath("manifest-v6.json"))')"
+python -m pip install ./benchmark-wheelhouse/wsi_dicom_bench-*.whl "dicom-validator==0.8.3"
+mkdir -p .dicom-validator-init
+validate_iods --edition 2026d .dicom-validator-init
+suite_path="$(python -c 'import importlib.resources; print(importlib.resources.files("wsi_dicom_bench.negative_bench").joinpath("manifest-v7.json"))')"
 wsi-dicom-bench challenge run \
   --suite "$suite_path" \
   --wsi-dicom /absolute/path/to/wsi-dicom \
   --output /new/evidence-directory
 ```
 
-The bundled suite manifest `manifest-v6.json` is an installed package resource, and the
-packaged suite directory resolves to it. The suite pairs catalog v6 with core profile v4: the
-selected WSI rule families, the standard-derived VL WSI IOD requirement checks, and value set,
-WSI image, attribute relation, series set, pixel attribute, codestream, and Data Set encoding
-checks. Catalog v6 accepts only `wsi-dicom` builds that declare rule set
-`wsi-dicom-core-profile-2026c-v4` (or `wsi-dicom-general-v3` for the general profile), and the
-workbench defaults to it. An existing evidence directory can be checked without modifying it:
+V7 requires `dciodvfy`, `dcentvfy`, and `validate_iods` on `PATH`. The setup above prepares
+the validator's DICOM 2026d definitions at its default `~/dicom-validator` location.
+
+The locked `manifest-v7.json` is an installed package resource. Build the candidate with
+`--features dicomweb` to include the JSON and HTTP commands. V7 requires DICOM edition 2026d,
+general rule set `wsi-dicom-general-v4`, core rule set `wsi-dicom-core-profile-v5`, and the
+`wsi-dicom-dicomweb-report-v1` HTTP report contract. An existing evidence directory can be
+checked without modifying it:
 
 ```sh
 wsi-dicom-bench challenge check --evidence /path/to/evidence
@@ -52,15 +55,47 @@ must be installed unless `--allow-missing-tools` is given. `wsi-dicom` releases
 through 0.8.0 still decode frames themselves. The workbench detects them and
 passes `--max-pixel-frames 0`, so frames are decoded once.
 
-The v6 protocol (`protocol-v6.md`) describes the benchmark scope and limitations. The
-engineered cases are not a prevalence sample, certification, or an independent blinded
-replication.
+## Locked DICOM 2026d v7 challenge
+
+The edition-neutral catalog v7 and `statement-coverage-v7.json` account for all 886 statements
+currently classified as checked: 690 file/object statements, 188 DICOMweb statements, and 8
+DICOM JSON statements. The locked suite has
+927 inputs (66 valid controls, 697 general negative cases, 3 core cases, 3 advisory cases, 16 JSON
+cases, and 142 HTTP cases) and no uncovered checked statement IDs.
+
+Seven requirements remain unchecked in 16 IOD scope pairs: five MPEG2
+stream/audio/display-aspect requirements and two JPIP Data Set byte-order requirements. Inspect the
+machine-readable frozen contract from an installed wheel with:
+
+```sh
+python -m wsi_dicom_bench.negative_bench.freeze_v7 --json
+```
+
+The locked `manifest-v7.json` retains those gaps as a known acceptance-policy failure. A complete
+v7 run against the current candidate evaluates every checked statement and then exits `1` because
+of those gaps; execution or integrity failures exit `2`. Per-input reports retain candidate,
+independent-validator and supported-decoder evidence. Known independent-tool limitations include
+dciodvfy's Concatenation model and OpenJPEG/Grok support for JPEG 2000 Part 2 transforms.
+
+The protocol (`protocol-v7.md`) describes the scope and limitations. These engineered cases are
+not a prevalence sample, certification, or an independent blinded replication. The draft
+authoring resources remain available, and the intrinsic-only diagnostic can be reproduced with:
+
+```sh
+python -m wsi_dicom_bench.negative_bench.draft_diagnostic \
+  --candidate /absolute/path/to/wsi-dicom \
+  --output /new/v7-diagnostic.json
+```
 
 For disconnected reproduction, add the `pydicom==3.0.2` wheel to the retained
 benchmark wheelhouse, verify it against `reproduction/requirements.lock`, then install with
 `python -m pip install --no-index --find-links /path/to/wheelhouse wsi-dicom-bench`.
-Accepted evidence contains the exact benchmark wheel and a hash-pinned acquisition
+Complete evidence contains the exact benchmark wheel and a hash-pinned acquisition
 requirement for pydicom; it does not rename or rebuild third-party wheels.
+
+The earlier locked `manifest-v6.json` and `protocol-v6.md` remain available. For compatibility,
+passing the packaged suite directory without a manifest still selects v6; select the v7 manifest
+explicitly as shown above. V6 uses `wsi-dicom-core-profile-2026c-v4` or `wsi-dicom-general-v3`.
 
 The optional
 [control-authoring tool](tools/control-authoring/README.md) is separate from normal runs.
