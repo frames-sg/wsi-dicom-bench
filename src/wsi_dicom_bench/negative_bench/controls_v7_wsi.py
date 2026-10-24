@@ -51,6 +51,8 @@ from pydicom.encaps import encapsulate
 from pydicom.sequence import Sequence
 from pydicom.uid import UID
 
+from wsi_dicom_bench.pnm import read_pnm
+
 HERE = Path(__file__).resolve().parent
 SOURCE_CONTROL = HERE / "controls-v4" / "CP01-EVRLE-4F-ANISO.dcm"
 OUTPUT = HERE / "controls-v7" / "wsi"
@@ -408,14 +410,20 @@ def build_dataset(spec: Spec) -> tuple[Dataset, list[bytes]]:
         raster = _raster(spec.seed or spec.control_id, spec.total_rows, spec.total_columns,
                          spec.samples, spec.bits)
     frames = []
+    # Other focal planes and optical paths carry their own seeded content, the same Frame
+    # for every tile of that plane and path.
+    others: dict[tuple[int, int], bytes] = {}
     for frame in order:
-        tile = _tile(raster, frame.row - 1, frame.column - 1, spec.rows, spec.columns, spec.bits)
         if frame.plane or frame.path:
-            # Other focal planes and optical paths carry their own seeded content.
-            other = _raster(f"{spec.seed or spec.control_id}:{frame.plane}:{frame.path}",
-                            spec.rows, spec.columns, spec.samples, spec.bits)
-            tile = _tile(other, 0, 0, spec.rows, spec.columns, spec.bits)
-        frames.append(tile)
+            key = (frame.plane, frame.path)
+            if key not in others:
+                other = _raster(f"{spec.seed or spec.control_id}:{frame.plane}:{frame.path}",
+                                spec.rows, spec.columns, spec.samples, spec.bits)
+                others[key] = _tile(other, 0, 0, spec.rows, spec.columns, spec.bits)
+            frames.append(others[key])
+        else:
+            frames.append(_tile(raster, frame.row - 1, frame.column - 1, spec.rows, spec.columns,
+                                spec.bits))
     ds.PixelData = b"".join(frames)
     ds["PixelData"].VR = "OW" if spec.bits == 16 else "OB"
     for tag, (vr, value) in spec.extra.items():
@@ -946,39 +954,34 @@ def _pnm(frame: bytes, rows: int, columns: int, samples: int, bits: int) -> byte
     return magic + f"\n{columns} {rows}\n{(1 << bits) - 1}\n".encode() + frame
 
 
-def _encode_frames(native: list[bytes], ds: Dataset, command) -> list[bytes]:
-    """Encode each native Frame with ``command(source, target)`` through PNM files."""
+def _encode_frames(native: list[bytes], ds: Dataset, suffix: str, command) -> list[bytes]:
+    """Encode each native Frame with ``command(source, target)`` through PNM files; the
+    target is named with ``suffix``, by which the codecs choose their output format."""
     out = []
     with tempfile.TemporaryDirectory() as temporary:
         for index, frame in enumerate(native):
             source = Path(temporary) / f"f{index}.{'ppm' if ds.SamplesPerPixel == 3 else 'pgm'}"
             source.write_bytes(_pnm(frame, ds.Rows, ds.Columns, ds.SamplesPerPixel, ds.BitsAllocated))
-            target = Path(temporary) / f"f{index}.out"
+            target = Path(temporary) / f"f{index}{suffix}"
             _run(command(str(source), str(target)))
             out.append(target.read_bytes())
     return out
 
 
+# Largest decoded PPM read back; the controls' Frames are far smaller.
+MAX_DECODED_FRAME_BYTES = 64 * 1024 * 1024
+
+
 def _decode_frames(encoded: list[bytes], suffix: str, command) -> list[bytes]:
-    """Decode each Frame with ``command(source, target)`` to PNM and return the raw samples."""
+    """Decode each Frame, held in a file named with ``suffix``, with ``command(source,
+    target)`` to a PPM and return its samples, read by the bounded PNM parser."""
     out = []
     with tempfile.TemporaryDirectory() as temporary:
         for index, frame in enumerate(encoded):
-            source, target = Path(temporary) / f"f{index}{suffix}", Path(temporary) / f"f{index}.pnm"
+            source, target = Path(temporary) / f"f{index}{suffix}", Path(temporary) / f"f{index}.ppm"
             source.write_bytes(frame)
             _run(command(str(source), str(target)))
-            data = target.read_bytes()
-            fields, position = [], 0
-            while len(fields) < 4:  # magic, width, height, maxval, then one whitespace byte
-                while data[position : position + 1].isspace() or data[position : position + 1] == b"#":
-                    if data[position : position + 1] == b"#":  # a comment runs to the line end
-                        position = data.index(b"\n", position)
-                    position += 1
-                start = position
-                while not data[position : position + 1].isspace():
-                    position += 1
-                fields.append(data[start:position])
-            out.append(data[position + 1 :])
+            out.append(read_pnm(target, MAX_DECODED_FRAME_BYTES)[4])
     return out
 
 
@@ -991,7 +994,7 @@ def build_htj2k_rpcl() -> dict[str, bytes]:
     spec = Spec(cid, rows=128, columns=128, total_rows=128, total_columns=256, spacing=0.0005,
                 photometric="YBR_RCT")
     ds, native = build_dataset(spec)
-    frames = _encode_frames(native, ds, _ojph)
+    frames = _encode_frames(native, ds, ".j2c", _ojph)
     decoded = _decode_frames(frames, ".j2c", _ojph_expand)
     if decoded != [bytes(f) for f in native]:
         raise RuntimeError(f"{cid}: ojph_expand does not recover the native Frames bit-exactly")
@@ -1000,35 +1003,29 @@ def build_htj2k_rpcl() -> dict[str, bytes]:
 
 
 def _ojph(source: str, target: str) -> list[str]:
-    # OpenJPH picks formats by file suffix, so the call is wrapped to write the named target.
-    return ["sh", "-c", 'ojph_compress -i "$1" -o "$2.j2c" -reversible true -colour_trans true '
-            '-prog_order RPCL -num_decomps 5 -block_size "{64,64}" -tlm_marker true -tileparts R '
-            '&& mv "$2.j2c" "$2"', "ojph", source, target]
+    return ["ojph_compress", "-i", source, "-o", target, "-reversible", "true", "-colour_trans",
+            "true", "-prog_order", "RPCL", "-num_decomps", "5", "-block_size", "{64,64}",
+            "-tlm_marker", "true", "-tileparts", "R"]
 
 
 def _ojph_expand(source: str, target: str) -> list[str]:
-    return ["sh", "-c", 'cp "$1" "$1.j2c" && ojph_expand -i "$1.j2c" -o "$2.ppm" && mv "$2.ppm" "$2"',
-            "ojph", source, target]
+    return ["ojph_expand", "-i", source, "-o", target]
 
 
 def _cjxl(*options: str):
-    return lambda source, target: [
-        "sh", "-c", 'src="$1"; dst="$2"; shift 2; cjxl "$src" "$dst.jxl" "$@" && mv "$dst.jxl" "$dst"',
-        "cjxl", source, target, *options]
+    return lambda source, target: ["cjxl", source, target, *options]
 
 
-def _djxl(suffix: str):
-    return lambda source, target: [
-        "sh", "-c", 'cp "$1" "$1.jxl" && djxl "$1.jxl" "$2' + suffix + '" && mv "$2' + suffix + '" "$2"',
-        "djxl", source, target]
+def _djxl(source: str, target: str) -> list[str]:
+    return ["djxl", source, target]
 
 
 def build_jpeg_xl_lossless() -> dict[str, bytes]:
     """JPEG XL Lossless (cjxl -d 0, modular, no XYB); RGB; decoded bit-exactly by djxl."""
     cid = "W7-TS-JXL-LOSSLESS-RGB"
     ds, native = build_dataset(Spec(cid))
-    frames = _encode_frames(native, ds, _cjxl("-d", "0", "-e", "7", "--quiet"))
-    if _decode_frames(frames, ".jxl", _djxl(".ppm")) != native:
+    frames = _encode_frames(native, ds, ".jxl", _cjxl("-d", "0", "-e", "7", "--quiet"))
+    if _decode_frames(frames, ".jxl", _djxl) != native:
         raise RuntimeError(f"{cid}: djxl does not recover the native Frames bit-exactly")
     _encapsulate(ds, frames, JPEG_XL_LOSSLESS)
     return {f"{cid}.dcm": _bytes(ds)}
@@ -1044,7 +1041,7 @@ def build_jpeg_xl_lossy() -> dict[str, bytes]:
     spec = Spec(cid, samples=1, photometric="MONOCHROME2", rows=16, columns=16, total_rows=32,
                 total_columns=32)
     ds, native = build_dataset(spec)
-    frames = _encode_frames(native, ds, _cjxl("-d", "1.0", "-e", "7", "--quiet"))
+    frames = _encode_frames(native, ds, ".jxl", _cjxl("-d", "1.0", "-e", "7", "--quiet"))
     _encapsulate(ds, frames, JPEG_XL)
     _lossy(ds, _native_size(ds), frames, "ISO_18181_1")
     return {f"{cid}.dcm": _bytes(ds)}
@@ -1084,18 +1081,16 @@ def _opj_control(control_id: str, transfer_syntax: str, photometric: str, option
     spec = Spec(control_id, rows=16, columns=16, total_rows=32, total_columns=32,
                 photometric=photometric)
     ds, native = build_dataset(spec)
-    frames = _encode_frames(native, ds, lambda s, d: [
-        "sh", "-c", 'src="$1"; dst="$2"; shift 2; opj_compress -i "$src" -o "$dst.j2k" "$@" '
-        '> /dev/null && mv "$dst.j2k" "$dst"', "opj", s, d, *options])
+    frames = _encode_frames(native, ds, ".j2k",
+                            lambda s, d: ["opj_compress", "-i", s, "-o", d, *options])
     for frame in frames:
         # SGcod multiple component transformation: the Part 1 RCT (5-3) or ICT (9-7).
         cod = frame.index(b"\xff\x52")
         if frame[cod + 8] != 1:
             raise RuntimeError(f"{control_id}: the codestream applies no Part 1 color transform")
     if not lossy:
-        decoded = _decode_frames(frames, ".j2k", lambda s, d: [
-            "sh", "-c", 'cp "$1" "$1.j2k" && opj_decompress -i "$1.j2k" -o "$2.ppm" > /dev/null '
-            '&& mv "$2.ppm" "$2"', "opj", s, d])
+        decoded = _decode_frames(frames, ".j2k",
+                                 lambda s, d: ["opj_decompress", "-i", s, "-o", d])
         if decoded != native:
             raise RuntimeError(f"{control_id}: opj_decompress does not recover the native Frames")
     _encapsulate(ds, frames, transfer_syntax)
