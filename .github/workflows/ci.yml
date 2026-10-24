@@ -23,19 +23,21 @@ jobs:
           python -m pip install "build==1.3.0"
           python -m build
       - name: Test the installed wheel
+        env:
+          WSI_DICOM_BENCH_RESERVED_WORDS: ${{ secrets.WSI_DICOM_BENCH_RESERVED_WORDS }}
         run: |
           python -m venv "${RUNNER_TEMP}/test-environment"
           "${RUNNER_TEMP}/test-environment/bin/python" -m pip install dist/*.whl
           "${RUNNER_TEMP}/test-environment/bin/python" -m pip install "numpy==2.4.4"
           env -u PYTHONPATH "${RUNNER_TEMP}/test-environment/bin/python" -m unittest discover -s tests
-      - name: Generate the bundled suite from an unrelated directory
+      - name: Generate the bundled v4, v5, and v6 suites from an unrelated directory
         shell: bash
         run: |
           python -m venv "${RUNNER_TEMP}/portable-environment"
           "${RUNNER_TEMP}/portable-environment/bin/python" -m pip install dist/*.whl
           portable_cwd="$(mktemp -d)"
           cd "${portable_cwd}"
-          env -u PYTHONPATH "${RUNNER_TEMP}/portable-environment/bin/python" - "${RUNNER_TEMP}/generated-suite" <<'PY'
+          env -u PYTHONPATH "${RUNNER_TEMP}/portable-environment/bin/python" - "${RUNNER_TEMP}" <<'PY'
           import json
           import sys
           from importlib.resources import files
@@ -43,38 +45,15 @@ jobs:
 
           from wsi_dicom_bench.negative_bench.generate import generate_challenge
 
-          manifest = files("wsi_dicom_bench").joinpath(
-              "negative_bench/manifest-v4.json"
-          )
-          output = Path(sys.argv[1])
-          generate_challenge(Path(str(manifest)), output)
-          document = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
-          assert len(document["valid_controls"]) == 14
-          assert len(document["evaluation_cases"]) == 69
-          assert len(list((output / "controls").iterdir())) == 14
-          assert len(list((output / "cases").iterdir())) == 69
-          PY
-      - name: Generate the bundled v5 amendment suite from an unrelated directory
-        shell: bash
-        run: |
-          portable_cwd="$(mktemp -d)"
-          cd "${portable_cwd}"
-          env -u PYTHONPATH "${RUNNER_TEMP}/portable-environment/bin/python" - "${RUNNER_TEMP}/generated-suite-v5" <<'PY'
-          import json
-          import sys
-          from importlib.resources import files
-          from pathlib import Path
-
-          from wsi_dicom_bench.negative_bench.generate import generate_challenge
-
-          manifest = files("wsi_dicom_bench").joinpath(
-              "negative_bench/manifest-v5.json"
-          )
-          output = Path(sys.argv[1])
-          generate_challenge(Path(str(manifest)), output)
-          document = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
-          assert len(document["valid_controls"]) == 14
-          assert len(document["evaluation_cases"]) == 149
-          assert len(list((output / "controls").iterdir())) == 14
-          assert len(list((output / "cases").iterdir())) == 149
+          for version, case_count in (("v4", 69), ("v5", 149), ("v6", 352)):
+              manifest = files("wsi_dicom_bench").joinpath(
+                  f"negative_bench/manifest-{version}.json"
+              )
+              output = Path(sys.argv[1]) / f"generated-suite-{version}"
+              generate_challenge(Path(str(manifest)), output)
+              document = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
+              assert len(document["valid_controls"]) == 14
+              assert len(document["evaluation_cases"]) == case_count
+              assert len(list((output / "controls").iterdir())) == 14
+              assert len(list((output / "cases").iterdir())) == case_count
           PY

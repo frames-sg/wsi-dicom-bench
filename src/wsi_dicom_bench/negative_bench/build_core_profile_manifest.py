@@ -77,6 +77,7 @@ def build_manifest(source_manifest: Path, controls_root: Path, output: Path) -> 
     if manifest.get("schema_version") not in {
         "wsi-dicom-negative-bench-manifest-v4",
         "wsi-dicom-negative-bench-manifest-v5",
+        "wsi-dicom-negative-bench-manifest-v6",
     }:
         raise ValueError("inventory rebuild requires a current challenge specification")
     refreshed = []

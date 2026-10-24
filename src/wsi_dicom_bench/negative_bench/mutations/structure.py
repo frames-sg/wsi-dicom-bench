@@ -14,132 +14,28 @@ import re
 import struct
 
 from pydicom import config
-from pydicom.datadict import dictionary_VR, tag_for_keyword
+from pydicom.datadict import dictionary_VR
 from pydicom.dataelem import DataElement
-from pydicom.dataset import Dataset
 from pydicom.sequence import Sequence
 from pydicom.tag import Tag
+from pydicom.valuerep import STR_VR
 
 from ..model import GenerationError, MutationContext, MutationResult
-from .dicom import save, set_case_sop
+from .dataset_edits import (
+    finish as _finish,
+    item_index as _item_index,
+    logged_value as _logged_value,
+    manifest_value as _value,
+    record_change as _record,
+    require_element as _require,
+    resolve_path as _resolve,
+)
+from .dicom import set_case_sop
+from .encoded_file import LONG_LENGTH_VRS, PREAMBLE_AND_PREFIX
 
 
-PREAMBLE_AND_PREFIX = 132
 FILE_META_PREFIX = b"DICM"
-# PS3.5 Table 7.1-1: VRs with a reserved field and a 4-byte Value Length.
-LONG_LENGTH_VRS = {
-    b"OB", b"OD", b"OF", b"OL", b"OV", b"OW", b"SQ", b"SV", b"UC", b"UN", b"UR", b"UT", b"UV",
-}
 FILE_META_TAG = re.compile(r"\(0002,([0-9A-F]{4})\)\Z")
-STRING_VRS = {
-    "AE", "AS", "CS", "DA", "DS", "DT", "IS", "LO", "LT", "PN", "SH", "ST", "TM", "UC",
-    "UI", "UR", "UT",
-}
-MAX_LOGGED_TEXT = 96
-
-
-def _tag(keyword: object) -> Tag:
-    if not isinstance(keyword, str):
-        raise GenerationError(f"mutation path keyword must be a string: {keyword!r}")
-    tag = tag_for_keyword(keyword)
-    if tag is None:
-        raise GenerationError(f"mutation path names an unknown DICOM keyword: {keyword}")
-    return Tag(tag)
-
-
-def _tag_text(tag: Tag) -> str:
-    return f"({tag.group:04X},{tag.element:04X})"
-
-
-def _resolve(dataset: Dataset, path: object) -> tuple[Dataset, Tag, str]:
-    """Return the Data Set that holds the final path keyword, its tag, and a printable path."""
-    if not isinstance(path, list) or not path or len(path) % 2 == 0:
-        raise GenerationError(
-            "mutation path must alternate Sequence keywords and Item indices and end in a keyword"
-        )
-    current = dataset
-    printable = []
-    for keyword, index in zip(path[:-1:2], path[1:-1:2]):
-        tag = _tag(keyword)
-        if tag not in current or current[tag].VR != "SQ":
-            raise GenerationError(f"mutation path Sequence is absent: {keyword}")
-        items = current[tag].value
-        if (
-            isinstance(index, bool)
-            or not isinstance(index, int)
-            or not 0 <= index < len(items)
-        ):
-            raise GenerationError(f"mutation path Item index is out of range: {keyword}[{index}]")
-        current = items[index]
-        printable.append(f"{keyword}[{index}]")
-    printable.append(path[-1])
-    return current, _tag(path[-1]), "/".join(printable)
-
-
-def _logged_value(element: DataElement | None):
-    """A bounded JSON-friendly rendering of one element Value."""
-    if element is None:
-        return None
-    if element.VR == "SQ":
-        return f"{len(element.value)} Item(s)"
-    value = element.value
-    if value is None or value == "":
-        return ""
-    if isinstance(value, (bytes, bytearray)):
-        return f"{len(value)} bytes"
-    if isinstance(value, (list, tuple)) or type(value).__name__ == "MultiValue":
-        return [_bounded(str(item)) for item in value]
-    return _bounded(str(value))
-
-
-def _bounded(text: str) -> str:
-    return text if len(text) <= MAX_LOGGED_TEXT else text[:MAX_LOGGED_TEXT] + "..."
-
-
-def _record(context: MutationContext, operation: str, path: str, tag: Tag, **fields) -> None:
-    context.changes.append(
-        {"kind": "defect", "operation": operation, "path": path, "tag": _tag_text(tag), **fields}
-    )
-
-
-def _finish(context: MutationContext) -> MutationResult:
-    context.changes[0]["value"] = str(context.dataset.SOPInstanceUID)
-    with config.disable_value_validation():
-        save(context.dataset, context.default_output)
-    return MutationResult([context.default_output], context.changes)
-
-
-def _require(parent: Dataset, tag: Tag, path: str) -> DataElement:
-    if tag not in parent:
-        raise GenerationError(f"mutation target is absent from the control: {path}")
-    return parent[tag]
-
-
-def _value(raw: object, vr: str):
-    """Convert one manifest Value to the form pydicom encodes for the VR."""
-    if vr == "SQ":
-        if not isinstance(raw, list) or not all(isinstance(item, dict) for item in raw):
-            raise GenerationError("a Sequence Value must be a list of Item objects")
-        items = []
-        for item in raw:
-            dataset = Dataset()
-            for keyword, item_value in sorted(item.items()):
-                item_tag = _tag(keyword)
-                item_vr = dictionary_VR(item_tag)
-                dataset.add(DataElement(item_tag, item_vr, _value(item_value, item_vr)))
-            items.append(dataset)
-        return Sequence(items)
-    if raw is None:
-        return None
-    if vr in STRING_VRS:
-        if isinstance(raw, list) and all(isinstance(item, str) for item in raw):
-            return list(raw)
-        if isinstance(raw, str):
-            return raw
-        raise GenerationError(f"a {vr} Value must be a string or a list of strings")
-    if isinstance(raw, bool) or not isinstance(raw, (int, float, list)):
-        raise GenerationError(f"a {vr} Value must be numeric")
-    return raw
 
 
 def iod_delete_attribute(context: MutationContext) -> MutationResult:
@@ -209,7 +105,7 @@ def iod_change_vr(context: MutationContext) -> MutationResult:
     parent, tag, path = _resolve(context.dataset, context.parameters["path"])
     element = _require(parent, tag, path)
     vr = context.parameters["vr"]
-    if element.VR not in STRING_VRS or vr not in STRING_VRS or vr == element.VR:
+    if element.VR not in STR_VR or vr not in STR_VR or vr == element.VR:
         raise GenerationError(f"VR change must replace one string VR with another: {path}")
     # DS and IS Values are held as numbers; re-encode their exact text unchanged.
     value = element.value
@@ -235,9 +131,7 @@ def _sequence(context: MutationContext) -> tuple[list, str, Tag]:
 def iod_duplicate_sequence_item(context: MutationContext) -> MutationResult:
     set_case_sop(context.dataset, context.seed)
     items, path, tag = _sequence(context)
-    index = context.parameters["item_index"]
-    if isinstance(index, bool) or not isinstance(index, int) or not 0 <= index < len(items):
-        raise GenerationError(f"duplicated Item index is out of range: {path}[{index}]")
+    index = _item_index(context.parameters["item_index"], items, "duplicated", path)
     before = len(items)
     items.append(copy.deepcopy(items[index]))
     _record(context, "duplicate_sequence_item", path, tag, vr="SQ",
@@ -260,9 +154,7 @@ def iod_append_sequence_item(context: MutationContext) -> MutationResult:
 def iod_remove_sequence_item(context: MutationContext) -> MutationResult:
     set_case_sop(context.dataset, context.seed)
     items, path, tag = _sequence(context)
-    index = context.parameters["item_index"]
-    if isinstance(index, bool) or not isinstance(index, int) or not 0 <= index < len(items):
-        raise GenerationError(f"removed Item index is out of range: {path}[{index}]")
+    index = _item_index(context.parameters["item_index"], items, "removed", path)
     before = len(items)
     del items[index]
     _record(context, "remove_sequence_item", path, tag, vr="SQ",

@@ -434,6 +434,23 @@ class NegativeBenchGenerationTests(unittest.TestCase):
             with self.assertRaisesRegex(GenerationError, "already exists"):
                 generate_challenge(MANIFEST, output)
 
+    def test_patient_identity_policy_admits_only_placeholder_name_components(self):
+        from wsi_dicom_bench.negative_bench.generate import GenerationError, _reject_identifying_metadata
+
+        source = control_source(json.loads(MANIFEST.read_text(encoding="utf-8"))["valid_controls"][0]["original_path"])
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "control.dcm"
+            dataset = pydicom.dcmread(source)
+            for name in ("RESEARCH^PLACEHOLDER", "RESEARCH^PLACEHOLDER^ANON", "ANON==RESEARCH"):
+                dataset.PatientName = name
+                dataset.save_as(path)
+                _reject_identifying_metadata(path)
+            for name in ("RESEARCH^SMITH", "RESEARCH^PLACEHOLDER=SMITH"):
+                dataset.PatientName = name
+                dataset.save_as(path)
+                with self.assertRaisesRegex(GenerationError, "patient identity policy"):
+                    _reject_identifying_metadata(path)
+
     def test_identifying_control_is_rejected_without_publishing_output(self):
         from wsi_dicom_bench.negative_bench.generate import GenerationError, generate_challenge
 
@@ -979,7 +996,14 @@ class NegativeBenchFinalizationTests(unittest.TestCase):
             ("VC-ONE", "valid-controls-v1"),
             ("NB-ONE", "evaluation-v1"),
         ):
-            executions.append({"id": identifier, "cohort": cohort})
+            executions.append(
+                {
+                    "id": identifier,
+                    "cohort": cohort,
+                    "returncode": 0,
+                    "timed_out": False,
+                }
+            )
             report = (
                 package
                 / "observed-results"
@@ -1110,6 +1134,23 @@ class NegativeBenchFinalizationTests(unittest.TestCase):
 
             with self.assertRaisesRegex(FinalizationError, "executions do not match"):
                 finalize_package(package)
+
+    def test_final_seal_rejects_incomplete_execution_status(self):
+        from wsi_dicom_bench.negative_bench.finalize import FinalizationError, finalize_package
+
+        with tempfile.TemporaryDirectory() as temporary:
+            package = Path(temporary)
+            self._write_completed_package(package)
+            summary_path = package / "observed-results" / "run-summary.json"
+            summary = json.loads(summary_path.read_text())
+            summary["executions"][0].update(
+                {"timed_out": True, "launch_error": None, "returncode": None}
+            )
+            summary_path.write_text(json.dumps(summary) + "\n")
+
+            with self.assertRaisesRegex(FinalizationError, "incomplete execution evidence"):
+                finalize_package(package)
+            self.assertFalse((package / "SHA256SUMS").exists())
 
     def test_final_seal_rejects_incomplete_or_unsafe_generation_manifest(self):
         from wsi_dicom_bench.negative_bench.finalize import FinalizationError, finalize_package

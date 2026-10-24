@@ -315,17 +315,38 @@ def _case(
     changed: str,
     citation: dict,
     rationale: str,
+    **fields,
 ) -> dict:
+    """One case specification; extra ``fields`` (v6 ``requirement_ids``) follow ``expected``."""
     return {
         "case_id": case_id,
         "control": control,
         "mutation_name": mutation,
         "mutation_parameters": parameters,
         "expected": expected,
+        **fields,
         "changed": changed,
         "citation": citation,
         "rationale": rationale,
     }
+
+
+# Builders of ``iod_edits`` operations, shared with the v6 requirement-statement tables.
+def _op(operation: str, path: list, value: object = None, vr: str | None = None) -> dict:
+    entry = {"operation": operation, "path": path}
+    if operation != "delete":
+        entry["value"] = value
+    if vr is not None:
+        entry["vr"] = vr
+    return entry
+
+
+def _edits(*operations: dict) -> dict:
+    return {"operations": list(operations)}
+
+
+def _code(scheme: str, value: str, meaning: str) -> dict:
+    return {"CodeValue": value, "CodingSchemeDesignator": scheme, "CodeMeaning": meaning}
 
 
 SHARED = ["SharedFunctionalGroupsSequence", 0]

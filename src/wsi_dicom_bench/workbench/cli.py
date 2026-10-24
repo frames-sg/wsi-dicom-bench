@@ -16,18 +16,30 @@ from wsi_dicom_bench.json_document import write_json
 from wsi_dicom_bench.process_evidence import run_bounded_command
 
 from .catalog import CatalogError, load_catalog
+from .contract import expected_rule_set_id
 from .execution import WorkbenchError, run_json_command
 from .pixel_decode import DecodePolicy, run_pixel_decode_checks
 from .report import build_report, render_summary
 
 
 RULES_DIR = Path(str(importlib.resources.files("wsi_dicom_bench.rules")))
-DEFAULT_CATALOG = RULES_DIR / "wsi-dicom-bench-rules-2026c-v5.json"
-# Catalog v4 remains selectable with --catalog for binaries of the v4 contract.
-CATALOG_PROFILES = {
-    "wsi-dicom-bench-rules-2026c-v4": "wsi-dicom-core-profile-2026c-v2",
-    "wsi-dicom-bench-rules-2026c-v5": "wsi-dicom-core-profile-2026c-v3",
-}
+DEFAULT_CATALOG = RULES_DIR / "wsi-dicom-bench-rules-2026c-v6.json"
+# The catalogs that pair with a core profile. Catalogs v4 and v5 remain selectable
+# with --catalog for binaries of their contracts.
+PROFILE_CATALOGS = frozenset(
+    {
+        "wsi-dicom-bench-rules-2026c-v4",
+        "wsi-dicom-bench-rules-2026c-v5",
+        "wsi-dicom-bench-rules-2026c-v6",
+    }
+)
+
+
+def expected_profile_id(catalog: dict) -> str | None:
+    """Return the core profile ID a catalog pairs with (its core rule set), or None."""
+    if catalog.get("catalog_version") not in PROFILE_CATALOGS:
+        return None
+    return expected_rule_set_id(catalog, "core-2026c")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -97,7 +109,7 @@ def run_workbench(args: argparse.Namespace) -> dict:
     ):
         raise WorkbenchError("--profile is required for the DICOM 2026c core-profile catalog")
     profile = load_profile(args.profile) if args.profile else None
-    expected_profile = CATALOG_PROFILES.get(catalog["catalog_version"])
+    expected_profile = expected_profile_id(catalog)
     if profile and profile["profile_id"] != expected_profile:
         raise WorkbenchError("catalog and selected profile version are incompatible")
     if profile and profile["dicom_edition"] != catalog["dicom_edition"]:

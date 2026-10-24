@@ -233,6 +233,19 @@ class DecodeStageTests(unittest.TestCase):
         self.assertEqual((check["name"], check["status"]), ("pixel-decode", "failed"))
         self.assertEqual(check["message"], "Pixel Data offset table has 2 entries for 3 frames")
 
+    def test_a_data_set_pydicom_cannot_read_fails_with_the_reason(self):
+        slide = self.root / "undelimited.dcm"
+        write_dicom(slide, JPEG_BASELINE, [b"FRAME0"])
+        data = slide.read_bytes()
+        delimiter = b"\xfe\xff\xdd\xe0\0\0\0\0"
+        self.assertTrue(data.endswith(delimiter))
+        slide.write_bytes(data[: -len(delimiter)])
+
+        check = self.run_stage(slide)["checks"][0]
+
+        self.assertEqual((check["name"], check["status"]), ("pixel-decode", "failed"))
+        self.assertIn("cannot parse DICOM metadata: End of file reached before delimiter", check["message"])
+
     def test_htj2k_uses_an_absolute_template_and_rejects_relative_commands(self):
         slide = self.root / "htj2k.dcm"
         write_dicom(slide, HTJ2K_LOSSLESS, [b"CODESTREAM"])

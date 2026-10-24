@@ -20,6 +20,10 @@ RULE_SET_IDS_BY_CATALOG = {
         "core-2026c": "wsi-dicom-core-profile-2026c-v3",
         "general": "wsi-dicom-general-v2",
     },
+    "wsi-dicom-bench-rules-2026c-v6": {
+        "core-2026c": "wsi-dicom-core-profile-2026c-v4",
+        "general": "wsi-dicom-general-v3",
+    },
 }
 
 

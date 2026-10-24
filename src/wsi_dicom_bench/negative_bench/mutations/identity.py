@@ -16,6 +16,7 @@ from .dicom import (
     patch_file_meta_sop_instance_uid,
     read_case_source,
     save,
+    set_case_pair,
     set_case_sop,
 )
 
@@ -42,8 +43,7 @@ def invalid_specimen_uid(context: MutationContext) -> None:
 def conflicting_specimen_uid_scope(context: MutationContext) -> MutationResult:
     first = context.dataset
     second = read_case_source(context.source)
-    set_case_sop(first, context.seed, "first")
-    set_case_sop(second, context.seed, "second")
+    set_case_pair(first, second, context.seed)
     second.SpecimenDescriptionSequence[0].SpecimenIdentifier = context.parameters[
         "second_specimen_identifier"
     ]
@@ -95,8 +95,7 @@ def duplicate_sop_uid_divergent_series(context: MutationContext) -> MutationResu
 def incorrect_source_image_reference_class(context: MutationContext) -> MutationResult:
     owner = context.dataset
     target = read_case_source(context.source)
-    set_case_sop(owner, context.seed, "owner")
-    set_case_sop(target, context.seed, "target")
+    set_case_pair(target, owner, context.seed, ("target", "owner"))
     reference = pydicom.Dataset()
     reference.ReferencedSOPClassUID = context.parameters["referenced_sop_class_uid"]
     reference.ReferencedSOPInstanceUID = target.SOPInstanceUID
@@ -132,8 +131,7 @@ def _save_identity_pair(
 ) -> MutationResult:
     first = context.dataset
     second = copy.deepcopy(context.dataset)
-    set_case_sop(first, context.seed, "first")
-    set_case_sop(second, context.seed, "second")
+    set_case_pair(first, second, context.seed)
     second_change(second)
     first_path = context.input_dir / "first.dcm"
     second_path = context.input_dir / "second.dcm"

@@ -1,6 +1,7 @@
 import hashlib
 import base64
 import json
+import os
 import re
 import tempfile
 import unittest
@@ -101,32 +102,45 @@ class DistributionPayloadTests(unittest.TestCase):
 
 
 class PublicPayloadTests(unittest.TestCase):
-    # Digests of lowercase words reserved for documents kept outside the
-    # repository.
-    RESERVED_WORD_DIGESTS = frozenset({
-        "4d5be44c61172ce4f1f57d44a02c2814abe7113434492f785e668100aa08a42b",
-        "6fd4b2b13c9465a622bc79ba5bde5ee3a09d8d9479477c0608e9cc73247e8ba4",
-    })
+    # Words reserved for documents kept outside the repository are configured outside
+    # it too, comma-separated in WSI_DICOM_BENCH_RESERVED_WORDS (a CI secret).
+    RESERVED_WORDS_VARIABLE = "WSI_DICOM_BENCH_RESERVED_WORDS"
+
+    @staticmethod
+    def _shipped_files(root: Path):
+        for path in [root / "README.md", *(root / "src" / "wsi_dicom_bench").rglob("*")]:
+            relative = path.relative_to(root)
+            if path.is_file() and "__pycache__" not in relative.parts:
+                yield path, relative
 
     def test_shipped_sources_carry_no_private_documents(self):
         root = Path(__file__).resolve().parents[1]
         private_dirs = {"manuscript", "manuscripts", "grant", "paper", "papers"}
+        leaked = [
+            str(relative)
+            for _, relative in self._shipped_files(root)
+            if private_dirs & {part.lower() for part in relative.parts[:-1]}
+            or relative.suffix.lower() in {".docx", ".pptx"}
+        ]
+        self.assertEqual(leaked, [], "shipped sources must not carry private documents")
+
+    def test_shipped_sources_carry_no_reserved_words(self):
+        configured = os.environ.get(self.RESERVED_WORDS_VARIABLE)
+        if configured is None:
+            self.skipTest(f"{self.RESERVED_WORDS_VARIABLE} is not set")
+        reserved = {word.strip().lower() for word in configured.split(",") if word.strip()}
+        # CI always sets the variable; an empty Value means the secret is missing.
+        self.assertTrue(reserved, f"{self.RESERVED_WORDS_VARIABLE} is set but names no words")
+        root = Path(__file__).resolve().parents[1]
         text_suffixes = {".cff", ".csv", ".json", ".md", ".py", ".toml", ".txt", ".yml"}
         leaked = []
-        for path in [root / "README.md", *(root / "src" / "wsi_dicom_bench").rglob("*")]:
-            relative = path.relative_to(root)
-            if not path.is_file() or "__pycache__" in relative.parts:
-                continue
+        for path, relative in self._shipped_files(root):
             words = set(re.findall(r"[a-z]+", str(relative).lower()))
             if path.suffix.lower() in text_suffixes:
                 words |= set(re.findall(r"[a-z]+", path.read_text(encoding="utf-8").lower()))
-            if (
-                private_dirs & {part.lower() for part in relative.parts[:-1]}
-                or path.suffix.lower() in {".docx", ".pptx"}
-                or any(hashlib.sha256(word.encode()).hexdigest() in self.RESERVED_WORD_DIGESTS for word in words)
-            ):
+            if words & reserved:
                 leaked.append(str(relative))
-        self.assertEqual(leaked, [], "shipped sources must not carry private documents")
+        self.assertEqual(leaked, [], "shipped sources must not carry reserved words")
 
 if __name__ == "__main__":
     unittest.main()

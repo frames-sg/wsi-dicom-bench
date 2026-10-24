@@ -148,11 +148,8 @@ def instance_facts(path: Path, dataset) -> dict:
 
 
 def file_meta_version_facts(dataset) -> dict:
-    file_meta = getattr(dataset, "file_meta", None)
-    value = (
-        getattr(file_meta, "FileMetaInformationVersion", None)
-        if file_meta is not None
-        else None
+    value = getattr(
+        getattr(dataset, "file_meta", None), "FileMetaInformationVersion", None
     )
     if value is None:
         return {"information_version_hex": None, "version_1_compatible": None}

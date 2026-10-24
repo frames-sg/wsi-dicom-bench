@@ -96,6 +96,18 @@ def evaluate_device_preflight_fixture(
 
 
 class GdcBenchmarkTests(unittest.TestCase):
+    def test_nonfinite_preflight_thresholds_are_rejected(self):
+        from wsi_dicom_bench.gdc.cli import parse_args
+
+        for option in (
+            "--device-preflight-min-speedup",
+            "--device-preflight-min-device-frame-pct",
+        ):
+            with self.subTest(option=option):
+                with self.assertRaises(SystemExit) as raised:
+                    parse_args(["--out", "results", option, "nan"])
+                self.assertEqual(raised.exception.code, 2)
+
     def test_environment_probe_uses_shared_process_bounds(self):
         from wsi_dicom_bench.gdc import environment
 

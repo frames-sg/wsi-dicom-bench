@@ -15,10 +15,12 @@ import shlex
 import shutil
 import struct
 import tempfile
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 
 from wsi_dicom_bench.file_digest import sha256_file
+from wsi_dicom_bench.pnm import inspect_pnm
 from wsi_dicom_bench.process_evidence import read_bounded_text, run_bounded_command
 
 from .encapsulated_frames import FrameAssemblyError, frame_spans, read_frame, read_item_stream
@@ -29,8 +31,6 @@ AUTO_HTJ2K_DECODER_COMMAND = "grk_decompress"
 DEFAULT_MAX_PIXEL_FRAME_BYTES = 512 * 1024 * 1024
 DEFAULT_MAX_DECODER_OUTPUT_BYTES = 4 * 1024 * 1024
 DEFER_METADATA_VALUES_ABOVE = "1 KB"
-MAX_PNM_TOKEN_BYTES = 64
-
 JPEG_BASELINE_8BIT = "1.2.840.10008.1.2.4.50"
 JPEG_2000_LOSSLESS = "1.2.840.10008.1.2.4.90"
 JPEG_2000 = "1.2.840.10008.1.2.4.91"
@@ -107,12 +107,19 @@ def _file_checks(
     import pydicom
 
     try:
-        dataset = pydicom.dcmread(path, defer_size=DEFER_METADATA_VALUES_ABOVE)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            dataset = pydicom.dcmread(path, defer_size=DEFER_METADATA_VALUES_ABOVE)
     except OSError as exc:
         return [_execution_failed_check("pixel-decode", path, f"cannot read {path}: {exc}", "io")]
     except Exception as exc:  # pydicom raises many exception types for malformed files
         message = f"cannot parse DICOM metadata: {type(exc).__name__}: {exc}"
         return [_failed_check("pixel-decode", path, message)]
+    if len(dataset) == 0:
+        # pydicom returns an empty Data Set, with only a warning, for some malformed
+        # streams, such as encapsulated Pixel Data that ends the file without its delimiter.
+        reason = "; ".join(str(warning.message) for warning in caught) or "no Data Element was read"
+        return [_failed_check("pixel-decode", path, f"cannot parse DICOM metadata: {reason}")]
     file_meta = getattr(dataset, "file_meta", None) or {}
     transfer_syntax = str(file_meta.get("TransferSyntaxUID", "")).rstrip("\0")
     family = _decoder_family(transfer_syntax)
@@ -339,22 +346,9 @@ def _command_check(decoder: Decoder, path: str, arguments: list[str], stem: Path
 
 def inspect_pnm_output(output: Path, expected: FrameExpectation, max_decoded_bytes: int) -> None:
     """Require a binary PGM/PPM whose header and payload match the DICOM frame."""
-    try:
-        stream = output.open("rb")
-    except OSError as exc:
-        raise ValueError(f"decoder did not create readable output {output}: {exc}") from exc
-    with stream:
-        file_len = os.fstat(stream.fileno()).st_size
-        if file_len > max_decoded_bytes:
-            raise ValueError(f"decoder output {output} exceeds {max_decoded_bytes} byte validation limit")
-        magic = _read_pnm_token(stream)
-        components = {"P5": 1, "P6": 3}.get(magic)
-        if components is None:
-            raise ValueError(f"decoder output uses unsupported PNM magic {magic!r}")
-        columns = _parse_pnm_int(stream, "width")
-        rows = _parse_pnm_int(stream, "height")
-        max_value = _parse_pnm_int(stream, "maximum sample value")
-        payload_start = stream.tell()
+    info = inspect_pnm(output, max_decoded_bytes)
+    columns, rows = info.width, info.height
+    components, max_value = info.components, info.maximum
     if (columns, rows) != (expected.columns, expected.rows):
         raise ValueError(
             f"decoder output dimensions {columns}x{rows} do not match DICOM "
@@ -377,46 +371,6 @@ def inspect_pnm_output(output: Path, expected: FrameExpectation, max_decoded_byt
                 f"decoder output maximum sample value {max_value} does not match "
                 f"{expected.bits_allocated}-bit DICOM pixels"
             )
-    payload_len = columns * rows * components * (2 if max_value > 255 else 1)
-    if file_len != payload_start + payload_len:
-        raise ValueError(
-            f"decoder output payload has {max(file_len - payload_start, 0)} bytes, expected {payload_len}"
-        )
-
-
-def _parse_pnm_int(stream, field: str) -> int:
-    token = _read_pnm_token(stream)
-    if not token.isdigit():
-        raise ValueError(f"decoder output has invalid PNM {field} {token!r}")
-    return int(token)
-
-
-def _read_pnm_token(stream) -> str:
-    token = bytearray()
-    in_comment = False
-    while True:
-        byte = stream.read(1)
-        if not byte:
-            if not token:
-                raise ValueError("decoder output ended inside the PNM header")
-            break
-        if in_comment:
-            in_comment = byte != b"\n"
-            continue
-        if not token and byte == b"#":
-            in_comment = True
-            continue
-        if byte.isspace():
-            if not token:
-                continue
-            break
-        token += byte
-        if len(token) > MAX_PNM_TOKEN_BYTES:
-            raise ValueError(f"decoder output PNM header token exceeds {MAX_PNM_TOKEN_BYTES} bytes")
-    try:
-        return token.decode("ascii")
-    except UnicodeDecodeError as exc:
-        raise ValueError(f"decoder output PNM header is not ASCII: {exc}") from exc
 
 
 def _write_private_file(path: Path, data: bytes) -> None:

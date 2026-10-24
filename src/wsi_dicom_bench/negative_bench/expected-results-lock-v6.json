@@ -1,0 +1,35 @@
+{
+  "schema_version": "wsi-dicom-negative-bench-expected-results-lock-v6",
+  "challenge_id": "wsi-dicom-negative-bench-v6",
+  "locked_at_date": "2026-10-23",
+  "lock_state": "frozen_after_candidate_adjudication_before_final_evaluation",
+  "core_profile": {
+    "profile_id": "wsi-dicom-core-profile-2026c-v4",
+    "version": "4",
+    "sha256": "60903fe01383175a5b31eb72f38126523cc2421cee048d645c7e94b1478a83b4"
+  },
+  "files": [
+    {
+      "path": "bench/negative_bench/protocol-v6.md",
+      "sha256": "25cd3f437e29657ecf84fa269bf41b78cbc04445324447466885eae674978364"
+    },
+    {
+      "path": "bench/negative_bench/manifest-v6.json",
+      "sha256": "9f6b615a8d9d2524b2a6196a377c3d5b4135b1d58623e19d47a2f04ccd08c52b"
+    },
+    {
+      "path": "rules/wsi-dicom-bench-rules-2026c-v6.json",
+      "sha256": "865f2b51c99d35d7fd8a7529b58b65607f8a79583a1768d2eb769a904d4a90b8"
+    },
+    {
+      "path": "rules/wsi-dicom-core-profile-2026c-v4.json",
+      "sha256": "60903fe01383175a5b31eb72f38126523cc2421cee048d645c7e94b1478a83b4"
+    }
+  ],
+  "expected_counts": {
+    "development_cases": 10,
+    "evaluation_cases": 352,
+    "valid_controls": 14,
+    "compound_cases": 0
+  }
+}

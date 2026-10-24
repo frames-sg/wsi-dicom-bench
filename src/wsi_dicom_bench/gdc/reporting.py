@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 from typing import Iterable, Sequence
 
+from wsi_dicom_bench.json_document import write_json
+
 def read_jsonl(path: Path) -> list[dict]:
     if not path.exists():
         return []
@@ -18,7 +20,7 @@ def read_jsonl(path: Path) -> list[dict]:
 
 def append_jsonl(path: Path, row: dict) -> None:
     with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(row, sort_keys=True))
+        handle.write(json.dumps(row, sort_keys=True, allow_nan=False))
         handle.write("\n")
 
 def completed_result_keys(rows: Iterable[dict]) -> set[tuple[str, str, str, str, int]]:
@@ -77,9 +79,6 @@ def attach_result_context(
         row.setdefault("result_set", result_set)
     row.setdefault("result_label", infer_result_label(row, result_set=result_set))
     return row
-
-def write_json(path: Path, data: object) -> None:
-    path.write_text(json.dumps(data, indent=2, sort_keys=True), encoding="utf-8")
 
 def write_csv(path: Path, rows: Sequence[dict]) -> None:
     fields = [
@@ -291,7 +290,7 @@ def render_markdown_summary(rows: Sequence[dict], *, title: str) -> str:
 def write_planned_commands(path: Path, commands: Sequence[dict]) -> None:
     with path.open("w", encoding="utf-8") as handle:
         for command in commands:
-            handle.write(json.dumps(command, sort_keys=True))
+            handle.write(json.dumps(command, sort_keys=True, allow_nan=False))
             handle.write("\n")
 
 def rows_from_result_dirs(result_dirs: Sequence[Path], *, annotate: bool = False) -> list[dict]:

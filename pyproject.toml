@@ -42,6 +42,7 @@ wsi_dicom_bench = [
   "negative_bench/controls-v2/*.dcm",
   "negative_bench/controls-v4/*.dcm",
   "negative_bench/controls-v4/*/*.dcm",
+  "negative_bench/controls-v6/*.dcm",
   "negative_bench/package/*",
   "negative_bench/package/.*",
   "rules/*.json",

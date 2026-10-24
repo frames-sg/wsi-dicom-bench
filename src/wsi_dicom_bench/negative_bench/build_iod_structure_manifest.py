@@ -23,6 +23,7 @@ import json
 import sys
 from pathlib import Path
 
+from wsi_dicom_bench.core_profile import intrinsic_rule_ids
 from wsi_dicom_bench.file_digest import sha256_file
 from wsi_dicom_bench.negative_bench.identifiers import manifest_identifier_items
 from wsi_dicom_bench.negative_bench.iod_amendment_cases import (
@@ -58,16 +59,12 @@ CANDIDATE = {
 SEVERITY_ORDER = ("none", "minor", "major", "critical")
 
 
-def _intrinsic_rules(catalog: dict) -> list[str]:
-    return [rule["rule_id"] for rule in catalog["rules"] if rule["rule_kind"] != "independent_validator"]
-
-
-def _severity(catalog: dict, rule_ids: list[str], field: str) -> str:
-    by_id = {rule["rule_id"]: rule for rule in catalog["rules"]}
+def _severity(by_id: dict, rule_ids: list[str], field: str) -> str:
+    """The most severe ``field`` among ``rule_ids``, looked up in the catalog index ``by_id``."""
     return max((by_id[rule][field] for rule in rule_ids), key=SEVERITY_ORDER.index)
 
 
-def _carry_forward(case: dict, intrinsic: list[str]) -> dict:
+def _carry_forward(case: dict, intrinsic: set[str]) -> dict:
     entry = copy.deepcopy(case)
     adjudications = CARRIED_FORWARD.get(case["case_id"], [])
     added = [item["rule_id"] for item in adjudications if item["disposition"] == "expected_failing_rule"]
@@ -77,18 +74,18 @@ def _carry_forward(case: dict, intrinsic: list[str]) -> dict:
     if all_cascades:
         entry["adjudicated_cascade_rules"] = all_cascades
     excluded = set(entry["expected_failing_rules"]) | set(all_cascades)
-    entry["expected_unaffected_rules"] = sorted(set(intrinsic) - excluded)
+    entry["expected_unaffected_rules"] = sorted(intrinsic - excluded)
     entry["iod_rule_adjudications"] = adjudications
     return entry
 
 
-def _structure_case(spec: dict, controls: dict, catalog: dict, intrinsic: list[str]) -> dict:
+def _structure_case(spec: dict, controls: dict, by_id: dict, intrinsic: set[str]) -> dict:
     expected = [full_rule_id(short) for short in spec["expected"]]
     control = controls[spec["control"]]
     return {
         "adjudication_rationale": spec["rationale"],
         "case_id": spec["case_id"],
-        "clinical_severity": _severity(catalog, expected, "clinical_severity"),
+        "clinical_severity": _severity(by_id, expected, "clinical_severity"),
         "cohort": STRUCTURE_COHORT,
         "deterministic_seed": f"{STRUCTURE_SEED}:{spec['case_id']}",
         "dicom_citation": spec["citation"],
@@ -100,11 +97,11 @@ def _structure_case(spec: dict, controls: dict, catalog: dict, intrinsic: list[s
             "rule_localized": True,
             "wsi_dicom_bench": "failed",
         },
-        "expected_unaffected_rules": sorted(set(intrinsic) - set(expected)),
+        "expected_unaffected_rules": sorted(intrinsic - set(expected)),
         "likely_fix_owner": "converter",
         "mutation_name": spec["mutation_name"],
         "mutation_parameters": spec["mutation_parameters"],
-        "operational_severity": _severity(catalog, expected, "operational_severity"),
+        "operational_severity": _severity(by_id, expected, "operational_severity"),
         "source_control_ids": [spec["control"]],
         "source_control_sha256": control["sha256"],
         "target_rule_family": expected[0],
@@ -121,9 +118,10 @@ def build_manifest(source: Path = SOURCE_MANIFEST, catalog_path: Path = CATALOG)
     if unknown:
         raise ValueError(f"adjudications name unknown v4 cases: {unknown}")
     catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
-    intrinsic = _intrinsic_rules(catalog)
+    by_id = {rule["rule_id"]: rule for rule in catalog["rules"]}
+    intrinsic = intrinsic_rule_ids(catalog["rules"])
     by_control = {control["control_id"]: control for control in controls}
-    structure = [_structure_case(spec, by_control, catalog, intrinsic) for spec in STRUCTURE_CASES]
+    structure = [_structure_case(spec, by_control, by_id, intrinsic) for spec in STRUCTURE_CASES]
     if any("package_paths" in by_control[case["source_control_ids"][0]] for case in structure):
         raise ValueError("IOD structure cases must use single-file controls")
     manifest = copy.deepcopy(v4)
@@ -139,7 +137,7 @@ def build_manifest(source: Path = SOURCE_MANIFEST, catalog_path: Path = CATALOG)
             "challenge_id": CHALLENGE_ID,
             "cohorts": {**v4["cohorts"], "iod_structure": STRUCTURE_COHORT},
             "core_profile": {
-                "path": "rules/wsi-dicom-core-profile-2026c-v3.json",
+                "path": f"rules/{PROFILE.name}",
                 "profile_id": "wsi-dicom-core-profile-2026c-v3",
             },
             "created_date": CREATED_DATE,
@@ -157,12 +155,12 @@ def build_manifest(source: Path = SOURCE_MANIFEST, catalog_path: Path = CATALOG)
                     "was recorded as expected or as an adjudicated cascade."
                 ),
             },
-            "expected_results_lock": "expected-results-lock-v5.json",
-            "protocol": "protocol-v5.md",
+            "expected_results_lock": LOCK.name,
+            "protocol": PROTOCOL.name,
             "resource_limits": {**v4["resource_limits"], "max_cases": 160},
             "rule_catalog": {
                 "catalog_version": catalog["catalog_version"],
-                "path": "rules/wsi-dicom-bench-rules-2026c-v5.json",
+                "path": f"rules/{CATALOG.name}",
                 "required_new_rule_ids": list(IOD_RULES),
             },
             "schema_version": "wsi-dicom-negative-bench-manifest-v5",
@@ -174,32 +172,47 @@ def build_manifest(source: Path = SOURCE_MANIFEST, catalog_path: Path = CATALOG)
     return manifest
 
 
-def build_lock(manifest_path: Path = MANIFEST) -> dict:
-    """Return the expected-results lock binding protocol, manifest, catalog, and profile."""
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    profile = json.loads(PROFILE.read_text(encoding="utf-8"))
-    profile_digest = sha256_file(PROFILE)
+def build_lock(
+    manifest_path: Path = MANIFEST,
+    profile_path: Path = PROFILE,
+    *,
+    schema_version: str = "wsi-dicom-negative-bench-expected-results-lock-v5",
+    locked_at_date: str = CREATED_DATE,
+    protocol: Path = PROTOCOL,
+    manifest: Path = MANIFEST,
+    catalog: Path = CATALOG,
+    profile: Path = PROFILE,
+) -> dict:
+    """Return the expected-results lock binding protocol, manifest, catalog, and profile.
+
+    ``manifest_path`` and ``profile_path`` are the files read and digested; ``protocol``,
+    ``manifest``, ``catalog`` and ``profile`` are the package files the lock names. The
+    defaults are the v5 files; later amendments pass their own.
+    """
+    document = json.loads(manifest_path.read_text(encoding="utf-8"))
+    profile_document = json.loads(profile_path.read_text(encoding="utf-8"))
+    profile_digest = sha256_file(profile_path)
     return {
-        "schema_version": "wsi-dicom-negative-bench-expected-results-lock-v5",
-        "challenge_id": manifest["challenge_id"],
-        "locked_at_date": CREATED_DATE,
+        "schema_version": schema_version,
+        "challenge_id": document["challenge_id"],
+        "locked_at_date": locked_at_date,
         "lock_state": "frozen_after_candidate_adjudication_before_final_evaluation",
         "core_profile": {
-            "profile_id": profile["profile_id"],
-            "version": profile["profile_version"],
+            "profile_id": profile_document["profile_id"],
+            "version": profile_document["profile_version"],
             "sha256": profile_digest,
         },
         "files": [
-            {"path": "bench/negative_bench/protocol-v5.md", "sha256": sha256_file(PROTOCOL)},
-            {"path": "bench/negative_bench/manifest-v5.json", "sha256": sha256_file(manifest_path)},
-            {"path": "rules/wsi-dicom-bench-rules-2026c-v5.json", "sha256": sha256_file(CATALOG)},
-            {"path": "rules/wsi-dicom-core-profile-2026c-v3.json", "sha256": profile_digest},
+            {"path": f"bench/negative_bench/{protocol.name}", "sha256": sha256_file(protocol)},
+            {"path": f"bench/negative_bench/{manifest.name}", "sha256": sha256_file(manifest_path)},
+            {"path": f"rules/{catalog.name}", "sha256": sha256_file(catalog)},
+            {"path": f"rules/{profile.name}", "sha256": profile_digest},
         ],
         "expected_counts": {
-            "development_cases": len(manifest.get("development_cases", [])),
-            "evaluation_cases": len(manifest["evaluation_cases"]),
-            "valid_controls": len(manifest["valid_controls"]),
-            "compound_cases": len(manifest.get("compound_cases", [])),
+            "development_cases": len(document.get("development_cases", [])),
+            "evaluation_cases": len(document["evaluation_cases"]),
+            "valid_controls": len(document["valid_controls"]),
+            "compound_cases": len(document.get("compound_cases", [])),
         },
     }
 
@@ -217,13 +230,13 @@ def main(argv: list[str] | None = None) -> int:
         MANIFEST.write_text(manifest_text, encoding="utf-8")
         LOCK.write_text(_render(build_lock(), sort_keys=False), encoding="utf-8")
         return 0
-    stale = []
+    stale = None
     if not MANIFEST.is_file() or MANIFEST.read_text(encoding="utf-8") != manifest_text:
-        stale.append(MANIFEST.name)
+        stale = MANIFEST.name
     elif not LOCK.is_file() or LOCK.read_text(encoding="utf-8") != _render(build_lock(), sort_keys=False):
-        stale.append(LOCK.name)
+        stale = LOCK.name
     if stale:
-        print(f"out of date: {', '.join(stale)}; rerun with --write", file=sys.stderr)
+        print(f"out of date: {stale}; rerun with --write", file=sys.stderr)
         return 1
     return 0
 

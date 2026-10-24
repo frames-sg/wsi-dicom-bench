@@ -1,6 +1,5 @@
 """Integrity of the v5 IOD amendment and its separation from the frozen v4 artifacts."""
 
-import hashlib
 import json
 import struct
 import tempfile
@@ -9,6 +8,10 @@ from collections import Counter
 from pathlib import Path
 
 import pydicom
+
+from wsi_dicom_bench.core_profile import intrinsic_rule_ids
+from wsi_dicom_bench.file_digest import sha256_file
+from wsi_dicom_bench.negative_bench import iod_amendment_cases
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -24,30 +27,11 @@ CATALOG_V4 = RULES / "wsi-dicom-bench-rules-2026c-v4.json"
 CATALOG_V5 = RULES / "wsi-dicom-bench-rules-2026c-v5.json"
 PROFILE_V2 = RULES / "wsi-dicom-core-profile-2026c-v2.json"
 PROFILE_V3 = RULES / "wsi-dicom-core-profile-2026c-v3.json"
-IOD_RULES = {
-    f"intrinsic-wsi-dicom-2026c-{name}"
-    for name in (
-        "iod-modules",
-        "iod-attribute-presence",
-        "iod-enumerated-values",
-        "iod-vr-vm",
-        "iod-value-format",
-        "iod-sequence-items",
-        "file-meta",
-    )
-}
+IOD_RULES = frozenset(iod_amendment_cases.IOD_RULES)
 
 
 def load(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
-
-
-def sha256_file(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def intrinsic_rules(catalog: dict) -> set[str]:
-    return {rule["rule_id"] for rule in catalog["rules"] if rule["rule_kind"] != "independent_validator"}
 
 
 class FrozenV4ArtifactTests(unittest.TestCase):
@@ -75,11 +59,11 @@ class FrozenV4ArtifactTests(unittest.TestCase):
 
     def test_v4_catalog_and_contract_remain_selectable(self):
         from wsi_dicom_bench.workbench.catalog import load_catalog
-        from wsi_dicom_bench.workbench.cli import CATALOG_PROFILES
+        from wsi_dicom_bench.workbench.cli import expected_profile_id
         from wsi_dicom_bench.workbench.contract import expected_rule_set_id
 
         catalog = load_catalog(CATALOG_V4)
-        self.assertEqual(CATALOG_PROFILES[catalog["catalog_version"]], load(PROFILE_V2)["profile_id"])
+        self.assertEqual(expected_profile_id(catalog), load(PROFILE_V2)["profile_id"])
         self.assertEqual(expected_rule_set_id(catalog, "core-2026c"), "wsi-dicom-core-profile-2026c-v2")
         self.assertEqual(expected_rule_set_id(catalog, "general"), "wsi-dicom-general-v1")
         self.assertFalse(IOD_RULES & {rule["rule_id"] for rule in catalog["rules"]})
@@ -178,6 +162,14 @@ class RuleSetSelectionTests(unittest.TestCase):
                 with self.subTest(catalog=catalog.name), self.assertRaisesRegex(WorkbenchError, "profile version"):
                     run_workbench(args)
 
+    def test_workbench_pairs_no_profile_with_the_pre_profile_catalog(self):
+        from wsi_dicom_bench.workbench.catalog import load_catalog
+        from wsi_dicom_bench.workbench.cli import expected_profile_id
+
+        # The contract names a core rule set for catalog v2, but v2 predates core profiles.
+        self.assertIsNone(expected_profile_id(load_catalog(RULES / "wsi-dicom-bench-rules-2026c-v2.json")))
+        self.assertEqual(expected_profile_id(load_catalog(CATALOG_V5)), load(PROFILE_V3)["profile_id"])
+
     def test_suite_directory_with_one_versioned_v5_manifest_resolves(self):
         from wsi_dicom_bench.challenge import ChallengeInfrastructureError, _suite_manifest
 
@@ -185,9 +177,21 @@ class RuleSetSelectionTests(unittest.TestCase):
             root = Path(temporary)
             (root / "manifest-v5.json").write_text("{}\n", encoding="utf-8")
             self.assertEqual(_suite_manifest(root), (root / "manifest-v5.json").resolve())
+            # Beside v4, as in the packaged directory, the default v4 suite is selected.
             (root / "manifest-v4.json").write_text("{}\n", encoding="utf-8")
+            self.assertEqual(_suite_manifest(root), (root / "manifest-v4.json").resolve())
+            (root / "manifest.json").write_text("{}\n", encoding="utf-8")
             with self.assertRaisesRegex(ChallengeInfrastructureError, "exactly one"):
                 _suite_manifest(root)
+
+    def test_packaged_suite_directory_resolves_to_the_default_v4_manifest(self):
+        import importlib.resources
+
+        from wsi_dicom_bench.challenge import _suite_manifest
+
+        packaged = Path(str(importlib.resources.files("wsi_dicom_bench.negative_bench")))
+        self.assertTrue((packaged / "manifest-v5.json").is_file())
+        self.assertEqual(_suite_manifest(packaged), (packaged / "manifest-v4.json").resolve())
 
 
 class CatalogAndProfileV5Tests(unittest.TestCase):
@@ -313,7 +317,7 @@ class ManifestV5IntegrityTests(unittest.TestCase):
                     self.assertTrue(item["citation"]["url"].startswith("https://dicom.nema.org/medical/dicom/2026c/"))
 
     def test_expected_unaffected_rules_exclude_every_expected_and_cascade_rule(self):
-        intrinsic = intrinsic_rules(self.catalog)
+        intrinsic = intrinsic_rule_ids(self.catalog["rules"])
         for case in self.v5["evaluation_cases"]:
             failing = set(case["expected_failing_rules"]) | set(case.get("adjudicated_cascade_rules", []))
             with self.subTest(case=case["case_id"]):
@@ -368,13 +372,17 @@ class ManifestV5IntegrityTests(unittest.TestCase):
         from wsi_dicom_bench.negative_bench.mutations import (
             ALL_MUTATIONS,
             MUTATION_REGISTRY,
-            STRUCTURE_MUTATION_REGISTRY,
+            codestream,
+            encoding,
+            relations,
+            structure,
         )
 
         used = {case["mutation_name"] for manifest in (self.v4, self.v5) for case in manifest["evaluation_cases"]}
-        self.assertEqual(set(ALL_MUTATIONS), set(MUTATION_REGISTRY) | set(STRUCTURE_MUTATION_REGISTRY))
-        self.assertFalse(set(MUTATION_REGISTRY) & set(STRUCTURE_MUTATION_REGISTRY))
-        self.assertEqual(set(ALL_MUTATIONS) - used, {"invalid_specimen_uid", "total_matrix_too_large"})
+        v6 = {*relations.HANDLERS, *codestream.HANDLERS, *encoding.HANDLERS}
+        # Every v5 mutation beyond v4 is a structure mutation, and no structure name shadows a v4 one.
+        self.assertEqual(set(ALL_MUTATIONS) - set(MUTATION_REGISTRY) - v6, set(structure.HANDLERS))
+        self.assertEqual(set(ALL_MUTATIONS) - used - v6, {"invalid_specimen_uid", "total_matrix_too_large"})
 
 
 class SourceReferenceMutationTests(unittest.TestCase):

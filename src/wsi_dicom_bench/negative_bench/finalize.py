@@ -8,9 +8,12 @@ import os
 import sys
 from pathlib import Path, PurePosixPath
 
+from wsi_dicom_bench.negative_bench.completed_evidence import (
+    CompletedEvidenceError,
+    require_candidate_sha256,
+    validate_completed_run,
+)
 from wsi_dicom_bench.file_digest import sha256_file
-from wsi_dicom_bench.negative_bench.identifiers import manifest_identifier_items
-from wsi_dicom_bench.path_identifiers import require_portable_identifier
 
 
 REQUIRED_FINAL_INPUTS = (
@@ -128,54 +131,29 @@ def _read_object(package: Path, relative: str) -> dict:
 
 def _validate_completed_package(package: Path) -> None:
     manifest = _read_object(package, "manifest.json")
-    try:
-        controls, cases = manifest_identifier_items(manifest)
-    except ValueError as exc:
-        raise FinalizationError(str(exc)) from exc
-    challenge_id = manifest.get("challenge_id")
-    if not isinstance(challenge_id, str) or not challenge_id:
-        raise FinalizationError("manifest challenge_id must be a non-empty string")
-
-    expected = {
-        **{control["control_id"]: "valid-controls-v1" for control in controls},
-        **{case["case_id"]: "evaluation-v1" for case in cases},
-    }
-    if not expected:
-        raise FinalizationError("completed package must contain at least one challenge input")
     run = _read_object(package, "observed-results/run-summary.json")
-    if (
-        run.get("schema_version") != "wsi-dicom-negative-bench-run-summary-v1"
-        or run.get("challenge_id") != challenge_id
-        or not isinstance(run.get("executions"), list)
-    ):
-        raise FinalizationError("run summary schema or challenge does not match manifest")
-    observed: dict[str, str] = {}
-    for index, execution in enumerate(run["executions"]):
-        if not isinstance(execution, dict):
-            raise FinalizationError(f"run summary execution {index} must be an object")
-        try:
-            identifier = require_portable_identifier(
-                execution.get("id"), f"run summary execution {index} id"
-            )
-        except ValueError as exc:
-            raise FinalizationError(str(exc)) from exc
-        if identifier in observed:
-            raise FinalizationError(f"run summary duplicates execution: {identifier}")
-        observed[identifier] = execution.get("cohort")
-    if observed != expected:
-        raise FinalizationError("run summary executions do not match manifest inputs")
+    try:
+        completed = validate_completed_run(manifest, run)
+    except CompletedEvidenceError as exc:
+        raise FinalizationError(str(exc)) from exc
+    controls, cases = completed.controls, completed.cases
+    challenge_id = manifest["challenge_id"]
 
-    for identifier in expected:
-        report_path = (
-            package
-            / "observed-results"
-            / identifier
-            / "workbench"
-            / "workbench-report.json"
-        )
-        report = _read_object(package, str(report_path.relative_to(package)))
-        if report.get("schema_version") not in {"wsi-dicom-bench-workbench-report-v1", "wsi-dicom-bench-workbench-report-v2"}:
-            raise FinalizationError(f"workbench report schema is invalid: {identifier}")
+    if not manifest.get("core_profile"):
+        for identifier in completed.expected:
+            report_path = (
+                package
+                / "observed-results"
+                / identifier
+                / "workbench"
+                / "workbench-report.json"
+            )
+            report = _read_object(package, str(report_path.relative_to(package)))
+            if report.get("schema_version") not in {
+                "wsi-dicom-bench-workbench-report-v1",
+                "wsi-dicom-bench-workbench-report-v2",
+            }:
+                raise FinalizationError(f"workbench report schema is invalid: {identifier}")
 
     analysis = _read_object(package, "analysis/summary.json")
     if (
@@ -190,8 +168,14 @@ def _validate_completed_package(package: Path) -> None:
         try:
             profile_path = package / "expected-results" / Path(manifest["core_profile"]["path"]).name
             catalog_path = "expected-results/" + Path(manifest["rule_catalog"]["path"]).name
-            validate_evidence_coverage(load_profile(profile_path), _read_object(package, catalog_path), manifest, package)
-        except (CoreProfileError, OSError) as exc:
+            validate_evidence_coverage(
+                load_profile(profile_path),
+                _read_object(package, catalog_path),
+                manifest,
+                package,
+                candidate_sha256=require_candidate_sha256(completed),
+            )
+        except (CompletedEvidenceError, CoreProfileError, OSError) as exc:
             raise FinalizationError(f"core evidence gate failed: {exc}") from exc
     for relative in REQUIRED_ANALYSIS_OUTPUTS:
         if not (package / relative).is_file():

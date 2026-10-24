@@ -58,16 +58,16 @@ class WorkbenchCatalogTests(unittest.TestCase):
         validation["profile"] = "general"
         self.assertTrue(any("profile" in error for error in validation_contract_errors(validation, catalog, True)))
 
-    def test_default_catalog_is_the_current_v5_catalog(self):
-        # The v5 amendment makes catalog v5 the default; catalog v4 stays selectable.
-        from wsi_dicom_bench.workbench.cli import CATALOG_PROFILES, DEFAULT_CATALOG
+    def test_default_catalog_is_the_current_v6_catalog(self):
+        # The v6 amendment makes catalog v6 the default; catalogs v4 and v5 stay selectable.
+        from wsi_dicom_bench.workbench.cli import DEFAULT_CATALOG, expected_profile_id
 
-        current = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v5.json"
+        current = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v6.json"
         self.assertEqual(DEFAULT_CATALOG.name, current.name)
         self.assertEqual(DEFAULT_CATALOG.read_bytes(), current.read_bytes())
         self.assertTrue(CATALOG_PATH.is_file())
         self.assertEqual(
-            CATALOG_PROFILES[json.loads(CATALOG_PATH.read_text())["catalog_version"]],
+            expected_profile_id(json.loads(CATALOG_PATH.read_text())),
             json.loads(PROFILE_PATH.read_text())["profile_id"],
         )
 
@@ -277,27 +277,47 @@ class WorkbenchDicomInspectionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             paths = []
+            # Name, transfer syntax, File Meta version, organization, explicit
+            # frame positions, frame count, and (optical paths, focal planes).
             controls = (
-                ("dense.dcm", ExplicitVRLittleEndian, b"\x00\x03", "TILED_FULL", []),
+                (
+                    "dense.dcm",
+                    ExplicitVRLittleEndian,
+                    b"\x00\x03",
+                    "TILED_FULL",
+                    [],
+                    36,
+                    (2, 3),
+                ),
                 (
                     "sparse.dcm",
                     JPEG2000Lossless,
                     b"\x80\x01",
                     "TILED_SPARSE",
                     [(1, 1), (513, 513)],
+                    2,
+                    None,
                 ),
-                ("volume.dcm", ExplicitVRLittleEndian, b"\x00\x01", "3D", []),
+                ("volume.dcm", ExplicitVRLittleEndian, b"\x00\x01", "3D", [], 6, None),
                 (
                     "incomplete-full.dcm",
                     ExplicitVRLittleEndian,
                     b"\x00\x01",
                     "TILED_FULL",
                     [],
+                    6,
+                    None,
                 ),
             )
-            for index, (name, transfer_syntax, version, organization, positions) in enumerate(
-                controls, start=1
-            ):
+            for index, (
+                name,
+                transfer_syntax,
+                version,
+                organization,
+                positions,
+                frame_count,
+                optical_planes,
+            ) in enumerate(controls, start=1):
                 path = root / name
                 meta = FileMetaDataset()
                 meta.TransferSyntaxUID = transfer_syntax
@@ -309,15 +329,14 @@ class WorkbenchDicomInspectionTests(unittest.TestCase):
                 dataset.ContainerIdentifier = "SLIDE-001"
                 dataset.Rows = 512
                 dataset.Columns = 512
-                dataset.NumberOfFrames = str(
-                    len(positions) or (36 if name == "dense.dcm" else 6)
-                )
+                dataset.NumberOfFrames = str(frame_count)
                 dataset.TotalPixelMatrixRows = 1024
                 dataset.TotalPixelMatrixColumns = 1536
                 dataset.DimensionOrganizationType = organization
-                if name == "dense.dcm":
-                    dataset.NumberOfOpticalPaths = 2
-                    dataset.TotalPixelMatrixFocalPlanes = 3
+                if optical_planes is not None:
+                    optical_paths, focal_planes = optical_planes
+                    dataset.NumberOfOpticalPaths = optical_paths
+                    dataset.TotalPixelMatrixFocalPlanes = focal_planes
                 dataset.SamplesPerPixel = 1
                 dataset.PhotometricInterpretation = "MONOCHROME2"
                 dataset.BitsAllocated = 16

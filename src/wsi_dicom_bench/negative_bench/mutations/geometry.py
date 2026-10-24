@@ -11,6 +11,7 @@ from .dicom import (
     replace_frames,
     save,
     selected_index,
+    set_case_pair,
     set_case_sop,
 )
 
@@ -90,8 +91,7 @@ def inconsistent_pyramid_physical_extent(
 ) -> MutationResult:
     first = context.dataset
     second = read_case_source(context.source)
-    set_case_sop(first, context.seed, "first")
-    set_case_sop(second, context.seed, "second")
+    set_case_pair(first, second, context.seed)
     spacing = context.parameters["second_pixel_spacing"]
     measures = second.SharedFunctionalGroupsSequence[0].PixelMeasuresSequence[0]
     measures.PixelSpacing = spacing
@@ -137,8 +137,7 @@ def nonorthogonal_image_orientation(context: MutationContext) -> None:
 def conflicting_slide_origin_set(context: MutationContext) -> MutationResult:
     first = context.dataset
     second = copy.deepcopy(context.dataset)
-    set_case_sop(first, context.seed, "first")
-    set_case_sop(second, context.seed, "second")
+    set_case_pair(first, second, context.seed)
     second.TotalPixelMatrixOriginSequence[0].XOffsetInSlideCoordinateSystem = (
         context.parameters.get("value", "1")
     )

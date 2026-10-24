@@ -7,6 +7,7 @@ import importlib.metadata
 import importlib.resources
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -30,6 +31,20 @@ from wsi_dicom_bench.path_identifiers import require_portable_identifier
 
 EXPECTED_PYDICOM_VERSION = "3.0.2"
 VL_WSI_SOP_CLASS_UID = "1.2.840.10008.5.1.4.1.1.77.1.6"
+# Supported manifest schemas and the version that names their manifest and lock.
+MANIFEST_VERSIONS = {
+    "wsi-dicom-negative-bench-manifest-v1": "v1",
+    "wsi-dicom-negative-bench-manifest-v2": "v2",
+    "wsi-dicom-negative-bench-manifest-v3": "v3",
+    "wsi-dicom-negative-bench-manifest-v4": "v4",
+    "wsi-dicom-negative-bench-manifest-v5": "v5",
+    "wsi-dicom-negative-bench-manifest-v6": "v6",
+}
+# Versions whose expected-results lock also binds a core profile.
+PROFILED_VERSIONS = {"v3", "v4", "v5", "v6"}
+
+# The only words a generated Patient's Name or Patient ID may hold.
+PLACEHOLDER_WORDS = {"", "RESEARCH", "PLACEHOLDER", "ANONYMOUS", "ANON"}
 
 
 def _resource_path(package: str, name: str = "") -> Path:
@@ -48,13 +63,7 @@ def load_manifest(path: Path) -> dict:
         controls, cases = manifest_identifier_items(manifest)
     except ValueError as exc:
         raise GenerationError(str(exc)) from exc
-    if manifest.get("schema_version") not in {
-        "wsi-dicom-negative-bench-manifest-v1",
-        "wsi-dicom-negative-bench-manifest-v2",
-        "wsi-dicom-negative-bench-manifest-v3",
-        "wsi-dicom-negative-bench-manifest-v4",
-        "wsi-dicom-negative-bench-manifest-v5",
-    }:
+    if manifest.get("schema_version") not in MANIFEST_VERSIONS:
         raise GenerationError("unsupported challenge manifest schema")
     limits = manifest.get("resource_limits")
     if not isinstance(limits, dict):
@@ -389,10 +398,12 @@ def _reject_identifying_metadata(path: Path) -> None:
     )
     if str(getattr(dataset, "SOPClassUID", "")) != VL_WSI_SOP_CLASS_UID:
         raise GenerationError(f"control is not VL Whole Slide Microscopy: {path}")
-    patient_name = str(getattr(dataset, "PatientName", "")).strip().upper()
-    patient_id = str(getattr(dataset, "PatientID", "")).strip().upper()
-    allowed = {"", "RESEARCH", "RESEARCH^PLACEHOLDER", "ANONYMOUS", "ANON"}
-    if patient_name not in allowed or patient_id not in allowed:
+    # Every component of the Patient's Name, and the Patient ID, is a placeholder word.
+    words = [
+        *re.split(r"[=^]", str(getattr(dataset, "PatientName", ""))),
+        str(getattr(dataset, "PatientID", "")),
+    ]
+    if any(word.strip().upper() not in PLACEHOLDER_WORDS for word in words):
         raise GenerationError(f"control failed patient identity policy: {path}")
 
 
@@ -405,14 +416,7 @@ def _verify_expected_results_lock(
 ) -> None:
     lock = json.loads(lock_path.read_text(encoding="utf-8"))
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    manifest_schema = manifest.get("schema_version")
-    version = {
-        "wsi-dicom-negative-bench-manifest-v1": "v1",
-        "wsi-dicom-negative-bench-manifest-v2": "v2",
-        "wsi-dicom-negative-bench-manifest-v3": "v3",
-        "wsi-dicom-negative-bench-manifest-v4": "v4",
-        "wsi-dicom-negative-bench-manifest-v5": "v5",
-    }.get(manifest_schema)
+    version = MANIFEST_VERSIONS.get(manifest.get("schema_version"))
     if version is None:
         raise GenerationError("expected-results lock received an unsupported manifest")
     if lock.get("schema_version") != f"wsi-dicom-negative-bench-expected-results-lock-{version}":
@@ -430,7 +434,7 @@ def _verify_expected_results_lock(
         raise GenerationError("expected-results lock counts do not match the manifest")
 
     files = lock.get("files")
-    profiled = version in {"v3", "v4", "v5"}
+    profiled = version in PROFILED_VERSIONS
     expected_file_count = 4 if profiled else 3
     if not isinstance(files, list) or len(files) != expected_file_count:
         raise GenerationError(

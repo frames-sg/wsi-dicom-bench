@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from ..model import GenerationError, MutationContext, MutationResult
-from . import color, conformance, geometry, identity, pixel, structure
+from . import codestream, color, conformance, encoding, geometry, identity, pixel, relations, structure
 from .dicom import read_case_source, save
 
 
@@ -41,15 +41,18 @@ CATALOG_V4_DOMAINS = (
     ("identity", identity.HANDLERS),
     ("conformance", conformance.HANDLERS),
 )
-# The catalog-v4 mutation inventory stays exact; the v5 amendment adds its
-# single-defect IOD structure mutations in a separate registry. ALL_MUTATIONS,
-# which generation dispatches through, rejects any name that both would own.
+# The catalog-v4 mutation inventory stays exact; the v5 and v6 amendments add their
+# single-defect IOD structure, relation, codestream and encoding mutations only to ALL_MUTATIONS,
+# which generation dispatches through and which rejects any name that two domains would own.
 MUTATION_REGISTRY: dict[str, MutationHandler] = build_registry(CATALOG_V4_DOMAINS)
-STRUCTURE_MUTATION_REGISTRY: dict[str, MutationHandler] = build_registry(
-    (("structure", structure.HANDLERS),)
-)
 ALL_MUTATIONS: dict[str, MutationHandler] = build_registry(
-    (*CATALOG_V4_DOMAINS, ("structure", structure.HANDLERS))
+    (
+        *CATALOG_V4_DOMAINS,
+        ("structure", structure.HANDLERS),
+        ("relations", relations.HANDLERS),
+        ("codestream", codestream.HANDLERS),
+        ("encoding", encoding.HANDLERS),
+    )
 )
 
 

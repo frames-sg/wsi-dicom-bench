@@ -253,7 +253,7 @@ class CoreEvidenceGateTests(unittest.TestCase):
                 input_path.parent.mkdir(parents=True)
                 input_path.write_bytes(identifier.encode())
                 status = "passed" if identifier == "C" else "failed"
-                report = {"status": status, "profile": {"id": "profile", "sha256": hashlib.sha256((expected / "profile.json").read_bytes()).hexdigest()}, "catalog": {"sha256": hashlib.sha256((expected / "catalog.json").read_bytes()).hexdigest()}, "slide": {"instances": [{"path": str(input_path), "sha256": hashlib.sha256(input_path.read_bytes()).hexdigest()}]}, "findings": [{"rule_id": "rule", "check_name": "check", "path": str(input_path), "status": status, "primary_domain": "pixel", "catalog_status": "mapped"}, {"rule_id": "external", "check_name": "validator", "status": "passed", "catalog_status": "mapped"}]}
+                report = {"schema_version": "wsi-dicom-bench-workbench-report-v2", "status": status, "profile": {"id": "profile", "sha256": hashlib.sha256((expected / "profile.json").read_bytes()).hexdigest()}, "catalog": {"sha256": hashlib.sha256((expected / "catalog.json").read_bytes()).hexdigest()}, "software": {"wsi_dicom": {"sha256": "a" * 64}}, "slide": {"instances": [{"path": str(input_path), "sha256": hashlib.sha256(input_path.read_bytes()).hexdigest()}]}, "findings": [{"rule_id": "rule", "check_name": "check", "path": str(input_path), "status": status, "primary_domain": "pixel", "catalog_status": "mapped"}, {"rule_id": "external", "check_name": "validator", "status": "passed", "catalog_status": "mapped"}]}
                 path = root / "observed-results" / identifier / "workbench/workbench-report.json"
                 path.parent.mkdir(parents=True)
                 report["execution"] = {}
@@ -271,10 +271,26 @@ class CoreEvidenceGateTests(unittest.TestCase):
                     report["execution"][name] = execution
                 path.write_text(json.dumps(report))
             with mock.patch.object(Path, "read_bytes", side_effect=AssertionError("evidence files must be streamed")):
-                baseline = validate_evidence_coverage(profile, catalog, manifest, root)
+                baseline = validate_evidence_coverage(
+                    profile, catalog, manifest, root, candidate_sha256="a" * 64
+                )
             self.assertEqual(baseline["controls_passing"], 1)
             path = root / "observed-results/N/workbench/workbench-report.json"
             report = json.loads(path.read_text())
+            path.write_text("[]")
+            with self.assertRaisesRegex(
+                CoreProfileError, "workbench report must be an object"
+            ):
+                validate_evidence_coverage(profile, catalog, manifest, root)
+            path.write_text(json.dumps(report))
+            broken = copy.deepcopy(report)
+            broken["software"]["wsi_dicom"]["sha256"] = "b" * 64
+            path.write_text(json.dumps(broken))
+            with self.assertRaisesRegex(CoreProfileError, "different wsi-dicom"):
+                validate_evidence_coverage(
+                    profile, catalog, manifest, root, candidate_sha256="a" * 64
+                )
+            path.write_text(json.dumps(report))
             for defect in ("missing_validator", "execution_error", "unmapped", "cascade", "input_digest"):
                 broken = copy.deepcopy(report)
                 if defect == "missing_validator":

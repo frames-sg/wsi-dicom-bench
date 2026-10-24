@@ -9,8 +9,8 @@ import sys
 from pathlib import Path, PurePosixPath
 
 from .core_profile import (
+    CoreEvidenceInfrastructureError,
     CoreProfileError,
-    _validate_report_evidence,
     load_profile,
     validate_evidence_coverage,
     validate_profile_coverage,
@@ -21,7 +21,11 @@ from .negative_bench.finalize import (
     _verify_generation_sums,
     finalize_package,
 )
-from .negative_bench.identifiers import manifest_identifier_items
+from .negative_bench.completed_evidence import (
+    CompletedEvidenceError,
+    require_candidate_sha256,
+    validate_completed_run,
+)
 from .negative_bench.model import GenerationError
 
 
@@ -43,19 +47,25 @@ def _read_object(path: Path, description: str) -> dict:
     return document
 
 
+# Bundled manifests in preference order. The packaged suite directory holds all of
+# them and resolves to the default v4 suite; the v5 and v6 amendments are selected by
+# passing their manifest file, or resolve from a directory that holds only one.
+BUNDLED_SUITE_MANIFESTS = ("manifest-v4.json", "manifest-v5.json", "manifest-v6.json")
+
+
 def _suite_manifest(suite: Path) -> Path:
     suite = suite.resolve()
     if suite.is_file():
         return suite
     if not suite.is_dir():
         raise ChallengeInfrastructureError(f"suite does not exist: {suite}")
-    candidates = [suite / "manifest.json", suite / "manifest-v4.json", suite / "manifest-v5.json"]
-    existing = [path for path in candidates if path.is_file()]
-    if len(existing) != 1:
+    generated = suite / "manifest.json"
+    bundled = [suite / name for name in BUNDLED_SUITE_MANIFESTS if (suite / name).is_file()]
+    if generated.is_file() == bool(bundled):
         raise ChallengeInfrastructureError(
             f"suite directory must contain exactly one supported manifest: {suite}"
         )
-    return existing[0]
+    return generated if generated.is_file() else bundled[0]
 
 
 def _require_distribution_payload(evidence: Path) -> None:
@@ -135,7 +145,7 @@ def _verify_final_seal(evidence: Path) -> None:
             raise ChallengeInfrastructureError(f"final SHA-256 mismatch: {relative}")
 
 
-def _preflight_evidence(evidence: Path) -> tuple[dict, dict, dict]:
+def _preflight_evidence(evidence: Path) -> tuple[dict, dict, dict, str]:
     evidence = evidence.resolve()
     if not evidence.is_dir():
         raise ChallengeInfrastructureError(f"evidence directory does not exist: {evidence}")
@@ -146,40 +156,13 @@ def _preflight_evidence(evidence: Path) -> tuple[dict, dict, dict]:
         raise ChallengeInfrastructureError(f"generated suite integrity failed: {exc}") from exc
 
     manifest = _read_object(evidence / "manifest.json", "challenge manifest")
-    try:
-        controls, cases = manifest_identifier_items(manifest)
-    except ValueError as exc:
-        raise ChallengeInfrastructureError(str(exc)) from exc
-    challenge_id = manifest.get("challenge_id")
     run = _read_object(
         evidence / "observed-results" / "run-summary.json", "run summary"
     )
-    if (
-        run.get("schema_version") != "wsi-dicom-negative-bench-run-summary-v1"
-        or run.get("challenge_id") != challenge_id
-        or not isinstance(run.get("executions"), list)
-    ):
-        raise ChallengeInfrastructureError("run summary schema or challenge is incompatible")
-    expected = {
-        **{item["control_id"]: "valid-controls-v1" for item in controls},
-        **{item["case_id"]: "evaluation-v1" for item in cases},
-    }
-    observed: dict[str, str] = {}
-    for index, execution in enumerate(run["executions"]):
-        if not isinstance(execution, dict) or not isinstance(execution.get("id"), str):
-            raise ChallengeInfrastructureError(f"run summary execution {index} is invalid")
-        identifier = execution["id"]
-        if identifier in observed:
-            raise ChallengeInfrastructureError(f"run summary duplicates execution: {identifier}")
-        observed[identifier] = execution.get("cohort")
-        if (
-            execution.get("timed_out")
-            or execution.get("launch_error")
-            or execution.get("returncode") not in {0, 1}
-        ):
-            raise ChallengeInfrastructureError(f"{identifier} has incomplete execution evidence")
-    if observed != expected:
-        raise ChallengeInfrastructureError("run summary executions do not match manifest inputs")
+    try:
+        completed = validate_completed_run(manifest, run)
+    except CompletedEvidenceError as exc:
+        raise ChallengeInfrastructureError(str(exc)) from exc
 
     profile_ref = manifest.get("core_profile", {}).get("path")
     catalog_ref = manifest.get("rule_catalog", {}).get("path")
@@ -199,55 +182,22 @@ def _preflight_evidence(evidence: Path) -> tuple[dict, dict, dict]:
             lock_path, evidence / "manifest.json", protocol_path, catalog_path, profile_path
         )
         validate_profile_coverage(profile, catalog, manifest)
-        candidate_digest = run.get("environment", {}).get("wsi_dicom_sha256")
-        if (
-            not isinstance(candidate_digest, str)
-            or len(candidate_digest) != 64
-            or any(character not in "0123456789abcdef" for character in candidate_digest)
-        ):
-            raise ChallengeInfrastructureError(
-                "run summary lacks the evaluated wsi-dicom SHA-256"
-            )
-        for identifier in expected:
-            report_path = (
-                evidence
-                / "observed-results"
-                / identifier
-                / "workbench"
-                / "workbench-report.json"
-            )
-            report = _read_object(report_path, f"workbench report for {identifier}")
-            if report.get("schema_version") not in {
-                "wsi-dicom-bench-workbench-report-v1",
-                "wsi-dicom-bench-workbench-report-v2",
-            }:
-                raise ChallengeInfrastructureError(
-                    f"workbench report schema is incompatible: {identifier}"
-                )
-            if report.get("profile", {}).get("id") != profile.get("profile_id"):
-                raise ChallengeInfrastructureError(
-                    f"{identifier} records an incompatible core-profile identity"
-                )
-            if report.get("profile", {}).get("sha256") != sha256_file(profile_path):
-                raise ChallengeInfrastructureError(
-                    f"{identifier} records the wrong core-profile digest"
-                )
-            if report.get("software", {}).get("wsi_dicom", {}).get("sha256") != candidate_digest:
-                raise ChallengeInfrastructureError(
-                    f"{identifier} records a different wsi-dicom executable SHA-256"
-                )
-            _validate_report_evidence(identifier, report, catalog, manifest, evidence)
-    except (CoreProfileError, GenerationError) as exc:
+        candidate_sha256 = require_candidate_sha256(completed)
+    except (CompletedEvidenceError, CoreProfileError, GenerationError) as exc:
         raise ChallengeInfrastructureError(f"evidence compatibility failed: {exc}") from exc
-    return manifest, profile, catalog
+    return manifest, profile, catalog, candidate_sha256
 
 
 def check_acceptance(evidence: Path) -> dict:
     """Apply the locked acceptance gate without modifying evidence."""
     evidence = evidence.resolve()
-    manifest, profile, catalog = _preflight_evidence(evidence)
+    manifest, profile, catalog, candidate_sha256 = _preflight_evidence(evidence)
     try:
-        gate = validate_evidence_coverage(profile, catalog, manifest, evidence)
+        gate = validate_evidence_coverage(
+            profile, catalog, manifest, evidence, candidate_sha256=candidate_sha256
+        )
+    except CoreEvidenceInfrastructureError as exc:
+        raise ChallengeInfrastructureError(str(exc)) from exc
     except CoreProfileError as exc:
         raise ChallengePolicyError(str(exc)) from exc
     return {
