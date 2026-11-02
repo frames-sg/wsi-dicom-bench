@@ -1,0 +1,339 @@
+{
+  "candidate_rule_set_id": "wsi-dicom-general-v4",
+  "cases": {
+    "CP-CF-007": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-iod-attribute-presence",
+        "intrinsic-wsi-dicom-iod-modules"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-iod-attribute-presence",
+        "intrinsic-wsi-dicom-iod-modules"
+      ],
+      "source_control_id": "CP01-EVRLE-4F-ANISO"
+    },
+    "IOD-ENU-008": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-iod-enumerated-values"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-iod-enumerated-values"
+      ],
+      "source_control_id": "CP09-J2K-LOSSLESS-4F"
+    },
+    "IOD-FMI-001": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-file-meta",
+        "intrinsic-wsi-dicom-identity-set"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-file-meta",
+        "intrinsic-wsi-dicom-identity-set"
+      ],
+      "source_control_id": "CP11-MONO-EVRLE-4F"
+    },
+    "IOD-FMI-002": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-file-meta",
+        "intrinsic-wsi-dicom-identity-set"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-file-meta",
+        "intrinsic-wsi-dicom-identity-set"
+      ],
+      "source_control_id": "CP03-JPEG-1F"
+    },
+    "IOD-FMT-001": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-iod-value-format"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-iod-value-format"
+      ],
+      "source_control_id": "CP03-JPEG-1F"
+    },
+    "IOD-FMT-003": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-iod-value-format"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-iod-value-format"
+      ],
+      "source_control_id": "CP04-J2K-LOSSLESS-16F"
+    },
+    "IOD-FMT-017": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-iod-value-format"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-iod-value-format"
+      ],
+      "source_control_id": "CP06-HTJ2K-LOSSLESS-16F"
+    },
+    "IOD-MOD-008": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-iod-modules"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-iod-modules"
+      ],
+      "source_control_id": "CP02-JPEG-16F"
+    },
+    "IOD-PRS-001": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-iod-attribute-presence"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-iod-attribute-presence"
+      ],
+      "source_control_id": "CP04-J2K-LOSSLESS-16F"
+    },
+    "IOD-PRS-002": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-iod-attribute-presence"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-iod-attribute-presence"
+      ],
+      "source_control_id": "CP03-JPEG-1F"
+    },
+    "IOD-PRS-003": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-iod-attribute-presence"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-iod-attribute-presence"
+      ],
+      "source_control_id": "CP01-EVRLE-4F-ANISO"
+    },
+    "IOD-PRS-007": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-iod-attribute-presence"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-iod-attribute-presence"
+      ],
+      "source_control_id": "CP01-EVRLE-4F-ANISO"
+    },
+    "IOD-PRS-014": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-iod-attribute-presence"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-iod-attribute-presence"
+      ],
+      "source_control_id": "CP07-HTJ2K-RPCL-4F"
+    },
+    "IOD-PRS-015": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-iod-attribute-presence"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-iod-attribute-presence"
+      ],
+      "source_control_id": "CP11-MONO-EVRLE-4F"
+    },
+    "IOD-SEQ-001": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-iod-sequence-items"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-iod-sequence-items"
+      ],
+      "source_control_id": "CP04-J2K-LOSSLESS-16F"
+    },
+    "IOD-VRM-001": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-iod-vr-vm"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-iod-vr-vm"
+      ],
+      "source_control_id": "CP02-JPEG-16F"
+    },
+    "NB-CF-005": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-pixel-structure",
+        "intrinsic-wsi-dicom-image-metadata",
+        "intrinsic-wsi-dicom-iod-attribute-presence",
+        "intrinsic-wsi-dicom-iod-enumerated-values"
+      ],
+      "new_failed_rules": [
+        "intrinsic-pixel-structure",
+        "intrinsic-wsi-dicom-image-metadata",
+        "intrinsic-wsi-dicom-iod-attribute-presence",
+        "intrinsic-wsi-dicom-iod-enumerated-values"
+      ],
+      "source_control_id": "CP01-EVRLE-4F-ANISO"
+    },
+    "NB-CO-003": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-icc-profile"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-icc-profile"
+      ],
+      "source_control_id": "CP07-HTJ2K-RPCL-4F"
+    },
+    "NB-CO-004": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-icc-profile"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-icc-profile"
+      ],
+      "source_control_id": "CP05-J2K-LOSSY-4F"
+    },
+    "NB-GE-002": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-dimension-order"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-dimension-order"
+      ],
+      "source_control_id": "CP04-J2K-LOSSLESS-16F"
+    },
+    "NB-ID-003": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-specimen-uid-set"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-specimen-uid-set"
+      ],
+      "source_control_id": "CP09-J2K-LOSSLESS-4F"
+    },
+    "NB-PX-002": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-pixel-structure",
+        "intrinsic-wsi-dicom-codestream"
+      ],
+      "new_failed_rules": [
+        "intrinsic-pixel-structure",
+        "intrinsic-wsi-dicom-codestream"
+      ],
+      "source_control_id": "CP02-JPEG-16F"
+    },
+    "NB-PX-003": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-pixel-structure",
+        "intrinsic-wsi-dicom-codestream"
+      ],
+      "new_failed_rules": [
+        "intrinsic-pixel-structure",
+        "intrinsic-wsi-dicom-codestream"
+      ],
+      "source_control_id": "CP05-J2K-LOSSY-4F"
+    },
+    "NB-PX-004": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-pixel-structure",
+        "intrinsic-wsi-dicom-codestream"
+      ],
+      "new_failed_rules": [
+        "intrinsic-pixel-structure",
+        "intrinsic-wsi-dicom-codestream"
+      ],
+      "source_control_id": "CP07-HTJ2K-RPCL-4F"
+    },
+    "NB-PX-007": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-pixel-structure"
+      ],
+      "new_failed_rules": [
+        "intrinsic-pixel-structure"
+      ],
+      "source_control_id": "CP10-EVRLE-16F"
+    },
+    "REQ-ENC-018": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-encoding"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-encoding"
+      ],
+      "source_control_id": "CP10-EVRLE-16F"
+    },
+    "REQ-ENC-033": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-encoding",
+        "intrinsic-wsi-dicom-iod-attribute-presence",
+        "intrinsic-wsi-dicom-iod-value-format"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-encoding",
+        "intrinsic-wsi-dicom-iod-attribute-presence",
+        "intrinsic-wsi-dicom-iod-value-format"
+      ],
+      "source_control_id": "CP10-EVRLE-16F"
+    },
+    "REQ-ENC-064": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-encoding"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-encoding"
+      ],
+      "source_control_id": "CP10-EVRLE-16F"
+    },
+    "REQ-ENC-067": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-encoding"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-encoding"
+      ],
+      "source_control_id": "CP10-EVRLE-16F"
+    },
+    "REQ-ENC-070": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-encoding"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-encoding"
+      ],
+      "source_control_id": "CP03-JPEG-1F"
+    },
+    "REQ-PIX-001": {
+      "baseline_failed_rules": [],
+      "failed_rules": [
+        "intrinsic-wsi-dicom-pixel-attributes"
+      ],
+      "new_failed_rules": [
+        "intrinsic-wsi-dicom-pixel-attributes"
+      ],
+      "source_control_id": "CP11-MONO-EVRLE-4F"
+    }
+  },
+  "dicom_edition": "2026d",
+  "schema_version": "wsi-dicom-existing-mapping-observations-v7-draft"
+}

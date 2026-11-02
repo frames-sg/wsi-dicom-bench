@@ -199,12 +199,46 @@ def build_controls(source: Path, output: Path) -> None:
         shutil.move(staging, output)
 
 
+# The controls-v4 lossy JPEG 2000 controls code their components with the irreversible ICT
+# but declare YBR_RCT (PS3.5 8.2.4 and 8.2.14); controls-v6 corrects only that declaration.
+ICT_CONTROLS = ("CP05-J2K-LOSSY-4F", "CP08-HTJ2K-LOSSY-4F")
+
+
+def correct_lossy_photometric(source: Path, output: Path) -> None:
+    """Write the ICT controls of ``source`` (controls-v4) to ``output`` as YBR_ICT.
+
+    The Frames are unchanged; the new interpretation of the pixels takes a new SOP
+    Instance UID, and the Study, Series and specimen identities are kept.
+    """
+    if output.exists():
+        raise RuntimeError(f"output already exists: {output}")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=f".{output.name}-", dir=output.parent) as temporary:
+        staging = Path(temporary)
+        for control_id in ICT_CONTROLS:
+            dataset = pydicom.dcmread(source / f"{control_id}.dcm")
+            if dataset.PhotometricInterpretation != "YBR_RCT":
+                raise RuntimeError(f"{control_id} no longer declares YBR_RCT")
+            dataset.PhotometricInterpretation = "YBR_ICT"
+            _set_instance_identity(dataset, control_id, "instance-ybr-ict")
+            dataset.save_as(staging / f"{control_id}.dcm", enforce_file_format=True)
+        shutil.move(staging, output)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument(
+        "--correct-lossy-photometric",
+        action="store_true",
+        help="derive the YBR_ICT lossy JPEG 2000 controls from controls-v4",
+    )
     args = parser.parse_args()
-    build_controls(args.source, args.output)
+    if args.correct_lossy_photometric:
+        correct_lossy_photometric(args.source, args.output)
+    else:
+        build_controls(args.source, args.output)
     return 0
 
 

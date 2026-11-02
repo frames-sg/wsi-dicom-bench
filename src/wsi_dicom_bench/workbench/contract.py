@@ -9,16 +9,22 @@ DOCTOR_SCHEMA = "wsi-dicom-doctor-report-v1"
 VALIDATION_SCHEMA = "wsi-dicom-validation-report-v1"
 # The wsi-dicom rule set each catalog was written for. A binary that declares a
 # different rule set emits checks the catalog does not map, so the pairing is exact.
-CATALOG_V4_RULE_SETS = {
-    "core-2026c": "wsi-dicom-core-profile-2026c-v2",
-    "general": "wsi-dicom-general-v1",
-}
 RULE_SET_IDS_BY_CATALOG = {
-    "wsi-dicom-bench-rules-2026c-v2": CATALOG_V4_RULE_SETS,
-    "wsi-dicom-bench-rules-2026c-v4": CATALOG_V4_RULE_SETS,
-    "wsi-dicom-bench-rules-2026c-v5": {
-        "core-2026c": "wsi-dicom-core-profile-2026c-v3",
-        "general": "wsi-dicom-general-v2",
+    # Format-coverage runs use catalog v2 with the general profile. Its core rule set is
+    # the identifier its binaries declared; no core profile pairs with catalog v2.
+    "wsi-dicom-bench-rules-2026c-v2": {
+        "core-2026c": "wsi-dicom-core-profile-2026c-v2",
+        "general": "wsi-dicom-general-v1",
+    },
+    "wsi-dicom-bench-rules-2026c-v6": {
+        "core-2026c": "wsi-dicom-core-profile-2026c-v4",
+        "general": "wsi-dicom-general-v3",
+    },
+    "wsi-dicom-bench-rules-v7": {
+        "general": "wsi-dicom-general-v4",
+    },
+    "wsi-dicom-bench-rules-v7-core": {
+        "core": "wsi-dicom-core-profile-v5",
     },
 }
 
@@ -78,7 +84,13 @@ def doctor_contract_errors(doctor: object) -> list[str]:
     return errors
 
 
-def validation_contract_errors(validation: object, catalog: dict, core: bool) -> list[str]:
+def validation_contract_errors(
+    validation: object,
+    catalog: dict,
+    core: bool,
+    *,
+    validation_profile: str | None = None,
+) -> list[str]:
     errors, legacy = _schema_errors(validation, VALIDATION_SCHEMA, "validation")
     errors.extend(_record_errors(validation, "checks", ("passed", "failed", "skipped")))
     if errors:
@@ -88,7 +100,7 @@ def validation_contract_errors(validation: object, catalog: dict, core: bool) ->
         not isinstance(path, str) or not path or "\0" in path for path in files
     ):
         return ["validation files must be a nonempty array of filenames"]
-    expected_profile = "core-2026c" if core else "general"
+    expected_profile = validation_profile or ("core-2026c" if core else "general")
     if validation.get("profile") != expected_profile:
         errors.append(f"binary did not execute selected profile {expected_profile}")
     rule_set_id = expected_rule_set_id(catalog, expected_profile)
@@ -120,7 +132,7 @@ def validation_contract_errors(validation: object, catalog: dict, core: bool) ->
         name for rule in catalog["rules"] if rule["rule_kind"] == "intrinsic"
         for name in rule["check_names"]
     }
-    if core:
+    if expected_profile != "general":
         for path in validation.get("files", []):
             observed = {
                 check.get("name") for check in checks

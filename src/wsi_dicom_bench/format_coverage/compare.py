@@ -17,6 +17,7 @@ from pydicom.encaps import generate_frames
 from wsi_dicom_bench.cli_values import positive_int
 from wsi_dicom_bench.file_digest import sha256_file
 from wsi_dicom_bench.json_document import write_json
+from wsi_dicom_bench.pnm import MAX_PNM_HEADER_BYTES, parse_pnm_bytes, read_pnm
 from wsi_dicom_bench.process_evidence import ProcessEvidenceError, run_bounded_command
 
 from .manifest import FormatCoverageError, validate_case_identifier
@@ -74,48 +75,10 @@ def semantic_digest(datasets: list[Dataset]) -> str:
 
 
 def parse_pnm(data: bytes) -> tuple[str, int, int, int, bytes]:
-    position = 0
-
-    def token() -> bytes:
-        nonlocal position
-        while position < len(data):
-            if data[position] == ord("#"):
-                newline = data.find(b"\n", position)
-                if newline < 0:
-                    raise FormatCoverageError("PNM comment is not newline terminated")
-                position = newline + 1
-            elif chr(data[position]).isspace():
-                position += 1
-            else:
-                break
-        start = position
-        while position < len(data) and not chr(data[position]).isspace():
-            position += 1
-        if start == position:
-            raise FormatCoverageError("PNM header is truncated")
-        return data[start:position]
-
     try:
-        magic = token().decode("ascii")
-        width = int(token())
-        height = int(token())
-        maximum = int(token())
-    except (UnicodeDecodeError, ValueError) as exc:
-        raise FormatCoverageError(f"invalid PNM header: {exc}") from exc
-    if magic not in {"P5", "P6"} or width <= 0 or height <= 0 or not 0 < maximum <= 65535:
-        raise FormatCoverageError("unsupported PNM geometry or sample range")
-    if position >= len(data) or not chr(data[position]).isspace():
-        raise FormatCoverageError("PNM header is missing its payload delimiter")
-    position += 1
-    channels = 1 if magic == "P5" else 3
-    bytes_per_sample = 1 if maximum <= 255 else 2
-    expected = width * height * channels * bytes_per_sample
-    payload = data[position:]
-    if len(payload) != expected:
-        raise FormatCoverageError(
-            f"PNM payload has {len(payload)} bytes; expected {expected}"
-        )
-    return magic, width, height, maximum, payload
+        return parse_pnm_bytes(data)
+    except ValueError as exc:
+        raise FormatCoverageError(str(exc)) from exc
 
 
 def performance_comparison(
@@ -269,7 +232,18 @@ def decoded_instance_digest(
                 f"HTJ2K decode failed for {dicom_path} frame {index}: "
                 f"returncode={execution['returncode']} stderr={stderr[:4096]!r}"
             )
-        magic, width, height, maximum, payload = parse_pnm(decoded.read_bytes())
+        expected_payload_bytes = (
+            int(dataset.Rows)
+            * int(dataset.Columns)
+            * int(dataset.SamplesPerPixel)
+            * ((int(dataset.BitsAllocated) + 7) // 8)
+        )
+        try:
+            magic, width, height, maximum, payload = read_pnm(
+                decoded, expected_payload_bytes + MAX_PNM_HEADER_BYTES
+            )
+        except ValueError as exc:
+            raise FormatCoverageError(str(exc)) from exc
         frame_digest = hashlib.sha256()
         frame_digest.update(f"{magic}:{width}:{height}:{maximum}:".encode("ascii"))
         frame_digest.update(payload)

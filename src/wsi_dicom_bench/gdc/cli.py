@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import math
 import os
 import sys
 from pathlib import Path
@@ -36,6 +37,12 @@ from .trial import benchmark_trial
 def default_python_command() -> str:
     venv_python = Path("./.venv/bin/python")
     return str(venv_python) if venv_python.exists() else sys.executable
+
+def finite_float(value: str) -> float:
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        raise argparse.ArgumentTypeError("must be finite")
+    return parsed
 
 def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -92,13 +99,13 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument("--device-preflight-timeout-secs", type=int, default=120)
     parser.add_argument(
         "--device-preflight-min-speedup",
-        type=float,
+        type=finite_float,
         default=1.0,
         help="Require the device preflight wall time to be at least this fast versus CPU.",
     )
     parser.add_argument(
         "--device-preflight-min-device-frame-pct",
-        type=float,
+        type=finite_float,
         default=100.0,
         help="Require at least this percent of preflight frames to use device encode.",
     )

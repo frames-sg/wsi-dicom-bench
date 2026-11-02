@@ -93,9 +93,17 @@ class AcceptanceTests(unittest.TestCase):
             ChallengePolicyError,
             check_acceptance,
         )
-        from wsi_dicom_bench.core_profile import CoreProfileError
+        from wsi_dicom_bench.core_profile import (
+            CoreEvidenceInfrastructureError,
+            CoreProfileError,
+        )
 
-        preflight = ({"challenge_id": "challenge"}, {"profile_id": "profile"}, {})
+        preflight = (
+            {"challenge_id": "challenge"},
+            {"profile_id": "profile"},
+            {},
+            "0" * 64,
+        )
         with mock.patch(
             "wsi_dicom_bench.challenge._preflight_evidence", return_value=preflight
         ), mock.patch(
@@ -103,6 +111,15 @@ class AcceptanceTests(unittest.TestCase):
             side_effect=CoreProfileError("case N was not localized to every expected rule"),
         ):
             with self.assertRaisesRegex(ChallengePolicyError, "not localized"):
+                check_acceptance(Path("evidence"))
+
+        with mock.patch(
+            "wsi_dicom_bench.challenge._preflight_evidence", return_value=preflight
+        ), mock.patch(
+            "wsi_dicom_bench.challenge.validate_evidence_coverage",
+            side_effect=CoreEvidenceInfrastructureError("report JSON is incomplete"),
+        ):
+            with self.assertRaisesRegex(ChallengeInfrastructureError, "report JSON"):
                 check_acceptance(Path("evidence"))
 
         with mock.patch(
@@ -204,7 +221,7 @@ class CommandTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            versioned = root / "manifest-v4.json"
+            versioned = root / "manifest-v6.json"
             versioned.write_text("{}\n", encoding="utf-8")
             self.assertEqual(_suite_manifest(root), versioned.resolve())
             (root / "manifest.json").write_text("{}\n", encoding="utf-8")

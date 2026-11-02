@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Iterable
 from pathlib import Path
 
 from .file_digest import sha256_file
@@ -15,6 +16,15 @@ from .file_digest import sha256_file
 
 class CoreProfileError(ValueError):
     """A core profile or its coverage evidence is incomplete or inconsistent."""
+
+
+class CoreEvidenceInfrastructureError(CoreProfileError):
+    """Completed evidence is unreadable, incompatible, or incomplete."""
+
+
+def intrinsic_rule_ids(rules: Iterable[dict]) -> set[str]:
+    """Return the IDs of catalog rules other than independent-validator rules."""
+    return {rule["rule_id"] for rule in rules if rule.get("rule_kind") != "independent_validator"}
 
 
 def _load_object(path: Path, label: str) -> dict:
@@ -98,11 +108,7 @@ def validate_profile_coverage(profile: dict, catalog: dict, manifest: dict) -> d
         for rule in catalog.get("rules", [])
         if isinstance(rule, dict) and isinstance(rule.get("rule_id"), str)
     }
-    intrinsic_rules = {
-        identifier
-        for identifier, rule in catalog_rules.items()
-        if rule.get("rule_kind") != "independent_validator"
-    }
+    intrinsic_rules = intrinsic_rule_ids(catalog_rules.values())
     catalog_checks = {
         check_name
         for rule in catalog_rules.values()
@@ -197,7 +203,12 @@ def validate_profile_coverage(profile: dict, catalog: dict, manifest: dict) -> d
 
 
 def validate_evidence_coverage(
-    profile: dict, catalog: dict, manifest: dict, evidence_root: Path
+    profile: dict,
+    catalog: dict,
+    manifest: dict,
+    evidence_root: Path,
+    *,
+    candidate_sha256: str | None = None,
 ) -> dict:
     """Verify the post-execution core-profile release gates."""
     validate_profile_coverage(profile, catalog, manifest)
@@ -229,14 +240,40 @@ def validate_evidence_coverage(
             try:
                 report = json.loads(report_path.read_text(encoding="utf-8"))
             except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-                raise CoreProfileError(
+                raise CoreEvidenceInfrastructureError(
                     f"cannot read workbench evidence for {identifier}: {exc}"
                 ) from exc
+            if not isinstance(report, dict):
+                raise CoreEvidenceInfrastructureError(
+                    f"workbench report must be an object: {identifier}"
+                )
+            if report.get("schema_version") not in {
+                "wsi-dicom-bench-workbench-report-v1",
+                "wsi-dicom-bench-workbench-report-v2",
+            }:
+                raise CoreEvidenceInfrastructureError(
+                    f"workbench report schema is incompatible: {identifier}"
+                )
             if report.get("profile", {}).get("id") != profile["profile_id"]:
-                raise CoreProfileError(f"{identifier} does not record the core profile")
+                raise CoreEvidenceInfrastructureError(
+                    f"{identifier} does not record the core profile"
+                )
             if report.get("profile", {}).get("sha256") != profile_digest:
-                raise CoreProfileError(f"{identifier} records the wrong core-profile digest")
-            _validate_report_evidence(identifier, report, catalog, manifest, evidence_root)
+                raise CoreEvidenceInfrastructureError(
+                    f"{identifier} records the wrong core-profile digest"
+                )
+            if (
+                candidate_sha256 is not None
+                and report.get("software", {}).get("wsi_dicom", {}).get("sha256")
+                != candidate_sha256
+            ):
+                raise CoreEvidenceInfrastructureError(
+                    f"{identifier} records a different wsi-dicom executable SHA-256"
+                )
+            try:
+                _validate_report_evidence(identifier, report, catalog, manifest, evidence_root)
+            except CoreProfileError as exc:
+                raise CoreEvidenceInfrastructureError(str(exc)) from exc
             reports[identifier] = report
 
     for requirement in profile["requirements"]:

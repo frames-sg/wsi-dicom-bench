@@ -154,9 +154,17 @@ def build_report(
     doctor_execution: dict,
     validation_execution: dict,
 ) -> dict:
+    validation_profile = (
+        "core-2026c" if profile is not None else getattr(args, "validation_profile", "general")
+    )
     doctor_errors = doctor_contract_errors(doctor)
     contract_errors = list(doctor_errors)
-    validation_errors = validation_contract_errors(validation, catalog, profile is not None)
+    validation_errors = validation_contract_errors(
+        validation,
+        catalog,
+        profile is not None,
+        validation_profile=validation_profile,
+    )
     contract_errors.extend(validation_errors)
     for name, execution in (("doctor", doctor_execution), ("validation", validation_execution)):
         if execution.get("document_error"):
@@ -170,11 +178,22 @@ def build_report(
     comparison = validator_comparison(findings)
     slide = {"slide_id": None, "instance_count": 0, "instances": []}
     software = {}
+    candidate_unreadable_files = decoding.get("candidate_unreadable_files", [])
+    unreadable_paths = {
+        item["path"] for item in candidate_unreadable_files
+        if isinstance(item, dict) and isinstance(item.get("path"), str)
+    }
     if not contract_errors:
         try:
-            software = software_inventory(args, doctor)
+            software = software_inventory(args, doctor, catalog["dicom_edition"])
             software["bench_decoders"] = decoding["decoders"]
-            slide = inspect_dicom_set([Path(path) for path in validation["files"]])
+        except (WorkbenchError, OSError, ValueError) as exc:
+            contract_errors.append(f"report enrichment failed: {exc}")
+    validation_files = validation.get("files", []) if isinstance(validation, dict) else []
+    readable_files = [Path(path) for path in validation_files if path not in unreadable_paths]
+    if not contract_errors and readable_files:
+        try:
+            slide = inspect_dicom_set(readable_files)
         except (WorkbenchError, OSError, ValueError) as exc:
             contract_errors.append(f"report enrichment failed: {exc}")
     failed_findings = sum(finding["status"] == "failed" for finding in findings)
@@ -214,6 +233,11 @@ def build_report(
             else None
         ),
         "evaluation_policy": {
+            "validation_profile": validation_profile,
+            "dicom_validator_standard_path": (
+                str(args.dicom_validator_standard_path)
+                if getattr(args, "dicom_validator_standard_path", None) else None
+            ),
             "strict_external_tools": not args.allow_missing_tools,
             "max_pixel_frames_per_transfer_syntax": args.max_pixel_frames,
             "pixel_decode_owner": "wsi-dicom-bench",
@@ -233,11 +257,19 @@ def build_report(
             "doctor": doctor_execution,
             "validation": validation_execution,
         },
-        "limitations": _limitations(doctor if not doctor_errors else {"tools": []}, findings),
+        "limitations": _limitations(
+            doctor if not doctor_errors else {"tools": []},
+            findings,
+            candidate_unreadable_files,
+        ),
     }
 
 
-def _limitations(doctor: dict, findings: list[dict]) -> dict:
+def _limitations(
+    doctor: dict,
+    findings: list[dict],
+    candidate_unreadable_files: list[dict],
+) -> dict:
     return {
         "unavailable_tools": [
             {
@@ -265,6 +297,7 @@ def _limitations(doctor: dict, findings: list[dict]) -> dict:
                 if finding["catalog_status"] == "unmapped"
             }
         ),
+        "candidate_unreadable_files": candidate_unreadable_files,
         "source_pixel_fidelity": "not_evaluated_by_this_dicom_only_entry_point",
         "dicomweb_receiver_behavior": "not_evaluated_by_this_entry_point",
     }
@@ -322,6 +355,8 @@ def render_summary(report: dict) -> str:
             f"- Unavailable or unconfigured tools: {len(report['limitations']['unavailable_tools'])}",
             f"- Skipped checks: {len(report['limitations']['skipped_checks'])}",
             f"- Unmapped checks: {len(report['limitations']['unmapped_checks'])}",
+            "- Candidate-declared unreadable files: "
+            f"{len(report['limitations']['candidate_unreadable_files'])}",
             "",
         ]
     )

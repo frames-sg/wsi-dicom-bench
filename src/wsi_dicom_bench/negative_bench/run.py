@@ -47,7 +47,7 @@ def run_challenge(package: Path, wsi_dicom: Path) -> dict:
             )
     catalog_name = Path(
         manifest.get("rule_catalog", {}).get(
-            "path", "rules/wsi-dicom-bench-rules-2026c-v4.json"
+            "path", "rules/wsi-dicom-bench-rules-2026c-v6.json"
         )
     ).name
     profile_path = None
@@ -128,6 +128,8 @@ def _run_one_input(
     identifier: str,
     cohort: str,
     dicom_input: Path,
+    validation_profile: str = "general",
+    dicom_validator_standard_path: Path | None = None,
 ) -> dict:
     if not dicom_input.exists():
         raise ChallengeRunError(f"challenge input does not exist: {dicom_input}")
@@ -156,6 +158,12 @@ def _run_one_input(
     ]
     if profile_path is not None:
         command.extend(["--profile", str(profile_path)])
+    if validation_profile != "general":
+        command.extend(["--validation-profile", validation_profile])
+    if dicom_validator_standard_path is not None:
+        command.extend([
+            "--dicom-validator-standard-path", str(dicom_validator_standard_path)
+        ])
     stdout_path = raw_dir / "launcher.stdout.json"
     stderr_path = raw_dir / "launcher.stderr.txt"
     execution = run_bounded_command(

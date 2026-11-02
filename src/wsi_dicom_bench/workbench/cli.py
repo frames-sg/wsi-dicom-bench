@@ -16,18 +16,23 @@ from wsi_dicom_bench.json_document import write_json
 from wsi_dicom_bench.process_evidence import run_bounded_command
 
 from .catalog import CatalogError, load_catalog
+from .contract import expected_rule_set_id
 from .execution import WorkbenchError, run_json_command
 from .pixel_decode import DecodePolicy, run_pixel_decode_checks
 from .report import build_report, render_summary
 
 
 RULES_DIR = Path(str(importlib.resources.files("wsi_dicom_bench.rules")))
-DEFAULT_CATALOG = RULES_DIR / "wsi-dicom-bench-rules-2026c-v5.json"
-# Catalog v4 remains selectable with --catalog for binaries of the v4 contract.
-CATALOG_PROFILES = {
-    "wsi-dicom-bench-rules-2026c-v4": "wsi-dicom-core-profile-2026c-v2",
-    "wsi-dicom-bench-rules-2026c-v5": "wsi-dicom-core-profile-2026c-v3",
-}
+DEFAULT_CATALOG = RULES_DIR / "wsi-dicom-bench-rules-2026c-v6.json"
+# The catalogs that pair with a core profile.
+PROFILE_CATALOGS = frozenset({"wsi-dicom-bench-rules-2026c-v6"})
+
+
+def expected_profile_id(catalog: dict) -> str | None:
+    """Return the core profile ID a catalog pairs with (its core rule set), or None."""
+    if catalog.get("catalog_version") not in PROFILE_CATALOGS:
+        return None
+    return expected_rule_set_id(catalog, "core-2026c")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -44,12 +49,23 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG)
     parser.add_argument(
+        "--validation-profile",
+        choices=("general", "core"),
+        default="general",
+        help="candidate validation profile; independent of the legacy --profile definition file",
+    )
+    parser.add_argument(
         "--profile",
         type=Path,
         help="machine-readable VL WSI core profile; required by versioned core-profile benchmark runs",
     )
     parser.add_argument("--allow-missing-tools", action="store_true")
     parser.add_argument("--dcmvalidate-iod", type=Path)
+    parser.add_argument(
+        "--dicom-validator-standard-path",
+        type=Path,
+        help="task-specific dicom-validator definition root used for provenance",
+    )
     parser.add_argument(
         "--htj2k-decoder",
         help="absolute HTJ2K decoder command template with {input} and {output}; "
@@ -97,7 +113,9 @@ def run_workbench(args: argparse.Namespace) -> dict:
     ):
         raise WorkbenchError("--profile is required for the DICOM 2026c core-profile catalog")
     profile = load_profile(args.profile) if args.profile else None
-    expected_profile = CATALOG_PROFILES.get(catalog["catalog_version"])
+    if profile and getattr(args, "validation_profile", "general") != "general":
+        raise WorkbenchError("--validation-profile cannot be combined with --profile")
+    expected_profile = expected_profile_id(catalog)
     if profile and profile["profile_id"] != expected_profile:
         raise WorkbenchError("catalog and selected profile version are incompatible")
     if profile and profile["dicom_edition"] != catalog["dicom_edition"]:
@@ -115,8 +133,10 @@ def run_workbench(args: argparse.Namespace) -> dict:
         for execution in (doctor_execution, validation_execution):
             for field in ("stdout_path", "stderr_path"):
                 execution[field] = str(args.output / Path(execution[field]).relative_to(staging))
+        candidate_unreadable_files = _candidate_unreadable_files(validation)
+        unreadable_paths = {item["path"] for item in candidate_unreadable_files}
         decoding = run_pixel_decode_checks(
-            _validated_files(validation),
+            [path for path in _validated_files(validation) if path not in unreadable_paths],
             DecodePolicy(
                 max_frames=args.max_pixel_frames,
                 strict=not args.allow_missing_tools,
@@ -127,6 +147,7 @@ def run_workbench(args: argparse.Namespace) -> dict:
         decoding["wsi_dicom_pixel_decode"] = (
             "disabled_with_max_pixel_frames_0" if legacy else "not_supported"
         )
+        decoding["candidate_unreadable_files"] = candidate_unreadable_files
         report = build_report(
             args,
             catalog,
@@ -197,6 +218,33 @@ def _validated_files(validation: object) -> list[str]:
     return files
 
 
+def _candidate_unreadable_files(validation: object) -> list[dict[str, str]]:
+    """Return files the candidate could not parse, bounded to one mapped check shape."""
+    files = set(_validated_files(validation))
+    checks = validation.get("checks") if isinstance(validation, dict) else None
+    if not isinstance(checks, list):
+        return []
+    unreadable = []
+    seen = set()
+    for check in checks:
+        if not isinstance(check, dict):
+            continue
+        path = check.get("path")
+        reason = check.get("message")
+        if (
+            check.get("name") != "intrinsic-pixel-structure"
+            or check.get("status") != "failed"
+            or path not in files
+            or path in seen
+            or not isinstance(reason, str)
+            or not reason.startswith("failed to read DICOM file:")
+        ):
+            continue
+        unreadable.append({"path": path, "reason": reason})
+        seen.add(path)
+    return unreadable
+
+
 def build_doctor_command(args: argparse.Namespace, legacy: bool = False) -> list[str]:
     command = [str(args.wsi_dicom), "doctor", "--json"]
     if not args.allow_missing_tools:
@@ -209,12 +257,15 @@ def build_doctor_command(args: argparse.Namespace, legacy: bool = False) -> list
 
 
 def build_validation_command(args: argparse.Namespace, legacy: bool = False) -> list[str]:
+    validation_profile = (
+        "core-2026c" if args.profile else getattr(args, "validation_profile", "general")
+    )
     command = [
         str(args.wsi_dicom),
         "validate",
         str(args.dicom),
         "--profile",
-        "core-2026c" if args.profile else "general",
+        validation_profile,
         "--json",
         "--command-timeout-secs",
         str(args.command_timeout_secs),

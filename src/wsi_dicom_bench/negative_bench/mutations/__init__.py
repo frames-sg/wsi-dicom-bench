@@ -6,8 +6,25 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any, Callable
 
+from pydicom.dataset import Dataset
+
 from ..model import GenerationError, MutationContext, MutationResult
-from . import color, conformance, geometry, identity, pixel, structure
+from . import (
+    codestream,
+    codec_statement,
+    color,
+    conformance,
+    deidentification,
+    encoding,
+    file_set,
+    signatures,
+    geometry,
+    identity,
+    object_set,
+    pixel,
+    relations,
+    structure,
+)
 from .dicom import read_case_source, save
 
 
@@ -34,22 +51,37 @@ def build_registry(
     return registry
 
 
-CATALOG_V4_DOMAINS = (
+CORE_PROFILE_DOMAINS = (
     ("pixel", pixel.HANDLERS),
     ("geometry", geometry.HANDLERS),
     ("color", color.HANDLERS),
     ("identity", identity.HANDLERS),
     ("conformance", conformance.HANDLERS),
 )
-# The catalog-v4 mutation inventory stays exact; the v5 amendment adds its
-# single-defect IOD structure mutations in a separate registry. ALL_MUTATIONS,
-# which generation dispatches through, rejects any name that both would own.
-MUTATION_REGISTRY: dict[str, MutationHandler] = build_registry(CATALOG_V4_DOMAINS)
-STRUCTURE_MUTATION_REGISTRY: dict[str, MutationHandler] = build_registry(
-    (("structure", structure.HANDLERS),)
-)
+# The core-profile cohort's mutation inventory stays exact; the IOD structure and
+# requirement-statement cohorts add their single-defect structure, relation, codestream and
+# encoding mutations only to ALL_MUTATIONS, which generation dispatches through and which
+# rejects any name that two domains would own.
+MUTATION_REGISTRY: dict[str, MutationHandler] = build_registry(CORE_PROFILE_DOMAINS)
 ALL_MUTATIONS: dict[str, MutationHandler] = build_registry(
-    (*CATALOG_V4_DOMAINS, ("structure", structure.HANDLERS))
+    (
+        *CORE_PROFILE_DOMAINS,
+        ("structure", structure.HANDLERS),
+        ("relations", relations.HANDLERS),
+        ("codestream", codestream.HANDLERS),
+        ("codec_statement", codec_statement.HANDLERS),
+        ("encoding", encoding.HANDLERS),
+        ("file_set", file_set.HANDLERS),
+        ("deidentification", deidentification.HANDLERS),
+        ("signatures", signatures.HANDLERS),
+        ("object_set", object_set.HANDLERS),
+    )
+)
+
+# Draft-v7 mutations are intentionally absent from the frozen v6 manifest.
+V7_ONLY_MUTATIONS = frozenset(
+    {"duplicate_sop_uid_different_pixels", "encrypted_attribute_edit",
+     "file_set_edits", "iod_set_edits", "signature_mac_defect", "codec_statement_defect"}
 )
 
 
@@ -59,11 +91,17 @@ def generate_case(
     handler = ALL_MUTATIONS.get(case["mutation_name"])
     if handler is None:
         raise GenerationError(f"unsupported mutation: {case['mutation_name']}")
+    if source.is_file():
+        dataset = read_case_source(source)
+    elif case["mutation_name"] == "iod_set_edits":
+        dataset = Dataset()
+    else:
+        raise GenerationError(f"mutation source is not a file: {source}")
     context = MutationContext(
         case=case,
         source=source,
         input_dir=input_dir,
-        dataset=read_case_source(source),
+        dataset=dataset,
         changes=[
             {
                 "kind": "harness_identity",

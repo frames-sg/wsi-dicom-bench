@@ -1,0 +1,2368 @@
+{
+  "candidate_report_schema_version": "wsi-dicom-dicomweb-report-v1",
+  "cases": {
+    "REQ-HTTP-001": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-capabilities"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: OPTIONS /dicomweb/ answered 405; 200 is required (PS3.18 2026d 8.9.3.1 and 10.2)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-002": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-capabilities"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: the Capabilities Description is an unrecognized media type; it is application/vnd.sun.wadl+xml or application/json (PS3.18 2026d 8.9.4)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-003": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-capabilities"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: OPTIONS /dicomweb/ answered 304; 200 is required (PS3.18 2026d 8.9.3.1 and 10.2)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-004": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-capabilities"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: the application/json Capabilities Description is not JSON: line 1 column 1: the text ends where a JSON value is expected (PS3.18 2026d 8.9.4 and Annex G); the Capabilities Description documents no character set, not even UTF-8, the Default Character Set of every DICOM Media Type (8.7.3.5.3) that the origin server supports; the Retrieve Capabilities response \"shall also document all supported character sets\" (PS3.18 2026d 8.8)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-005": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-capabilities"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: the WADL document holds 2 \"application\" elements; it holds one (PS3.18 2026d Annex H and 8.9.3.2)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-006": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-capabilities"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: the WADL document has no \"resources\" element with a \"base\" attribute (PS3.18 2026d Annex H)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-007": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-capabilities"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: the Capabilities Description documents no character set, not even UTF-8, the Default Character Set of every DICOM Media Type (8.7.3.5.3) that the origin server supports; the Retrieve Capabilities response \"shall also document all supported character sets\" (PS3.18 2026d 8.8)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-008": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-capabilities"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: the WADL document has no \"resource\" element for thumbnail, which the origin server serves; it describes all child resources of the Target Resource (PS3.18 2026d Annex H Table H-1)",
+      "observed_status": "failed",
+      "request_count": 5
+    },
+    "REQ-HTTP-009": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-response-messages"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: OPTIONS /dicomweb/: the connection closed before a complete response; the origin server shall always return a response message (PS3.18 2026d 8.1.2)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-010": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-capabilities",
+        "dicomweb-response-messages"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: OPTIONS /dicomweb/ answered 600, which is not a valid 3-digit status code: its first digit gives the class, 1 to 5 (PS3.18 2026d 8.1.2.1 and 8.5)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-011": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-capabilities",
+        "dicomweb-payload-headers"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: OPTIONS /dicomweb/: the payload has no Content-Type (PS3.18 2026d 8.4.2 Table 8.4.2-1)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-012": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-payload-headers"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: OPTIONS /dicomweb/: the payload has neither Content-Length nor Transfer-Encoding; Content-Length is present even if the payload is empty (PS3.18 2026d 8.4.3 Table 8.4.3-1 and 8.6)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-013": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-payload-headers"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: OPTIONS /dicomweb/: Content-Length is present with Transfer-Encoding, which it shall not be (PS3.18 2026d 8.4.3 Table 8.4.3-1)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-014": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-capabilities",
+        "dicomweb-payload-headers"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: OPTIONS /dicomweb/: the payload has neither Content-Length nor Transfer-Encoding; Content-Length is present even if the payload is empty (PS3.18 2026d 8.4.3 Table 8.4.3-1 and 8.6)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-015": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-capabilities",
+        "dicomweb-payload-headers"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: OPTIONS /dicomweb/: a 204 response has no payload, yet it has Content-Length; a message without a payload has neither Transfer-Encoding nor Content-Length (PS3.18 2026d 8.6)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-016": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-capabilities",
+        "dicomweb-payload-headers"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: OPTIONS /dicomweb/: a 204 response has no payload, yet it has a Content-Type, which is only present when a payload is (PS3.18 2026d 8.7.9)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-017": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-capabilities",
+        "dicomweb-payload-headers"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: OPTIONS /dicomweb/: the payload has an unquoted 10-character charset value with a space; a Defined Term with a space is enclosed in double quotes (PS3.18 2026d 8.8)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-018": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-capabilities",
+        "dicomweb-payload-headers"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: OPTIONS /dicomweb/: the payload is single part application/dicom, which is only used for an individual Instance resource (PS3.18 2026d 10.4.4)",
+      "observed_status": "failed",
+      "request_count": 1
+    },
+    "REQ-HTTP-019": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-studies"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: matching Study Instance UID (value withheld: identifying; 30 characters) returned 0 results, 0 with that UID; single value matching returns the one Study (PS3.18 2026d 8.3.4.1.1)",
+      "observed_status": "failed",
+      "request_count": 36
+    },
+    "REQ-HTTP-020": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-studies"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: result 1 lacks Patient's Birth Date (0010,0030) (PS3.18 2026d 10.6.3.3 Table 10.6.3-3)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-021": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-studies"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: result 1: Instance Number (0020,0013), an Instance Level includefield, is returned by a Study search, which shall not return it (PS3.18 2026d 10.6.3.3.1)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-022": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-resources",
+        "dicomweb-search-studies"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&includefield=00200013: Content-Type is application/json; application/dicom+json is required (PS3.18 2026d 10.6.4 Table 10.6.4-1)",
+      "observed_status": "failed",
+      "request_count": 36
+    },
+    "REQ-HTTP-023": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching",
+        "dicomweb-search-series"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: result 1 lacks Modality (0008,0060) (PS3.18 2026d 10.6.3.3 Table 10.6.3-4)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-024": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-series"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: result 1: Instance Number (0020,0013), an Instance Level includefield, is returned by a Series search, which shall not return it (PS3.18 2026d 10.6.3.3.2); result 2: Instance Number (0020,0013), an Instance Level includefield, is returned by a Series search, which shall not return it (PS3.18 2026d 10.6.3.3.2)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-025": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-instances"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: result 1 lacks Instance Number (0020,0013) (PS3.18 2026d 10.6.3.3 Table 10.6.3-5)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-026": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-paging"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances?includefield=00083002&limit=1&offset=1 returned [(value withheld: identifying; 30 characters)]; the unpaged search lists (value withheld: identifying; 30 characters) at offset 1 of the same ordered list (PS3.18 2026d 8.3.4.4.1)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-027": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-paging"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances?includefield=00083002&limit=1 returned [(value withheld: identifying; 30 characters), (value withheld: identifying; 30 characters)]; the unpaged search lists (value withheld: identifying; 30 characters) at offset 0 of the same ordered list (PS3.18 2026d 8.3.4.4.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances?includefield=00083002&limit=1 leaves 1 matches unreturned but has no \"Warning: 299 <service>: There are 1 additional results that can be requested\" (PS3.18 2026d 8.3.4.4.1)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-028": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-paging"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances?includefield=00083002 sent twice returned [(value withheld: identifying; 30 characters), (value withheld: identifying; 30 characters)] and then [(value withheld: identifying; 30 characters), (value withheld: identifying; 30 characters)]; two identical searches return the same ordered list of matches (PS3.18 2026d 8.3.4.4.1)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-029": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-paging"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances?includefield=00083002&limit=1 leaves 1 matches unreturned but has no \"Warning: 299 <service>: There are 1 additional results that can be requested\" (PS3.18 2026d 8.3.4.4.1)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-030": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-paging"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances?includefield=00083002&limit=1: Warning (value withheld: identifying; 67 characters) names (value withheld: identifying; 9 characters) where the URL of the service is required (PS3.18 2026d 8.3.4.4.1 and 10.6.3.1 Table 10.6.3-1)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-031": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 41 characters)/series: no Series matches, and the payload is a JSON array of 629 bytes; it is an empty JSON array ([]) (PS3.18 2026d 8.3.4.4.1)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-032": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching",
+        "dicomweb-search-matching-attributes"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&StudyDate=(value withheld: identifying; 17 characters)&StudyTime=(value withheld: identifying; 13 characters) returned 0 Studies; the Study's date and time lie in the combined date-time range, though its time is outside the time range alone, so combined date-time matching returns it (PS3.18 2026d 8.3.4.1.1 and PS3.4 C.2.2.2.5)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-033": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching",
+        "dicomweb-search-matching-attributes",
+        "dicomweb-search-matching-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "3 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 41 characters) answered 204 (No Content), which earlier releases specified; a search without match answers 200 with an empty JSON array (PS3.18 2026d 8.3.4.4.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 41 characters) answered 204; 200 is required (PS3.18 2026d 8.3.4.4.1 and 10.6.4 Table 10.6.4-1); GET /dicomweb/studies/(value withheld: identifying; 41 characters)/series answered 204 (No Content), which earlier releases specified; a search without match answers 200 with an empty JSON array (PS3.18 2026d 8.3.4.4.1)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-034": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching",
+        "dicomweb-search-matching-attributes",
+        "dicomweb-search-matching-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 41 characters): no Series matches, and the payload is a JSON object of 2 bytes; it is an empty JSON array ([]) (PS3.18 2026d 8.3.4.4.1); GET /dicomweb/studies/(value withheld: identifying; 41 characters)/series: no Series matches, and the payload is a JSON object of 2 bytes; it is an empty JSON array ([]) (PS3.18 2026d 8.3.4.4.1)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-035": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 41 characters): no Series matches, and the payload is not an empty NativeDicomModel root element (PS3.18 2026d 8.3.4.4.1)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-036": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching",
+        "dicomweb-search-matching-attributes",
+        "dicomweb-search-resources"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 41 characters): no Series matches, and the payload is a JSON array of 629 bytes; it is an empty JSON array ([]) (PS3.18 2026d 8.3.4.4.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 41 characters): Content-Type is application/dicom+json; multipart/related is required (PS3.18 2026d 10.6.4 Table 10.6.4-1)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-037": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&wsidicomprobe=1 answered 400 (17 byte Status Report payload); 200 is required (PS3.18 2026d 10.6.3.1)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-038": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&limit=many answered 200; \"limit\" is a uint, and a supported Query Parameter with an invalid value answers 400 (Bad Request) (PS3.18 2026d 8.3 and 8.3.4.4)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-039": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-accept-required"
+      ],
+      "observed_advisories": [
+        "GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters): the Status Report of a request without an Acceptable Media Type is application/dicom+json; it should be text/html, the default Media Type of the Text Resource Category (PS3.18 2026d 8.6.3)"
+      ],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters) answered 200 (689 byte Status Report payload); 406 is required (PS3.18 2026d 8.7.5)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-040": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [],
+      "observed_advisories": [
+        "GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters): the Status Report of a request without an Acceptable Media Type is application/json; it should be text/html, the default Media Type of the Text Resource Category (PS3.18 2026d 8.6.3)"
+      ],
+      "observed_message": "a request without an Accept header answers 406",
+      "observed_status": "passed",
+      "request_count": 44
+    },
+    "REQ-HTTP-041": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&includefield=00081030&limit=1&offset=0&fuzzymatching=false&emptyvaluematching=false&multiplevaluematching=false answered 400 (14 byte Status Report payload); 200 is required (PS3.18 2026d 10.6.3.1); the Instance Metadata holds no Study Level Attribute beyond the return keys to ask for as an includefield",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-042": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&PatientName=(value withheld: identifying; 19 characters)&fuzzymatching=false returned the Study, whose PatientName is (value withheld: identifying; 16 characters); fuzzymatching=false, so the search is performed without Fuzzy Matching and (value withheld: identifying; 16 characters) with \"XQZ\" added does not match (PS3.18 2026d 8.3.4.2 and PS3.4 C.2.2.2.1.1); the Instance Metadata holds no Study Level Attribute beyond the return keys to ask for as an includefield",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-043": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&PatientName=(value withheld: identifying; 19 characters)&fuzzymatching=true: no Warning says fuzzymatching is not supported, so it was performed, yet the Capabilities Description does not document it; an unsupported value of \"true\" brings the 299 Warning, and a supported one is documented (PS3.18 2026d 8.3.4.2); the Instance Metadata holds no Study Level Attribute beyond the return keys to ask for as an includefield; GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&PatientName=(value withheld: identifying; 19 characters)&fuzzymatching=true: Fuzzy Matching is performed; what it matches is implementation specific (PS3.4 C.2.2.2.1.1)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-044": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&PatientName=(value withheld: identifying; 19 characters)&fuzzymatching=true returned the Study, whose PatientName is (value withheld: identifying; 16 characters); fuzzymatching is warned unsupported, so the search is performed without Fuzzy Matching and (value withheld: identifying; 16 characters) with \"XQZ\" added does not match (PS3.18 2026d 8.3.4.2 and PS3.4 C.2.2.2.1.1); the Instance Metadata holds no Study Level Attribute beyond the return keys to ask for as an includefield",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-045": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&PatientName=(value withheld: identifying; 19 characters)&fuzzymatching=true: no Warning says fuzzymatching is not supported, so it was performed, yet the Capabilities Description does not document it; an unsupported value of \"true\" brings the 299 Warning, and a supported one is documented (PS3.18 2026d 8.3.4.2); the Instance Metadata holds no Study Level Attribute beyond the return keys to ask for as an includefield; GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&PatientName=(value withheld: identifying; 19 characters)&fuzzymatching=true: Fuzzy Matching is performed; what it matches is implementation specific (PS3.4 C.2.2.2.1.1)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-046": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&AccessionNumber=(value withheld: identifying; 2 characters)&emptyvaluematching=false returned the Study, whose AccessionNumber is empty; emptyvaluematching=false, so \"\" is matched literally and the empty Attribute does not match (PS3.18 2026d 8.3.4.5 and PS3.4 C.2.2.2.1); the Instance Metadata holds no Study Level Attribute beyond the return keys to ask for as an includefield",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-047": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&AccessionNumber=(value withheld: identifying; 2 characters)&emptyvaluematching=true: no Warning says emptyvaluematching is not supported, so it was performed, yet the Capabilities Description does not document it; an unsupported value of \"true\" brings the 299 Warning, and a supported one is documented (PS3.18 2026d 8.3.4.5); the Instance Metadata holds no Study Level Attribute beyond the return keys to ask for as an includefield",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-048": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&AccessionNumber=(value withheld: identifying; 2 characters)&emptyvaluematching=true returned the Study, whose AccessionNumber is empty; emptyvaluematching is warned unsupported, so \"\" is matched literally and the empty Attribute does not match (PS3.18 2026d 8.3.4.5 and PS3.4 C.2.2.2.1); the Instance Metadata holds no Study Level Attribute beyond the return keys to ask for as an includefield",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-049": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&AccessionNumber=(value withheld: identifying; 2 characters)&emptyvaluematching=true: no Warning says emptyvaluematching is not supported, so it was performed, yet the Capabilities Description does not document it; an unsupported value of \"true\" brings the 299 Warning, and a supported one is documented (PS3.18 2026d 8.3.4.5); GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&AccessionNumber=(value withheld: identifying; 2 characters)&emptyvaluematching=true returned no Study, though its AccessionNumber is empty; with Empty Value Matching performed, \"\" matches a zero-length value (PS3.18 2026d 8.3.4.5 and PS3.4 C.2.2.2.7); the Instance Metadata holds no Study Level Attribute beyond the return keys to ask for as an includefield",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-050": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&ModalitiesInStudy=SM%5CCT&multiplevaluematching=true: no Warning says multiplevaluematching is not supported, so it was performed, yet the Capabilities Description does not document it; an unsupported value of \"true\" brings the 299 Warning, and a supported one is documented (PS3.18 2026d 8.3.4.6); GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&ModalitiesInStudy=SM%5CZZ&multiplevaluematching=true: no Warning says multiplevaluematching is not supported, so it was performed, yet the Capabilities Description does not document it; an unsupported value of \"true\" brings the 299 Warning, and a supported one is documented (PS3.18 2026d 8.3.4.6); the Instance Metadata holds no Study Level Attribute beyond the return keys to ask for as an includefield",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-051": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "3 violations: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&ModalitiesInStudy=SM%5CCT&multiplevaluematching=true: no Warning says multiplevaluematching is not supported, so it was performed, yet the Capabilities Description does not document it; an unsupported value of \"true\" brings the 299 Warning, and a supported one is documented (PS3.18 2026d 8.3.4.6); GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&ModalitiesInStudy=SM%5CCT&multiplevaluematching=true returned 0 Studies; the Study's Modalities in Study are \"SM\\\\CT\", and with Multiple Value Matching \"SM\\\\CT\" matches only a Study holding every value (PS3.18 2026d 8.3.4.6 and PS3.4 C.2.2.2.8); GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&ModalitiesInStudy=SM%5CZZ&multiplevaluematching=true: no Warning says multiplevaluematching is not supported, so it was performed, yet the Capabilities Description does not document it; an unsupported value of \"true\" brings the 299 Warning, and a supported one is documented (PS3.18 2026d 8.3.4.6); the Instance Metadata holds no Study Level Attribute beyond the return keys to ask for as an includefield",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-052": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching-attributes",
+        "dicomweb-search-matching-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "16 violations: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&StudyDate=(value withheld: identifying; 8 characters) returned 1 results, though the Study holds StudyDate (value withheld: identifying; 8 characters); StudyDate is a Required Matching Attribute, so a value it does not hold matches nothing (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-5 and 8.3.4.1.1); GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&StudyTime=(value withheld: identifying; 6 characters) returned 1 results, though the Study holds StudyTime (value withheld: identifying; 6 characters); StudyTime is a Required Matching Attribute, so a value it does not hold matches nothing (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-5 and 8.3.4.1.1); GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&AccessionNumber=(value withheld: identifying; 15 characters) returned 1 results, though the Study holds AccessionNumber \"\"; AccessionNumber is a Required Matching Attribute, so a value it does not hold matches nothing (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-5 and 8.3.4.1.1); GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&ModalitiesInStudy=WSIDICOMNOMATCH returned 1 results, though the Study holds ModalitiesInStudy \"SM\"; ModalitiesInStudy is a Required Matching Attribute, so a value it does not hold matches nothing (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-5 and 8.3.4.1.1); GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&ReferringPhysicianName=(value withheld: identifying; 31 characters) returned 1 results, though the Study holds ReferringPhysicianName (value withheld: identifying; 15 characters); ReferringPhysicianName is a Required Matching Attribute, so a value it does not hold matches nothing (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-5 and 8.3.4.1.1); GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&PatientName=(value withheld: identifying; 31 characters) returned 1 results, though the Study holds PatientName (value withheld: identifying; 16 characters); PatientName is a Required Matching Attribute, so a value it does not hold matches nothing (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-5 and 8.3.4.1.1); GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&PatientID=(value withheld: identifying; 15 characters) returned 1 results, though the Study holds PatientID (value withheld: identifying; 8 characters); PatientID is a Required Matching Attribute, so a value it does not hold matches nothing (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-5 and 8.3.4.1.1); GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&StudyID=(value withheld: identifying; 15 characters) returned 1 results, though the Study holds StudyID (value withheld: identifying; 4 characters); StudyID is a Required Matching Attribute, so a value it does not hold matches nothing (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-5 and 8.3.4.1.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 30 characters)&Modality=WSIDICOMNOMATCH returned 1 results, though the Series holds Modality \"SM\"; Modality is a Required Matching Attribute, so a value it does not hold matches nothing (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-5 and 8.3.4.1.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 30 characters)&SeriesNumber=999999 returned 1 results, though the Series holds SeriesNumber \"1\"; SeriesNumber is a Required Matching Attribute, so a value it does not hold matches nothing (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-5 and 8.3.4.1.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 30 characters)&PerformedProcedureStepStartDate=(value withheld: identifying; 8 characters) returned 1 results, though the Series holds PerformedProcedureStepStartDate \"\"; PerformedProcedureStepStartDate is a Required Matching Attribute, so a value it does not hold matches nothing (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-5 and 8.3.4.1.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 30 characters)&PerformedProcedureStepStartTime=(value withheld: identifying; 6 characters) returned 1 results, though the Series holds PerformedProcedureStepStartTime \"\"; PerformedProcedureStepStartTime is a Required Matching Attribute, so a value it does not hold matches nothing (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-5 and 8.3.4.1.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 30 characters)&RequestAttributesSequence.ScheduledProcedureStepID=(value withheld: identifying; 15 characters) returned 1 results, though the Series holds RequestAttributesSequence.ScheduledProcedureStepID \"\"; RequestAttributesSequence.ScheduledProcedureStepID is a Required Matching Attribute, so a value it does not hold matches nothing (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-5 and 8.3.4.1.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 30 characters)&RequestAttributesSequence.RequestedProcedureID=(value withheld: identifying; 15 characters) returned 1 results, though the Series holds RequestAttributesSequence.RequestedProcedureID \"\"; RequestAttributesSequence.RequestedProcedureID is a Required Matching Attribute, so a value it does not hold matches nothing (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-5 and 8.3.4.1.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances?SOPInstanceUID=(value withheld: identifying; 30 characters)&SOPClassUID=2.25.299792458299792458299792458299792458 returned 1 results, though the Instance holds SOPClassUID \"1.2.840.10008.5.1.4.1.1.77.1.6\"; SOPClassUID is a Required Matching Attribute, so a value it does not hold matches nothing (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-5 and 8.3.4.1.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances?SOPInstanceUID=(value withheld: identifying; 30 characters)&InstanceNumber=999999 returned 1 results, though the Instance holds InstanceNumber \"1\"; InstanceNumber is a Required Matching Attribute, so a value it does not hold matches nothing (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-5 and 8.3.4.1.1)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-053": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-matching",
+        "dicomweb-search-matching-attributes"
+      ],
+      "observed_advisories": [],
+      "observed_message": "3 violations: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&StudyDate=(value withheld: identifying; 8 characters)&StudyTime=(value withheld: identifying; 6 characters)&ModalitiesInStudy=SM&ReferringPhysicianName=(value withheld: identifying; 15 characters)&PatientName=(value withheld: identifying; 16 characters)&PatientID=(value withheld: identifying; 8 characters)&StudyID=(value withheld: identifying; 4 characters): the result lacks StudyDate, passed as match parameters, which the response contains (PS3.18 2026d 10.6.3.3.1, 10.6.3.3.2 and 10.6.3.3.3); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 30 characters)&Modality=SM&SeriesNumber=1: the result lacks Modality, passed as match parameters, which the response contains (PS3.18 2026d 10.6.3.3.1, 10.6.3.3.2 and 10.6.3.3.3); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances?SOPInstanceUID=(value withheld: identifying; 30 characters)&SOPClassUID=1.2.840.10008.5.1.4.1.1.77.1.6&InstanceNumber=1: the result lacks SOPClassUID, passed as match parameters, which the response contains (PS3.18 2026d 10.6.3.3.1, 10.6.3.3.2 and 10.6.3.3.3)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-054": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-resources",
+        "dicomweb-search-series"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: the Study's Series search did not return results; it is Mandatory for every origin server, native or DIMSE proxy (PS3.18 2026d 10.6.1.1 Table 10.6.1-1 and 10.3 Table 10.3-2)",
+      "observed_status": "failed",
+      "request_count": 43
+    },
+    "REQ-HTTP-055": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-resources"
+      ],
+      "observed_advisories": [],
+      "observed_message": "3 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/instances?SeriesInstanceUID=(value withheld: identifying; 30 characters)&SOPInstanceUID=(value withheld: identifying; 30 characters) returned []; matching on the IE Levels of the resource returns (value withheld: identifying; 30 characters) alone (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-4); GET /dicomweb/series?StudyInstanceUID=(value withheld: identifying; 30 characters)&SeriesInstanceUID=(value withheld: identifying; 30 characters) returned []; matching on the IE Levels of the resource returns (value withheld: identifying; 30 characters) alone (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-4); GET /dicomweb/instances?StudyInstanceUID=(value withheld: identifying; 30 characters)&SeriesInstanceUID=(value withheld: identifying; 30 characters)&SOPInstanceUID=(value withheld: identifying; 30 characters) returned []; matching on the IE Levels of the resource returns (value withheld: identifying; 30 characters) alone (PS3.18 2026d 10.6.1.2.3 Table 10.6.1-4)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-056": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-resources"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: result 1 lacks Study Date (0008,0020), Study Time (0008,0030), Accession Number (0008,0050), Modalities in Study (0008,0061), Referring Physician's Name (0008,0090), Patient's Name (0010,0010), Patient ID (0010,0020), Patient's Birth Date (0010,0030), Patient's Sex (0010,0040), Study Instance UID (0020,000D), Study ID (0020,0010), Number of Study Related Series (0020,1206), Number of Study Related Instances (0020,1208) (PS3.18 2026d 10.6.3.3 Tables 10.6.3-3 and 10.6.3-4, as 10.6.3.3.2 requires of All Series)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-057": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-resources"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: result 1 lacks Study Date (0008,0020), Study Time (0008,0030), Accession Number (0008,0050), Modalities in Study (0008,0061), Referring Physician's Name (0008,0090), Patient's Name (0010,0010), Patient ID (0010,0020), Patient's Birth Date (0010,0030), Patient's Sex (0010,0040), Study Instance UID (0020,000D), Study ID (0020,0010), Number of Study Related Series (0020,1206), Number of Study Related Instances (0020,1208), Modality (0008,0060), Series Instance UID (0020,000E), Series Number (0020,0011), Number of Series Related Instances (0020,1209) (PS3.18 2026d 10.6.3.3 Tables 10.6.3-3, 10.6.3-4 and 10.6.3-5, as 10.6.3.3.3 requires of All Instances)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-058": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-accept-negotiation"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: Content-Type is application/json; application/dicom+json is required (PS3.18 2026d 8.3.3.1 and 8.7.3 Table 8.7.3-1: with none of the Acceptable Media Types supported, the Default Media Type (or 406, 8.7.8.1)); Rendered resources skipped by request (--skip rendered)",
+      "observed_status": "failed",
+      "request_count": 16
+    },
+    "REQ-HTTP-059": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-accept-negotiation"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata?accept=application/dicom%2Bjson,text/html answered 200 (5984 byte Status Report payload); 400 is required (PS3.18 2026d 8.3.3.1: an Accept Query Parameter with DICOM and non-DICOM Media Types answers 400 (Bad Request)); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata answered 406, as 8.7.8.1 step 5 and Table 10.4.3-1 prescribe; 8.3.3.1 and Table 8.7.3-1 would return the Default Media Type; Rendered resources skipped by request (--skip rendered)",
+      "observed_status": "failed",
+      "request_count": 16
+    },
+    "REQ-HTTP-060": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-accept-negotiation"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata answered 200 (5984 byte Status Report payload); 400 is required (PS3.18 2026d 8.7.5: Acceptable Media Types with DICOM and Rendered Media Types answer 400 (Bad Request)); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata answered 406, as 8.7.8.1 step 5 and Table 10.4.3-1 prescribe; 8.3.3.1 and Table 8.7.3-1 would return the Default Media Type; Rendered resources skipped by request (--skip rendered)",
+      "observed_status": "failed",
+      "request_count": 16
+    },
+    "REQ-HTTP-061": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-accept-negotiation"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata answered 406; 200 is required (PS3.18 2026d 8.7.7: Accept values that are not valid or not supported are ignored); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata answered 406, as 8.7.8.1 step 5 and Table 10.4.3-1 prescribe; 8.3.3.1 and Table 8.7.3-1 would return the Default Media Type; Rendered resources skipped by request (--skip rendered)",
+      "observed_status": "failed",
+      "request_count": 16
+    },
+    "REQ-HTTP-062": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-accept-negotiation"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: Content-Type is application/dicom+json; multipart/related is required (PS3.18 2026d 8.7.8.1: media ranges are prioritized by qvalue (RFC 7231 5.3.1), and the XML one has 1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata answered 406, as 8.7.8.1 step 5 and Table 10.4.3-1 prescribe; 8.3.3.1 and Table 8.7.3-1 would return the Default Media Type; Rendered resources skipped by request (--skip rendered)",
+      "observed_status": "failed",
+      "request_count": 16
+    },
+    "REQ-HTTP-063": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-accept-negotiation"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata?accept=application/dicom%2Bjson: Content-Type is multipart/related; application/dicom+json is required (PS3.18 2026d 8.7.8.1 and Table 10.4.1-5: the supported Media Type of the Accept Query Parameter is selected before the Accept Header Field's); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata answered 406, as 8.7.8.1 step 5 and Table 10.4.3-1 prescribe; 8.3.3.1 and Table 8.7.3-1 would return the Default Media Type; Rendered resources skipped by request (--skip rendered)",
+      "observed_status": "failed",
+      "request_count": 16
+    },
+    "REQ-HTTP-064": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-character-sets"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata?charset=x-wsidicom-unsupported answered 406; 200 is required (PS3.18 2026d 8.3.3.2: a charset Query Parameter value that is not supported is ignored); Search skipped, so Accept-Charset was not sent to it; Rendered resources skipped by request (--skip rendered)",
+      "observed_status": "failed",
+      "request_count": 16
+    },
+    "REQ-HTTP-065": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-character-sets"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata answered 406; 200 is required (PS3.18 2026d 10.4.1.3 Table 10.4.1-6: the origin server supports Accept-Charset); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata answered 406; 200 is required (PS3.18 2026d 8.8.1: charset values that are not valid or not supported are ignored); Search skipped, so Accept-Charset was not sent to it; Rendered resources skipped by request (--skip rendered)",
+      "observed_status": "failed",
+      "request_count": 16
+    },
+    "REQ-HTTP-066": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-character-sets"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata answered 406; 200 is required (PS3.18 2026d 10.1.3 and 10.4.4: the Transfer Syntax and Character Set Media Type parameters are supported); Search skipped, so Accept-Charset was not sent to it; Rendered resources skipped by request (--skip rendered)",
+      "observed_status": "failed",
+      "request_count": 16
+    },
+    "REQ-HTTP-067": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-character-sets"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters) answered 406; 200 is required (PS3.18 2026d 10.6.1.3 Table 10.6.1-6: the origin server supports Accept-Charset in a Search); Rendered resources skipped by request (--skip rendered)",
+      "observed_status": "failed",
+      "request_count": 62
+    },
+    "REQ-HTTP-068": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-content-location"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/metadata: no Content-Location, though the payload is a representation of the Target Resource (PS3.18 2026d 8.4.2 Table 8.4.2-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: no Content-Location, though the payload is a representation of the Target Resource (PS3.18 2026d 8.4.2 Table 8.4.2-1)",
+      "observed_status": "failed",
+      "request_count": 16
+    },
+    "REQ-HTTP-069": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-range-requests"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: 206 with an invalid 10-character Content-Range; the partial response to Range: bytes=0-15 has Content-Range \"bytes 0-15/5984\" (RFC 7233 4.1, PS3.18 2026d 8.6.1.1)",
+      "observed_status": "failed",
+      "request_count": 16
+    },
+    "REQ-HTTP-070": {
+      "baseline_advisories": [
+        "2 multipart/related responses, such as GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata, quote the \"type\" parameter, which should not contain quote marks per RFC 2387 (PS3.18 2026d 8.7.1)"
+      ],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-accept-negotiation",
+        "dicomweb-character-sets",
+        "dicomweb-payload-headers",
+        "dicomweb-retrieve-instance-metadata",
+        "dicomweb-retrieve-metadata"
+      ],
+      "observed_advisories": [
+        "2 multipart/related responses, such as GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata, quote the \"type\" parameter, which should not contain quote marks per RFC 2387 (PS3.18 2026d 8.7.1)"
+      ],
+      "observed_message": "9 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/metadata: the payload has no Content-Type (PS3.18 2026d 8.4.2 Table 8.4.2-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the payload has no Content-Type (PS3.18 2026d 8.4.2 Table 8.4.2-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the payload has no Content-Type (PS3.18 2026d 8.4.2 Table 8.4.2-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the payload has no Content-Type (PS3.18 2026d 8.4.2 Table 8.4.2-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata?accept=application/dicom%2Bjson: the payload has no Content-Type (PS3.18 2026d 8.4.2 Table 8.4.2-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata?charset=x-wsidicom-unsupported: the payload has no Content-Type (PS3.18 2026d 8.4.2 Table 8.4.2-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the payload has no Content-Type (PS3.18 2026d 8.4.2 Table 8.4.2-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the payload has no Content-Type (PS3.18 2026d 8.4.2 Table 8.4.2-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the payload has no Content-Type (PS3.18 2026d 8.4.2 Table 8.4.2-1)",
+      "observed_status": "failed",
+      "request_count": 15
+    },
+    "REQ-HTTP-071": {
+      "baseline_advisories": [
+        "2 multipart/related responses, such as GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata, quote the \"type\" parameter, which should not contain quote marks per RFC 2387 (PS3.18 2026d 8.7.1)"
+      ],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-payload-headers"
+      ],
+      "observed_advisories": [
+        "2 multipart/related responses, such as GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata, quote the \"type\" parameter, which should not contain quote marks per RFC 2387 (PS3.18 2026d 8.7.1)"
+      ],
+      "observed_message": "10 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/metadata: the payload has neither Content-Length nor Transfer-Encoding; Content-Length is present even if the payload is empty (PS3.18 2026d 8.4.3 Table 8.4.3-1 and 8.6); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the payload has neither Content-Length nor Transfer-Encoding; Content-Length is present even if the payload is empty (PS3.18 2026d 8.4.3 Table 8.4.3-1 and 8.6); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the payload has neither Content-Length nor Transfer-Encoding; Content-Length is present even if the payload is empty (PS3.18 2026d 8.4.3 Table 8.4.3-1 and 8.6); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the payload has neither Content-Length nor Transfer-Encoding; Content-Length is present even if the payload is empty (PS3.18 2026d 8.4.3 Table 8.4.3-1 and 8.6); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata?accept=application/dicom%2Bjson: the payload has neither Content-Length nor Transfer-Encoding; Content-Length is present even if the payload is empty (PS3.18 2026d 8.4.3 Table 8.4.3-1 and 8.6); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata?charset=x-wsidicom-unsupported: the payload has neither Content-Length nor Transfer-Encoding; Content-Length is present even if the payload is empty (PS3.18 2026d 8.4.3 Table 8.4.3-1 and 8.6); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the payload has neither Content-Length nor Transfer-Encoding; Content-Length is present even if the payload is empty (PS3.18 2026d 8.4.3 Table 8.4.3-1 and 8.6); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the payload has neither Content-Length nor Transfer-Encoding; Content-Length is present even if the payload is empty (PS3.18 2026d 8.4.3 Table 8.4.3-1 and 8.6); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the payload has neither Content-Length nor Transfer-Encoding; Content-Length is present even if the payload is empty (PS3.18 2026d 8.4.3 Table 8.4.3-1 and 8.6); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the payload has neither Content-Length nor Transfer-Encoding; Content-Length is present even if the payload is empty (PS3.18 2026d 8.4.3 Table 8.4.3-1 and 8.6)",
+      "observed_status": "failed",
+      "request_count": 16
+    },
+    "REQ-HTTP-072": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-response-messages"
+      ],
+      "observed_advisories": [],
+      "observed_message": "9 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/metadata: the response is not an HTTP/1.1 response message; the response message includes a valid 3-digit status code (PS3.18 2026d 8.1.2 and 8.1.2.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the response is not an HTTP/1.1 response message; the response message includes a valid 3-digit status code (PS3.18 2026d 8.1.2 and 8.1.2.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the response is not an HTTP/1.1 response message; the response message includes a valid 3-digit status code (PS3.18 2026d 8.1.2 and 8.1.2.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the response is not an HTTP/1.1 response message; the response message includes a valid 3-digit status code (PS3.18 2026d 8.1.2 and 8.1.2.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata?accept=application/dicom%2Bjson: the response is not an HTTP/1.1 response message; the response message includes a valid 3-digit status code (PS3.18 2026d 8.1.2 and 8.1.2.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata?charset=x-wsidicom-unsupported: the response is not an HTTP/1.1 response message; the response message includes a valid 3-digit status code (PS3.18 2026d 8.1.2 and 8.1.2.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the response is not an HTTP/1.1 response message; the response message includes a valid 3-digit status code (PS3.18 2026d 8.1.2 and 8.1.2.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the response is not an HTTP/1.1 response message; the response message includes a valid 3-digit status code (PS3.18 2026d 8.1.2 and 8.1.2.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata: the response is not an HTTP/1.1 response message; the response message includes a valid 3-digit status code (PS3.18 2026d 8.1.2 and 8.1.2.1)",
+      "observed_status": "failed",
+      "request_count": 15
+    },
+    "REQ-HTTP-073": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [],
+      "observed_advisories": [
+        "GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&includefield=00081030: the Study result lacks StudyDescription (0008,1030), which the Study's Instance holds; an includefield Attribute should be included (PS3.18 2026d 8.3.4.3: includefield specifies \"the Attributes that should be included in the response\")",
+        "GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&includefield=all: the Study result lacks StudyDescription (0008,1030), which the Study's Instance holds; an includefield Attribute should be included (PS3.18 2026d 8.3.4.3: \"all\" means \"that all available attributes of the object should be included in the response\")"
+      ],
+      "observed_message": "the Search Query Parameters are supported, and each matching parameter is performed as documented or warned unsupported and not performed",
+      "observed_status": "passed",
+      "request_count": 62
+    },
+    "REQ-HTTP-074": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-frames",
+        "dicomweb-retrieve-frames-uncompressed",
+        "dicomweb-transfer-syntaxes"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1,2: Content-Type is application/octet-stream; multipart/related is required (PS3.18 2026d 10.4.4 Table 10.4.4-1)",
+      "observed_status": "failed",
+      "request_count": 20
+    },
+    "REQ-HTTP-075": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-frames",
+        "dicomweb-retrieve-frames-uncompressed",
+        "dicomweb-transfer-syntaxes"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1,2: part 1 has no Content-Type (PS3.18 2026d 8.6.1.2 Table 8.6.1-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1,2: part 2 has no Content-Type (PS3.18 2026d 8.6.1.2 Table 8.6.1-1)",
+      "observed_status": "failed",
+      "request_count": 20
+    },
+    "REQ-HTTP-076": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-frames",
+        "dicomweb-retrieve-frames-uncompressed",
+        "dicomweb-transfer-syntaxes"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1,2: part 1 has no Content-Length, which a part has unless the response payload has a transfer encoding (PS3.18 2026d 8.6.1.2 Table 8.6.1-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1,2: part 2 has no Content-Length, which a part has unless the response payload has a transfer encoding (PS3.18 2026d 8.6.1.2 Table 8.6.1-1)",
+      "observed_status": "failed",
+      "request_count": 20
+    },
+    "REQ-HTTP-077": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-frames"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1,2: part 1's Content-Location is (value withheld: identifying; 179 characters); it corresponds to the Pixel Data of the Instance in the Metadata (PS3.18 2026d 10.4.3.3.6); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1,2: part 2's Content-Location is (value withheld: identifying; 179 characters); it corresponds to the Pixel Data of the Instance in the Metadata (PS3.18 2026d 10.4.3.3.6)",
+      "observed_status": "failed",
+      "request_count": 20
+    },
+    "REQ-HTTP-078": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-frames",
+        "dicomweb-retrieve-frames-uncompressed",
+        "dicomweb-transfer-syntaxes"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1,2: multipart/related has no \"type\" parameter, which is required (PS3.18 2026d 8.7.1 and 8.7.3.5.1)",
+      "observed_status": "failed",
+      "request_count": 20
+    },
+    "REQ-HTTP-079": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-frames",
+        "dicomweb-retrieve-frames-uncompressed"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1,2: part 1 has 2 transfer-syntax parameters; a DICOM media type has at most one (PS3.18 2026d 8.7.3.5.2 and 8.7.9); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1,2: part 2 has 2 transfer-syntax parameters; a DICOM media type has at most one (PS3.18 2026d 8.7.3.5.2 and 8.7.9)",
+      "observed_status": "failed",
+      "request_count": 20
+    },
+    "REQ-HTTP-080": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-frames",
+        "dicomweb-retrieve-frames-uncompressed"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1: Frame 1 is 11 bytes; uncompressed it is 12 (PS3.18 2026d 8.7.3.3.1)",
+      "observed_status": "failed",
+      "request_count": 20
+    },
+    "REQ-HTTP-081": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-frames-uncompressed",
+        "dicomweb-transfer-syntaxes"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1: part 1 is application/octet-stream in 1.2.840.10008.1.2.1.98; application/octet-stream requested without a Transfer Syntax parameter is in 1.2.840.10008.1.2.1 (PS3.18 2026d 8.7.3.3: without a Transfer Syntax parameter, Explicit VR Little Endian); Instance retrieval skipped by request (--skip instance)",
+      "observed_status": "failed",
+      "request_count": 20
+    },
+    "REQ-HTTP-082": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-frames",
+        "dicomweb-retrieve-frames-uncompressed",
+        "dicomweb-transfer-syntaxes"
+      ],
+      "observed_advisories": [],
+      "observed_message": "5 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1: part 1 is application/octet-stream in 1.2.840.10008.1.2; application/octet-stream requested without a Transfer Syntax parameter is in 1.2.840.10008.1.2.1 (PS3.18 2026d 8.7.3.3: without a Transfer Syntax parameter, Explicit VR Little Endian); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1,2: part 1 is in Implicit VR Little Endian (1.2.840.10008.1.2), which shall not be used with Web Services (PS3.18 2026d 8.7.3, 8.7.3.4 and 8.6.2.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1,2: part 2 is in Implicit VR Little Endian (1.2.840.10008.1.2), which shall not be used with Web Services (PS3.18 2026d 8.7.3, 8.7.3.4 and 8.6.2.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1: part 1 is in Implicit VR Little Endian (1.2.840.10008.1.2), which shall not be used with Web Services (PS3.18 2026d 8.7.3, 8.7.3.4 and 8.6.2.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1: part 1 is in Implicit VR Little Endian (1.2.840.10008.1.2), which shall not be used with Web Services (PS3.18 2026d 8.7.3, 8.7.3.4 and 8.6.2.1); Instance retrieval skipped by request (--skip instance)",
+      "observed_status": "failed",
+      "request_count": 20
+    },
+    "REQ-HTTP-083": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-character-sets",
+        "dicomweb-rendered-parameters",
+        "dicomweb-retrieve-rendered"
+      ],
+      "observed_advisories": [],
+      "observed_message": "3 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered: Content-Type is application/octet-stream; image/jpeg is required (PS3.18 2026d 8.7.4 Table 8.7.4-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?viewport=64,64: Content-Type is application/octet-stream; image/jpeg is required (PS3.18 2026d 8.7.4 Table 8.7.4-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered: Content-Type is application/octet-stream; image/png is required (PS3.18 2026d 8.7.4 Table 8.7.4-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered answered 406 without Content-Type: image/jph is not offered, which is Optional (Table 8.7.4-1)",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-084": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters",
+        "dicomweb-retrieve-rendered"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered: the frame is SOF2 (FFC2), not the baseline process SOF0 (PS3.18 2026d 8.7.4); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?viewport=64,64: the frame is SOF2 (FFC2), not the baseline process SOF0 (PS3.18 2026d 8.7.4); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered answered 406 without Content-Type: image/jph is not offered, which is Optional (Table 8.7.4-1)",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-085": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-rendered"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered: the image/jph image does not begin with the JP2 Signature box; a rendered image/jph is encoded with the JP2 box present (PS3.18 2026d 8.7.4)",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-086": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-rendered"
+      ],
+      "observed_advisories": [],
+      "observed_message": "3 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered: image/jpeg has a transfer-syntax parameter, which a Rendered Media Type shall not have (PS3.18 2026d 8.7.4); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?viewport=64,64: image/jpeg has a transfer-syntax parameter, which a Rendered Media Type shall not have (PS3.18 2026d 8.7.4); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered: image/png has a transfer-syntax parameter, which a Rendered Media Type shall not have (PS3.18 2026d 8.7.4); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered answered 406 without Content-Type: image/jph is not offered, which is Optional (Table 8.7.4-1)",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-087": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-character-sets",
+        "dicomweb-rendered-parameters",
+        "dicomweb-retrieve-rendered"
+      ],
+      "observed_advisories": [],
+      "observed_message": "6 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered: the payload is one image, not multipart, yet its Content-Type is multipart/related; a single part payload has a single part media type (PS3.18 2026d 8.6.1.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered: Content-Type is multipart/related; image/jpeg is required (PS3.18 2026d 8.7.4 Table 8.7.4-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?viewport=64,64: the payload is one image, not multipart, yet its Content-Type is multipart/related; a single part payload has a single part media type (PS3.18 2026d 8.6.1.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?viewport=64,64: Content-Type is multipart/related; image/jpeg is required (PS3.18 2026d 8.7.4 Table 8.7.4-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered: the payload is one image, not multipart, yet its Content-Type is multipart/related; a single part payload has a single part media type (PS3.18 2026d 8.6.1.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered: Content-Type is multipart/related; image/png is required (PS3.18 2026d 8.7.4 Table 8.7.4-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered answered 406 without Content-Type: image/jph is not offered, which is Optional (Table 8.7.4-1)",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-088": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-rendered"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered: the image is 4x4; 2x2 is required (PS3.18 2026d 8.3.5.1.3); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered: the image is 4x4; 2x2 is required (PS3.18 2026d 8.3.5.1.3); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered answered 406 without Content-Type: image/jph is not offered, which is Optional (Table 8.7.4-1)",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-089": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters",
+        "dicomweb-retrieve-rendered"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?viewport=64,64: the image is 2x2; 64x64 is required (PS3.18 2026d 8.3.5.1.3); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered answered 406 without Content-Type: image/jph is not offered, which is Optional (Table 8.7.4-1)",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-090": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?viewport=64,64,0,0,2,1: the image is 64x64; the 2x1 region scaled into 64x64 is 64x32 (PS3.18 2026d 8.3.5.1.3: the source is cropped to sx, sy, sw, sh and scaled into the viewport); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?viewport=64,64,0,0,,1: the image is 64x64; the 2x1 region scaled into 64x64 is 64x32 (PS3.18 2026d 8.3.5.1.3: an elided sw defaults to the right edge of the source); every iccprofile value brought the same embedding, so the Optional iccprofile parameter is not supported (Table 10.4.1-5) and was ignored",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-091": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?viewport=64,64,0,0,,1: the image is 64x64; the 2x1 region scaled into 64x64 is 64x32 (PS3.18 2026d 8.3.5.1.3: an elided sw defaults to the right edge of the source); every iccprofile value brought the same embedding, so the Optional iccprofile parameter is not supported (Table 10.4.1-5) and was ignored",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-092": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?viewport=64 answered 200 (656 byte Status Report payload); 400 is required (PS3.18 2026d 8.3.5.1.3: a viewport without vh is ill-formed and answers 400 (Bad Request)); every iccprofile value brought the same embedding, so the Optional iccprofile parameter is not supported (Table 10.4.1-5) and was ignored",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-093": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?annotation= answered 200 (656 byte Status Report payload); 400 is required (PS3.18 2026d 8.3.5.1.1: an annotation without values answers 400 (Bad Request)); every iccprofile value brought the same embedding, so the Optional iccprofile parameter is not supported (Table 10.4.1-5) and was ignored",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-094": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?annotation=patient,wsidicomprobe answered 400; 200 is required (PS3.18 2026d 8.3.5.1.1: unsupported annotation values are ignored); every iccprofile value brought the same embedding, so the Optional iccprofile parameter is not supported (Table 10.4.1-5) and was ignored",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-095": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?annotation=patient,wsidicomprobe: the unsupported annotation value wsidicomprobe brought no \"Warning: 299 <service>: The following annotation values are not supported: wsidicomprobe\" (PS3.18 2026d 8.3.5.1.1); every iccprofile value brought the same embedding, so the Optional iccprofile parameter is not supported (Table 10.4.1-5) and was ignored",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-096": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "3 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?annotation=patient answered 400; 200 is required (PS3.18 2026d 10.4.1.2 Table 10.4.1-5 and 8.3.5: annotation is supported); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?quality=90 answered 400; 200 is required (PS3.18 2026d 10.4.1.2 Table 10.4.1-5 and 8.3.5: quality is supported); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?window=128,256,linear answered 400; 200 is required (PS3.18 2026d 10.4.1.2 Table 10.4.1-5 and 8.3.5: window is supported); every iccprofile value brought the same embedding, so the Optional iccprofile parameter is not supported (Table 10.4.1-5) and was ignored",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-097": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?quality=101 answered 200 (656 byte Status Report payload); 400 is required (PS3.18 2026d 8.3.5.1.2: a quality that is not an integer between 1 and 100 answers 400 (Bad Request)); every iccprofile value brought the same embedding, so the Optional iccprofile parameter is not supported (Table 10.4.1-5) and was ignored",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-098": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?window=128 answered 200 (656 byte Status Report payload); 400 is required (PS3.18 2026d 8.3.5.1.4: a window without its three values answers 400 (Bad Request)); every iccprofile value brought the same embedding, so the Optional iccprofile parameter is not supported (Table 10.4.1-5) and was ignored",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-099": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-accept-negotiation"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1,2/rendered answered 200 (656 byte Status Report payload); 406 is required (PS3.18 2026d 8.3.3.1 and 8.7.8.1: a Multi-frame Image has no Default Rendered Media Type (Table 8.7.4-1), so an unsupported one answers 406); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata answered 406, as 8.7.8.1 step 5 and Table 10.4.3-1 prescribe; 8.3.3.1 and Table 8.7.3-1 would return the Default Media Type",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-100": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-character-sets"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?charset=UTF-8 answered 406; 200 is required (PS3.18 2026d 8.8: the origin server supports the \"UTF-8\" charset name for Retrieve Rendered); Search skipped, so Accept-Charset was not sent to it",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-101": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-thumbnail"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/thumbnail answered 404; 200 is required (PS3.18 2026d 10.4.1.1.4: an origin server offering one Thumbnail resource offers all)",
+      "observed_status": "failed",
+      "request_count": 20
+    },
+    "REQ-HTTP-102": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-content-location",
+        "dicomweb-retrieve-thumbnail"
+      ],
+      "observed_advisories": [],
+      "observed_message": "4 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/thumbnail: Content-Type is multipart/related; image/jpeg is required (PS3.18 2026d 10.4.4 Table 10.4.4-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/thumbnail: Content-Type is multipart/related; image/jpeg is required (PS3.18 2026d 10.4.4 Table 10.4.4-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/thumbnail: Content-Type is multipart/related; image/jpeg is required (PS3.18 2026d 10.4.4 Table 10.4.4-1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/thumbnail: Content-Type is multipart/related; image/jpeg is required (PS3.18 2026d 10.4.4 Table 10.4.4-1)",
+      "observed_status": "failed",
+      "request_count": 20
+    },
+    "REQ-HTTP-103": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-bulkdata"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET (value withheld: identifying; 117 characters): the part's Content-Location is (value withheld: identifying; 119 characters); it is the BulkDataURI (value withheld: identifying; 117 characters) of the Metadata (PS3.18 2026d 10.4.3.3.5)",
+      "observed_status": "failed",
+      "request_count": 17
+    },
+    "REQ-HTTP-104": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-instance",
+        "dicomweb-transfer-syntaxes"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters): the part is not a PS3.10 file: no \"DICM\" prefix after the 128-byte preamble (PS3.10 2026d 7.1, PS3.18 2026d 8.7.3.1)",
+      "observed_status": "failed",
+      "request_count": 19
+    },
+    "REQ-HTTP-105": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-instance"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters): the Instance holds (0008,0008) that its Metadata lacks; the Metadata contains all Attributes in the resource (PS3.18 2026d 10.4.3.3.2)",
+      "observed_status": "failed",
+      "request_count": 19
+    },
+    "REQ-HTTP-106": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-instance"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters): the Bulk Data of bulk/icc is 604 bytes that are not the 612-byte (0028,2000) of the Instance; the payload of a Bulk Data resource holds all its Bulk Data (PS3.18 2026d 10.4.3.3.5)",
+      "observed_status": "failed",
+      "request_count": 20
+    },
+    "REQ-HTTP-107": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-instance"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters) answered 406; 200 is required (PS3.18 2026d 10.4.3.1)",
+      "observed_status": "failed",
+      "request_count": 19
+    },
+    "REQ-HTTP-108": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-transfer-syntaxes"
+      ],
+      "observed_advisories": [],
+      "observed_message": "3 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters): part 1 is in Implicit VR Little Endian (1.2.840.10008.1.2), which shall not be used with Web Services (PS3.18 2026d 8.7.3, 8.7.3.4 and 8.6.2.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters): part 1 is in Implicit VR Little Endian (1.2.840.10008.1.2), which shall not be used with Web Services (PS3.18 2026d 8.7.3, 8.7.3.4 and 8.6.2.1); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters): part 1 is in Implicit VR Little Endian (1.2.840.10008.1.2), which shall not be used with Web Services (PS3.18 2026d 8.7.3, 8.7.3.4 and 8.6.2.1); Frames skipped by request (--skip frames)",
+      "observed_status": "failed",
+      "request_count": 19
+    },
+    "REQ-HTTP-109": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-retrieve-url"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: Study, Series, Instance results lack Retrieve URL (0008,1190), though the origin server answers the Retrieve Transaction for them",
+      "observed_status": "failed",
+      "request_count": 65
+    },
+    "REQ-HTTP-110": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-response-messages",
+        "dicomweb-search-resources"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&includefield=00200013: the response is not an HTTP/1.1 response message; the response message includes a valid 3-digit status code (PS3.18 2026d 8.1.2 and 8.1.2.1)",
+      "observed_status": "failed",
+      "request_count": 36
+    },
+    "REQ-HTTP-111": {
+      "baseline_advisories": [
+        "1 multipart/related responses, such as GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 41 characters), quote the \"type\" parameter, which should not contain quote marks per RFC 2387 (PS3.18 2026d 8.7.1)"
+      ],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-payload-headers",
+        "dicomweb-search-resources",
+        "dicomweb-search-studies"
+      ],
+      "observed_advisories": [
+        "1 multipart/related responses, such as GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 41 characters), quote the \"type\" parameter, which should not contain quote marks per RFC 2387 (PS3.18 2026d 8.7.1)"
+      ],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&includefield=00200013: the payload has no Content-Type (PS3.18 2026d 8.4.2 Table 8.4.2-1)",
+      "observed_status": "failed",
+      "request_count": 36
+    },
+    "REQ-HTTP-112": {
+      "baseline_advisories": [
+        "1 multipart/related responses, such as GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 41 characters), quote the \"type\" parameter, which should not contain quote marks per RFC 2387 (PS3.18 2026d 8.7.1)"
+      ],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-payload-headers"
+      ],
+      "observed_advisories": [
+        "1 multipart/related responses, such as GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series?SeriesInstanceUID=(value withheld: identifying; 41 characters), quote the \"type\" parameter, which should not contain quote marks per RFC 2387 (PS3.18 2026d 8.7.1)"
+      ],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters)&includefield=00200013: the payload has neither Content-Length nor Transfer-Encoding; Content-Length is present even if the payload is empty (PS3.18 2026d 8.4.3 Table 8.4.3-1 and 8.6)",
+      "observed_status": "failed",
+      "request_count": 44
+    },
+    "REQ-HTTP-113": {
+      "baseline_advisories": [
+        "GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters) answered 406 with a payload that lists no Media Type; it should list the available Media Types and their resource identifiers (PS3.18 2026d 8.5 Table 8.5-1)"
+      ],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-search-resources"
+      ],
+      "observed_advisories": [
+        "GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters) answered 406 with a payload that lists no Media Type; it should list the available Media Types and their resource identifiers (PS3.18 2026d 8.5 Table 8.5-1)",
+        "GET /dicomweb/instances?StudyInstanceUID=(value withheld: identifying; 30 characters)&SeriesInstanceUID=(value withheld: identifying; 30 characters)&SOPInstanceUID=(value withheld: identifying; 30 characters) answered 413 with no payload; a failure response payload should contain a Status Report explaining the error and whether it is temporary or permanent (PS3.18 2026d 10.6.3.1 Table 10.6.3-1 and 8.1.2.3)"
+      ],
+      "observed_message": "1 401 responses carry WWW-Authenticate and 1 405 responses carry Allow",
+      "observed_status": "passed",
+      "request_count": 46
+    },
+    "REQ-HTTP-114": {
+      "baseline_advisories": [
+        "GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters) answered 406 with a payload that lists no Media Type; it should list the available Media Types and their resource identifiers (PS3.18 2026d 8.5 Table 8.5-1)"
+      ],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-error-responses"
+      ],
+      "observed_advisories": [
+        "GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters) answered 406 with a payload that lists no Media Type; it should list the available Media Types and their resource identifiers (PS3.18 2026d 8.5 Table 8.5-1)"
+      ],
+      "observed_message": "1 violation: GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters) answered 401 without a WWW-Authenticate Header Field, which holds at least one challenge (RFC 7235 4.1, PS3.18 2026d 8.5 Table 8.5-1)",
+      "observed_status": "failed",
+      "request_count": 46
+    },
+    "REQ-HTTP-115": {
+      "baseline_advisories": [
+        "GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters) answered 406 with a payload that lists no Media Type; it should list the available Media Types and their resource identifiers (PS3.18 2026d 8.5 Table 8.5-1)"
+      ],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-error-responses"
+      ],
+      "observed_advisories": [
+        "GET /dicomweb/studies?StudyInstanceUID=(value withheld: identifying; 30 characters) answered 406 with a payload that lists no Media Type; it should list the available Media Types and their resource identifiers (PS3.18 2026d 8.5 Table 8.5-1)"
+      ],
+      "observed_message": "1 violation: TRACE /dicomweb/studies answered 405 without an Allow Header Field listing the supported methods (PS3.18 2026d 8.5 Table 8.5-1)",
+      "observed_status": "failed",
+      "request_count": 46
+    },
+    "REQ-HTTP-116": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-payload-headers",
+        "dicomweb-store"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: POST /dicomweb/studies answered 405 (53 byte Status Report payload); 200 or 202 is required (PS3.18 2026d 10.5.3.1 Table 10.5.3-1)",
+      "observed_status": "failed",
+      "request_count": 2
+    },
+    "REQ-HTTP-117": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-store"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: POST /dicomweb/studies answered 411 (Length Required) to a chunked request; the origin server supports Transfer-Encoding (Table 10.5.1-2, PS3.18 2026d 10.5.1.3)",
+      "observed_status": "failed",
+      "request_count": 2
+    },
+    "REQ-HTTP-118": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-response-messages"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: POST /dicomweb/studies: the response is not an HTTP/1.1 response message; the response message includes a valid 3-digit status code (PS3.18 2026d 8.1.2 and 8.1.2.1)",
+      "observed_status": "failed",
+      "request_count": 2
+    },
+    "REQ-HTTP-119": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-store"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: POST /dicomweb/studies answered 202, which means warnings or failures exist, yet the module lists none; 200 is appropriate (PS3.18 2026d 10.5.3 and 10.5.3.1 Table 10.5.3-1); 202: stored with warnings or failures (10.5.3.1)",
+      "observed_status": "failed",
+      "request_count": 4
+    },
+    "REQ-HTTP-120": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-store"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: POST /dicomweb/studies: no Location, which is present when a new resource was created (PS3.18 2026d 10.5.3.2 Table 10.5.3-2)",
+      "observed_status": "failed",
+      "request_count": 4
+    },
+    "REQ-HTTP-121": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-store"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: POST /dicomweb/studies: no Content-Location, which is present when a new resource was created (PS3.18 2026d 10.5.3.2 Table 10.5.3-2)",
+      "observed_status": "failed",
+      "request_count": 4
+    },
+    "REQ-HTTP-122": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-payload-headers"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: POST /dicomweb/studies: the payload has neither Content-Length nor Transfer-Encoding; Content-Length is present even if the payload is empty (PS3.18 2026d 8.4.3 Table 8.4.3-1 and 8.6)",
+      "observed_status": "failed",
+      "request_count": 4
+    },
+    "REQ-HTTP-123": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-store"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: POST /dicomweb/studies: the payload holds no Store Instances Response Module (PS3.18 2026d 10.5.3.3)",
+      "observed_status": "failed",
+      "request_count": 2
+    },
+    "REQ-HTTP-124": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-store"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: POST /dicomweb/studies: Original Attributes Sequence (0400,0561) Item 1 has 2 Modified Attributes Sequence (0400,0550) Items; only a single Item is included (PS3.18 2026d I.1 Table I.1-1)",
+      "observed_status": "failed",
+      "request_count": 4
+    },
+    "REQ-HTTP-125": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [],
+      "observed_advisories": [
+        "POST /dicomweb/studies: the 33-character Warning holds no DICOM Status Code; the text returned in the Warning Header Field should contain one and a descriptive reason (PS3.18 2026d 10.5.3.2)"
+      ],
+      "observed_message": "the Instance is stored from a chunked request, with a Store Instances Response Module referencing it",
+      "observed_status": "passed",
+      "request_count": 4
+    },
+    "REQ-HTTP-126": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-store-readback"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 43 characters)/series/(value withheld: identifying; 43 characters)/instances/(value withheld: identifying; 43 characters): the stored Instance fails dcentvfy, dciodvfy, intrinsic-pixel-structure, intrinsic-wsi-dicom-encoding, validate_iods, which the file stored passes; stored Instances fully conform to the IOD and encoding requirements of PS3.3 and PS3.5 (PS3.18 2026d 10.5.2)",
+      "observed_status": "failed",
+      "request_count": 4
+    },
+    "REQ-HTTP-127": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-store-readback"
+      ],
+      "observed_advisories": [],
+      "observed_message": "2 violations: GET /dicomweb/studies/(value withheld: identifying; 43 characters)/series/(value withheld: identifying; 43 characters)/instances/(value withheld: identifying; 43 characters)/metadata: the stored Instance does not hold the stored file's (0010,0020), so they were coerced or corrected, yet it has no Original Attributes Sequence (0400,0561) (PS3.18 2026d 10.5.2 and 10.5.3); GET /dicomweb/studies/(value withheld: identifying; 43 characters)/series/(value withheld: identifying; 43 characters)/instances/(value withheld: identifying; 43 characters)/metadata: (0010,0020) were coerced or removed in storage, yet the Store response's Warning Reason (0008,1196) is absent; it is B000 (Coercion of Data Elements) or B006 (Elements Discarded) (PS3.18 2026d I.2.1 Table I.2-1)",
+      "observed_status": "failed",
+      "request_count": 4
+    },
+    "REQ-HTTP-128": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-store"
+      ],
+      "observed_advisories": [
+        "POST /dicomweb/studies answered 409 with no payload; a failure response payload should contain a Status Report explaining the error and whether it is temporary or permanent (PS3.18 2026d 8.1.2.3 and 8.5 Table 8.5-1)"
+      ],
+      "observed_message": "0 401 responses carry WWW-Authenticate and 1 405 responses carry Allow; no Search to send an invalid credential with; no response was 401, so WWW-Authenticate was not exercised",
+      "observed_status": "passed",
+      "request_count": 3
+    },
+    "REQ-HTTP-129": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-store"
+      ],
+      "observed_advisories": [
+        "POST /dicomweb/studies answered 202 with no payload; the payload of a 202 should contain a Status Report (PS3.18 2026d 8.5 Table 8.5-1)"
+      ],
+      "observed_message": "0 401 responses carry WWW-Authenticate and 1 405 responses carry Allow; no Search to send an invalid credential with; no response was 401, so WWW-Authenticate was not exercised",
+      "observed_status": "passed",
+      "request_count": 3
+    },
+    "REQ-HTTP-130": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "6 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=no: the image embeds an ICC Profile; \"no\" indicates that no ICC profile shall be present (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=yes: the embedded 612-byte ICC Profile is not the 7-byte ICC Profile (0028,2000) of the Frame, which \"yes\" embeds when no color space is named (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=srgb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=adobergb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=rommrgb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=displayp3: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); whether the pixels were transformed into a named color space is a judgment of the pixels and is not checked",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-131": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "4 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=yes: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=adobergb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=rommrgb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=displayp3: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); whether the pixels were transformed into a named color space is a judgment of the pixels and is not checked",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-132": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "5 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=yes: the embedded 612-byte ICC Profile is not the 7-byte ICC Profile (0028,2000) of the Frame, which \"yes\" embeds when no color space is named (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=srgb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=adobergb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=rommrgb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=displayp3: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); whether the pixels were transformed into a named color space is a judgment of the pixels and is not checked",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-133": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "5 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=yes: the embedded 612-byte ICC Profile is not the 7-byte ICC Profile (0028,2000) of the Frame, which \"yes\" embeds when no color space is named (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=srgb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=adobergb: the embedded ICC Profile does not have the primaries of ADOBERGB, the color space \"adobergb\" names (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=rommrgb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=displayp3: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); whether the pixels were transformed into a named color space is a judgment of the pixels and is not checked",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-134": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "5 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=yes: the embedded 612-byte ICC Profile is not the 7-byte ICC Profile (0028,2000) of the Frame, which \"yes\" embeds when no color space is named (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=srgb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=adobergb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=rommrgb: the embedded ICC Profile does not have the primaries of ROMMRGB, the color space \"rommrgb\" names (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=displayp3: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); whether the pixels were transformed into a named color space is a judgment of the pixels and is not checked",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-135": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "5 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=yes: the embedded 612-byte ICC Profile is not the 7-byte ICC Profile (0028,2000) of the Frame, which \"yes\" embeds when no color space is named (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=srgb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=adobergb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=rommrgb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=displayp3: the embedded ICC Profile does not have the primaries of DISPLAYP3, the color space \"displayp3\" names (PS3.18 2026d 8.3.5.1.5); whether the pixels were transformed into a named color space is a judgment of the pixels and is not checked",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-136": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-rendered-parameters"
+      ],
+      "observed_advisories": [],
+      "observed_message": "5 violations: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=yes: the embedded 18-byte ICC Profile is not the 7-byte ICC Profile (0028,2000) of the Frame, which \"yes\" embeds when no color space is named (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=srgb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=adobergb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=rommrgb: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1/rendered?iccprofile=displayp3: the image embeds no ICC Profile, though image/jpeg embeds them and the parameter is supported (PS3.18 2026d 8.3.5.1.5); whether the pixels were transformed into a named color space is a judgment of the pixels and is not checked",
+      "observed_status": "failed",
+      "request_count": 38
+    },
+    "REQ-HTTP-137": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [],
+      "observed_advisories": [
+        "2 multipart/related responses, such as GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata, quote the \"type\" parameter, which should not contain quote marks per RFC 2387 (PS3.18 2026d 8.7.1)"
+      ],
+      "observed_message": "each of 16 responses with a payload has one of Content-Length and Transfer-Encoding and a Content-Type, and responses without one have neither",
+      "observed_status": "passed",
+      "request_count": 16
+    },
+    "REQ-HTTP-138": {
+      "baseline_advisories": [
+        "2 multipart/related responses, such as GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata, quote the \"type\" parameter, which should not contain quote marks per RFC 2387 (PS3.18 2026d 8.7.1)"
+      ],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [],
+      "observed_advisories": [
+        "GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1,2: the same 20-character Content-ID names more than one part; a content identifier should be unique for each part (PS3.18 2026d 8.7.1)",
+        "2 multipart/related responses, such as GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata, quote the \"type\" parameter, which should not contain quote marks per RFC 2387 (PS3.18 2026d 8.7.1)"
+      ],
+      "observed_message": "each of 20 responses with a payload has one of Content-Length and Transfer-Encoding and a Content-Type, and responses without one have neither",
+      "observed_status": "passed",
+      "request_count": 20
+    },
+    "REQ-HTTP-139": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-retrieve-frames",
+        "dicomweb-retrieve-frames-missing",
+        "dicomweb-retrieve-frames-uncompressed"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1 answered 406; 200 is required (PS3.18 2026d 10.4.4 Table 10.4.4-1)",
+      "observed_status": "failed",
+      "request_count": 20
+    },
+    "REQ-HTTP-140": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [
+        "dicomweb-transfer-syntaxes"
+      ],
+      "observed_advisories": [],
+      "observed_message": "1 violation: GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/1: part 1 is image/jp2 in 1.2.840.10008.1.2.4.90, though application/octet-stream in Explicit VR Little Endian has qvalue 1 and image/jp2 0.5; the Selected Media Type is determined first, then its Transfer Syntax (PS3.18 2026d 8.7.8.2 and 8.7.8.1); Instance retrieval skipped by request (--skip instance)",
+      "observed_status": "failed",
+      "request_count": 68
+    },
+    "REQ-HTTP-141": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [],
+      "observed_advisories": [
+        "GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/frames/5 answered 404 with no payload; a failure response payload should contain a Status Report explaining the error and whether it is temporary or permanent (PS3.18 2026d 10.4.3.3, 8.1.2.3 and 8.5 Table 8.5-1)"
+      ],
+      "observed_message": "0 401 responses carry WWW-Authenticate and 1 405 responses carry Allow; no Search to send an invalid credential with; no response was 401, so WWW-Authenticate was not exercised",
+      "observed_status": "passed",
+      "request_count": 21
+    },
+    "REQ-HTTP-142": {
+      "baseline_advisories": [],
+      "baseline_failed_checks": [],
+      "baseline_status": "passed",
+      "candidate_contract": {
+        "dicom_edition": "2026d",
+        "schema_version": "wsi-dicom-dicomweb-report-v1"
+      },
+      "failed_checks": [],
+      "observed_advisories": [
+        "GET /dicomweb/studies/(value withheld: identifying; 30 characters)/series/(value withheld: identifying; 30 characters)/instances/(value withheld: identifying; 30 characters)/metadata answered 406 with a payload that lists no Media Type; it should list the available Media Types and their resource identifiers (PS3.18 2026d 8.5 Table 8.5-1)"
+      ],
+      "observed_message": "0 401 responses carry WWW-Authenticate and 1 405 responses carry Allow; no Search to send an invalid credential with; no response was 401, so WWW-Authenticate was not exercised",
+      "observed_status": "passed",
+      "request_count": 17
+    }
+  },
+  "dicom_edition": "2026d",
+  "schema_version": "wsi-dicom-http-statement-observations-v7-draft"
+}

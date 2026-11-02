@@ -6,12 +6,14 @@ import tempfile
 import unittest
 import sys
 from pathlib import Path
+from unittest import mock
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = REPO_ROOT / "src" / "wsi_dicom_bench"
-CATALOG_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v4.json"
-PROFILE_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-core-profile-2026c-v2.json"
+CATALOG_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v6.json"
+PROFILE_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-core-profile-2026c-v4.json"
+V7_CATALOG_PATH = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-v7.json"
 
 
 class WorkbenchCatalogTests(unittest.TestCase):
@@ -58,16 +60,13 @@ class WorkbenchCatalogTests(unittest.TestCase):
         validation["profile"] = "general"
         self.assertTrue(any("profile" in error for error in validation_contract_errors(validation, catalog, True)))
 
-    def test_default_catalog_is_the_current_v5_catalog(self):
-        # The v5 amendment makes catalog v5 the default; catalog v4 stays selectable.
-        from wsi_dicom_bench.workbench.cli import CATALOG_PROFILES, DEFAULT_CATALOG
+    def test_default_catalog_is_the_current_v6_catalog(self):
+        from wsi_dicom_bench.workbench.cli import DEFAULT_CATALOG, expected_profile_id
 
-        current = PACKAGE_ROOT / "rules" / "wsi-dicom-bench-rules-2026c-v5.json"
-        self.assertEqual(DEFAULT_CATALOG.name, current.name)
-        self.assertEqual(DEFAULT_CATALOG.read_bytes(), current.read_bytes())
-        self.assertTrue(CATALOG_PATH.is_file())
+        self.assertEqual(DEFAULT_CATALOG.name, CATALOG_PATH.name)
+        self.assertEqual(DEFAULT_CATALOG.read_bytes(), CATALOG_PATH.read_bytes())
         self.assertEqual(
-            CATALOG_PROFILES[json.loads(CATALOG_PATH.read_text())["catalog_version"]],
+            expected_profile_id(json.loads(CATALOG_PATH.read_text())),
             json.loads(PROFILE_PATH.read_text())["profile_id"],
         )
 
@@ -95,6 +94,20 @@ class WorkbenchCatalogTests(unittest.TestCase):
             "intrinsic-wsi-dicom-2026c-clinical-identity-set",
             "intrinsic-wsi-dicom-2026c-pyramid-geometry",
             "intrinsic-wsi-dicom-2026c-source-relationship",
+            "intrinsic-wsi-dicom-2026c-iod-modules",
+            "intrinsic-wsi-dicom-2026c-iod-attribute-presence",
+            "intrinsic-wsi-dicom-2026c-iod-enumerated-values",
+            "intrinsic-wsi-dicom-2026c-iod-vr-vm",
+            "intrinsic-wsi-dicom-2026c-iod-value-format",
+            "intrinsic-wsi-dicom-2026c-iod-sequence-items",
+            "intrinsic-wsi-dicom-2026c-file-meta",
+            "intrinsic-wsi-dicom-2026c-iod-value-sets",
+            "intrinsic-wsi-dicom-2026c-wsi-image",
+            "intrinsic-wsi-dicom-2026c-attribute-relations",
+            "intrinsic-wsi-dicom-2026c-series-set",
+            "intrinsic-wsi-dicom-2026c-pixel-attributes",
+            "intrinsic-wsi-dicom-2026c-codestream",
+            "intrinsic-wsi-dicom-2026c-encoding",
             "pixel-decode",
             "pixel-djpeg",
             "pixel-opj-decompress",
@@ -105,7 +118,7 @@ class WorkbenchCatalogTests(unittest.TestCase):
             "dcmvalidate",
         }
         self.assertEqual(set(index), expected_checks)
-        self.assertEqual(catalog["catalog_version"], "wsi-dicom-bench-rules-2026c-v4")
+        self.assertEqual(catalog["catalog_version"], "wsi-dicom-bench-rules-2026c-v6")
         self.assertEqual(
             len({rule["rule_id"] for rule in catalog["rules"]}),
             len(catalog["rules"]),
@@ -277,27 +290,47 @@ class WorkbenchDicomInspectionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             paths = []
+            # Name, transfer syntax, File Meta version, organization, explicit
+            # frame positions, frame count, and (optical paths, focal planes).
             controls = (
-                ("dense.dcm", ExplicitVRLittleEndian, b"\x00\x03", "TILED_FULL", []),
+                (
+                    "dense.dcm",
+                    ExplicitVRLittleEndian,
+                    b"\x00\x03",
+                    "TILED_FULL",
+                    [],
+                    36,
+                    (2, 3),
+                ),
                 (
                     "sparse.dcm",
                     JPEG2000Lossless,
                     b"\x80\x01",
                     "TILED_SPARSE",
                     [(1, 1), (513, 513)],
+                    2,
+                    None,
                 ),
-                ("volume.dcm", ExplicitVRLittleEndian, b"\x00\x01", "3D", []),
+                ("volume.dcm", ExplicitVRLittleEndian, b"\x00\x01", "3D", [], 6, None),
                 (
                     "incomplete-full.dcm",
                     ExplicitVRLittleEndian,
                     b"\x00\x01",
                     "TILED_FULL",
                     [],
+                    6,
+                    None,
                 ),
             )
-            for index, (name, transfer_syntax, version, organization, positions) in enumerate(
-                controls, start=1
-            ):
+            for index, (
+                name,
+                transfer_syntax,
+                version,
+                organization,
+                positions,
+                frame_count,
+                optical_planes,
+            ) in enumerate(controls, start=1):
                 path = root / name
                 meta = FileMetaDataset()
                 meta.TransferSyntaxUID = transfer_syntax
@@ -309,15 +342,14 @@ class WorkbenchDicomInspectionTests(unittest.TestCase):
                 dataset.ContainerIdentifier = "SLIDE-001"
                 dataset.Rows = 512
                 dataset.Columns = 512
-                dataset.NumberOfFrames = str(
-                    len(positions) or (36 if name == "dense.dcm" else 6)
-                )
+                dataset.NumberOfFrames = str(frame_count)
                 dataset.TotalPixelMatrixRows = 1024
                 dataset.TotalPixelMatrixColumns = 1536
                 dataset.DimensionOrganizationType = organization
-                if name == "dense.dcm":
-                    dataset.NumberOfOpticalPaths = 2
-                    dataset.TotalPixelMatrixFocalPlanes = 3
+                if optical_planes is not None:
+                    optical_paths, focal_planes = optical_planes
+                    dataset.NumberOfOpticalPaths = optical_paths
+                    dataset.TotalPixelMatrixFocalPlanes = focal_planes
                 dataset.SamplesPerPixel = 1
                 dataset.PhotometricInterpretation = "MONOCHROME2"
                 dataset.BitsAllocated = 16
@@ -398,6 +430,103 @@ class WorkbenchDicomInspectionTests(unittest.TestCase):
 
 
 class WorkbenchCliTests(unittest.TestCase):
+    def test_candidate_declared_unreadable_file_is_a_bounded_limitation(self):
+        from argparse import Namespace
+
+        from wsi_dicom_bench.workbench.catalog import load_catalog
+        from wsi_dicom_bench.workbench.cli import _candidate_unreadable_files
+        from wsi_dicom_bench.workbench.report import build_report
+
+        bad = "/challenge/bad.dcm"
+        good = "/challenge/good.dcm"
+        validation = {
+            "schema_version": "wsi-dicom-validation-report-v1",
+            "profile": "general",
+            "rule_set_id": "wsi-dicom-general-v4",
+            "dicom_edition": "2026d",
+            "files": [bad, good],
+            "checks": [
+                {
+                    "name": "intrinsic-pixel-structure",
+                    "path": bad,
+                    "status": "failed",
+                    "message": "failed to read DICOM file: Premature data set end",
+                },
+                {
+                    "name": "intrinsic-pixel-structure",
+                    "path": good,
+                    "status": "passed",
+                    "message": "conformant",
+                },
+                {
+                    "name": "intrinsic-wsi-dicom-encoding",
+                    "path": good,
+                    "status": "failed",
+                    "message": "failed to read DICOM file: unrelated check",
+                },
+                {
+                    "name": "dciodvfy",
+                    "path": bad,
+                    "status": "failed",
+                    "message": "dciodvfy independently rejected the malformed object",
+                },
+            ],
+        }
+        unreadable = _candidate_unreadable_files(validation)
+        self.assertEqual(unreadable, [{
+            "path": bad,
+            "reason": "failed to read DICOM file: Premature data set end",
+        }])
+
+        args = Namespace(
+            catalog=V7_CATALOG_PATH,
+            profile=None,
+            validation_profile="general",
+            allow_missing_tools=False,
+            max_pixel_frames=1,
+            max_input_bytes=None,
+            command_timeout_secs=60,
+            evaluation_timeout_secs=300,
+            dicom_validator_standard_path=None,
+            wsi_dicom=Path("wsi-dicom"),
+        )
+        decoding = {
+            "policy": {"max_frame_bytes": 1024},
+            "decoders": [],
+            "checks": [],
+            "wsi_dicom_pixel_decode": "not_supported",
+            "candidate_unreadable_files": unreadable,
+        }
+        execution = {"returncode": 0, "document_error": None}
+        with mock.patch(
+            "wsi_dicom_bench.workbench.report.software_inventory", return_value={}
+        ), mock.patch(
+            "wsi_dicom_bench.workbench.report.inspect_dicom_set",
+            return_value={"slide_id": "GOOD", "instance_count": 1, "instances": []},
+        ) as inspect:
+            report = build_report(
+                args,
+                load_catalog(V7_CATALOG_PATH),
+                None,
+                {"schema_version": "wsi-dicom-doctor-report-v1", "tools": []},
+                validation,
+                decoding,
+                execution,
+                {"returncode": 1, "document_error": None},
+            )
+
+        self.assertEqual(report["status"], "failed")
+        self.assertEqual(report["contract_errors"], [])
+        self.assertEqual(report["limitations"]["candidate_unreadable_files"], unreadable)
+        self.assertEqual(
+            [
+                finding["status"] for finding in report["findings"]
+                if finding["check_name"] == "dciodvfy"
+            ],
+            ["failed"],
+        )
+        inspect.assert_called_once_with([Path(good)])
+
     def test_failed_process_documents_retain_diagnostics_and_never_pass(self):
         from wsi_dicom_bench.workbench.cli import main
 
@@ -504,7 +633,7 @@ class WorkbenchCliTests(unittest.TestCase):
 
         validation = {
             "profile": "general",
-            "rule_set_id": "wsi-dicom-general-v1",
+            "rule_set_id": "wsi-dicom-general-v3",
             "files": ["slide.dcm"],
             "checks": [{"name": "pixel-djpeg", "path": "slide.dcm", "status": "passed"}],
             "schema_version": "wsi-dicom-validation-report-v1",
@@ -581,26 +710,13 @@ class WorkbenchCliTests(unittest.TestCase):
             dataset.save_as(dicom_path, enforce_file_format=True)
 
             fake = root / "fake-wsi-dicom"
+            # Every intrinsic and set check of the catalog, and the required external validators.
             checks = [
-                "intrinsic-wsi-dicom-2026c-tile-geometry",
-                "intrinsic-wsi-dicom-2026c-identity-set",
-                "intrinsic-wsi-dicom-2026c-image-metadata",
-                "intrinsic-pixel-structure",
-                "intrinsic-wsi-dicom-2026c-icc-profile",
-                "intrinsic-wsi-dicom-2026c-monochrome-presentation",
-                "intrinsic-wsi-dicom-2026c-lossy-history",
-                "intrinsic-wsi-dicom-2026c-specimen-identity",
-                "intrinsic-wsi-dicom-2026c-specimen-uid-set",
-                "intrinsic-wsi-dicom-2026c-dimension-order",
-                "intrinsic-wsi-dicom-2026c-core-image-profile",
-                "intrinsic-wsi-dicom-2026c-slide-coordinate-system",
-                "intrinsic-wsi-dicom-2026c-optical-path-structure",
-                "intrinsic-wsi-dicom-2026c-specimen-container",
-                "intrinsic-wsi-dicom-2026c-clinical-identity-set",
-                "dciodvfy",
-                "dcentvfy",
-                "validate_iods",
-            ]
+                name
+                for rule in json.loads(CATALOG_PATH.read_text())["rules"]
+                if rule["rule_kind"] in {"intrinsic", "intrinsic_set"}
+                for name in rule["check_names"]
+            ] + ["dciodvfy", "dcentvfy", "validate_iods"]
             fake.write_text(
                 "#!/usr/bin/env python3\n"
                 "import json, pathlib, sys\n"
@@ -656,9 +772,9 @@ class WorkbenchCliTests(unittest.TestCase):
         self.assertEqual(report["slide"]["slide_id"], "SLIDE-001")
         self.assertEqual(report["domains"]["identity"]["status"], "passed")
         self.assertFalse(report["validator_comparison"]["disagreement"])
-        self.assertEqual(report["catalog"]["version"], "wsi-dicom-bench-rules-2026c-v4")
-        self.assertEqual(report["profile"]["id"], "wsi-dicom-core-profile-2026c-v2")
-        self.assertEqual(report["profile"]["version"], "2")
+        self.assertEqual(report["catalog"]["version"], "wsi-dicom-bench-rules-2026c-v6")
+        self.assertEqual(report["profile"]["id"], "wsi-dicom-core-profile-2026c-v4")
+        self.assertEqual(report["profile"]["version"], "4")
         self.assertEqual(len(report["profile"]["sha256"]), 64)
         self.assertEqual(report["software"]["wsi_dicom"]["version"], "wsi-dicom 0.7.4")
         self.assertEqual(len(report["software"]["wsi_dicom"]["sha256"]), 64)

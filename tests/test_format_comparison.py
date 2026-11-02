@@ -240,6 +240,21 @@ class FormatCoverageComparisonTests(unittest.TestCase):
         self.assertEqual(parse_pnm(left), parse_pnm(right))
         self.assertEqual(parse_pnm(left)[0:3], ("P5", 2, 1))
 
+    def test_pnm_file_is_bounded_before_its_payload_is_read(self):
+        from wsi_dicom_bench.pnm import MAX_PNM_HEADER_BYTES, read_pnm
+
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "oversized.pgm"
+            path.write_bytes(b"P5\n1 1\n255\n" + bytes(1024))
+            with self.assertRaisesRegex(ValueError, "exceeds 64 byte validation limit"):
+                read_pnm(path, 64)
+
+            path.write_bytes(
+                b"P5\n#" + bytes(MAX_PNM_HEADER_BYTES) + b"\n1 1\n255\n\0"
+            )
+            with self.assertRaisesRegex(ValueError, "PNM header exceeds"):
+                read_pnm(path, MAX_PNM_HEADER_BYTES * 2)
+
     def test_performance_comparison_reports_direction_without_claiming_speedup(self):
         from wsi_dicom_bench.format_coverage.compare import performance_comparison
 

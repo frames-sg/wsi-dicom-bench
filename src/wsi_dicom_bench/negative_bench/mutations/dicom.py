@@ -7,6 +7,7 @@ import struct
 from pathlib import Path
 
 import pydicom
+from pydicom import config
 from pydicom.encaps import encapsulate_extended, generate_frames
 
 from ..model import GenerationError
@@ -42,8 +43,29 @@ def set_case_sop(dataset, seed: str, suffix: str = "instance") -> str:
     return uid
 
 
+def number_after(first, second) -> None:
+    """Give ``second`` the Instance Number after ``first``'s: only the members of one
+    Concatenation share an Instance Number in a Series (PS3.3 C.7.6.16.1)."""
+    if "InstanceNumber" in first:
+        second.InstanceNumber = int(first.InstanceNumber) + 1
+
+
+def set_case_pair(first, second, seed: str, roles: tuple[str, str] = ("first", "second")) -> None:
+    """Give two SOP Instances of a case their SOP Instance UIDs, suffixed by ``roles``, and
+    ``second`` the Instance Number after ``first``'s."""
+    set_case_sop(first, seed, roles[0])
+    set_case_sop(second, seed, roles[1])
+    number_after(first, second)
+
+
 def save(dataset, path: Path) -> None:
     dataset.save_as(path, enforce_file_format=True)
+
+
+def save_unvalidated(dataset, path: Path) -> None:
+    """Save without pydicom's Value validation, which would reject an authored defect."""
+    with config.disable_value_validation():
+        save(dataset, path)
 
 
 def encoded_ui(uid: str) -> bytes:
